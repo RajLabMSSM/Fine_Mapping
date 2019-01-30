@@ -1,0 +1,228 @@
+---
+title: "<center>Fine Mapping:<br>Parkinson's Disease</center>" 
+author: 
+    "<div class='container'>
+     <h3>Brian M. Schilder, Bioinformatician II<br>
+     Raj Lab<br>
+     Department of Neuroscience<br>
+     Icahn School of Medicine at Mount Sinai<br>
+     NYC, New York<br>
+     </h3> 
+     
+     <a href='https://github.com/RajLabMSSM'><img src='./web/images/github.png'></a> 
+     <a class='item' href='https://rajlabmssm.github.io/RajLab_website/'>
+        <img src='./web/images/brain-icon.png'>
+        <span class='caption'>RAJ LAB</span>
+     <a href='https://icahn.mssm.edu/'><img src='./web/images/sinai.png'></a>
+     </div>"
+date: "`r Sys.Date()`"
+output:
+ html_document:
+    theme: cerulean
+    highlight: zenburn
+    code_folding: show
+    toc: true
+    toc_float: true
+    smooth_scroll: true
+    number_sections: false
+    self_contained: true
+    css: ./web/css/style.css
+editor_options: 
+  chunk_output_type: inline
+--- 
+ 
+# Setup
+
+## Load Libraries
+
+```{r setup, message=F, warning=F}
+library(readxl)
+library(DT)
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(cowplot)
+library(curl) 
+
+# *** susieR ****
+# library(knitrBootstrap) #install_github('jimhester/knitrBootstrap')
+library(susieR) # devtools::install_github("stephenslab/susieR") 
+
+# *** finemapr ****
+## finemapr contains: finemap, CAVIAR, and PAINTOR
+#library(finemapr) # devtools::install_github("variani/finemapr") 
+library(roxygen2)#roxygenize()  
+
+# *** locuscomparer ****
+# https://github.com/boxiangliu/locuscomparer
+library(locuscomparer); #devtools::install_github("boxiangliu/locuscomparer")
+
+# thm <- knitr::knit_theme$get("bipolar")
+# knitr::knit_theme$set(thm)
+
+sessionInfo()
+print(paste("susieR ", packageVersion("susieR")))
+```
+
+## Import Data
+
+Nalls et al. (2019) data: https://github.com/neurogenetics/meta5
+```{r Import Data}
+createDT <- function(DF, caption="", scrollY=400){
+  data <- DT::datatable(DF, caption=caption,
+    extensions = 'Buttons',
+    options = list( dom = 'Bfrtip', 
+                    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), 
+                    scrollY = scrollY, scrollX=T, scrollCollapse = T, paging = F,  
+                      columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    )
+  ) 
+   return(data)
+}
+createDT_html <- function(DF, caption="", scrollY=400){
+  print( htmltools::tagList( createDT(DF, caption, scrollY)) ) 
+}
+  
+
+# Nall (2018) Summary Stats
+Nalls_SS <- read_excel("Data/Nalls2018_S2_SummaryStats.xlsx", sheet = "Data")
+# lapply(Nalls_SS, function(x){print(paste(length(unique(x))))}) %>% data.frame() %>% t()
+createDT(Nalls_SS, caption = "Nalls (2018): Table S2. Detailed summary statistics on all nominated risk variants, known and novel")
+
+# Nall (2018) QTL Stats
+Nalls_QTL <- read_excel("Data/Nalls2018_S4_QTL-MR.xlsx") 
+createDT(Nalls_QTL, caption = "Nalls (2018) Table S4. Expanded summary statistics for QTL Mendelian randomization") 
+```
+
+
+# susieR
+
+* Other fine-mapping tools included in susieR
+  + susieR::N3finemapping.CAVIAR()
+  + susieR::N3finemapping.DAP()
+  + susieR::N3finemapping.FINEMAP()  
+* Statistical Terms:
+  + posterior inclusion probability (PIP)  
+  + coefficient estimate (Beta)
+  + Effect allele frequency (EAF)
+  + The I^2 statistic describes the percentage of variation across studies that seems not to be due to chance. 
+
+* LDlink API
+  + To get the LD matrices for each set of variants (without having to download and process an entire VCF file), 
+  use NIH's LDLink API suite (specifically the LDmatrix tool) which uses data from the 1000 Genomes Project. 
+  + You first need to register to get your token here: https://ldlink.nci.nih.gov/?tab=apiaccess
+  + Then specify which SNPs you want, and from which population(s)
+```{r susieR Functions}   
+get_LDmatrix <- function(rs_list, token="df4298d58dc4", population_list=c("CEU","TSI","FIN","GBR","IBS"),R2_or_D="r2"){
+  populations <- ifelse(length(population_list)==1, population_list, paste(population_list, collapse="%2B"))
+  rs_IDs <- paste(rs_list, collapse="%0A")
+  con <-curl(paste("https://ldlink.nci.nih.gov/LDlinkRest/ldmatrix?snps=", rs_IDs, 
+                   "&pop=",populations,
+                   "&r2_d=",R2_or_D,
+                   "&token=",token, 
+                   sep=""))
+  open(con)
+  LD_matrix <- read.delim(con, header = T, row.names = "RS_number" )  
+  LD_matrix <- LD_matrix %>% data.matrix(rownames.force = T)
+  LD_matrix[is.na(LD_matrix) | LD_matrix<0] <- 0 
+   
+  close(con)
+  return(LD_matrix)
+}
+ 
+susie_on_gene <- function(gene, summary_stats){
+  # Subset summary stats 
+  # cat("\n Preparing summary stats...\n")
+  geneSub <- subset(summary_stats, `Nearest Gene` == gene)  
+  before_plot <-ggplot(geneSub, aes(x=BP, y=`Beta, all studies`, label=SNP, color= -log(`P, all studies`) )) + 
+    geom_hline(yintercept=0,alpha=.5, linetype=2, size=.5) +
+    geom_point() + 
+    geom_segment(aes(xend=BP, yend=0, color=-log(`P, all studies`)), alpha=.5) +
+    geom_text(aes(label=paste(SNP)),vjust="inward",hjust="inward", nudge_y=.15, nudge_x=.25) +
+    labs(title=paste(gene, "Before Fine Mapping",sep="\n"), y="Beta", x="BP Position", color="-log(p-value)\nAll Studies") +
+    theme(plot.title = element_text(hjust = 0.5))
+  # Get LD matrix from NIH API
+  # cat("\n Downloading LD matrix...\n")
+  LD_matrix <- get_LDmatrix(geneSub$SNP) 
+  # Run Susie
+  # cat("\n Running SusieR...\n")
+  b <- geneSub$`Beta, all studies`#data$true_coef[,1]
+  se <- geneSub$`SE, all studies`  
+  fitted_bhat <- susie_bhat(bhat = b,#sumstats[1,,1], 
+                            shat = se, #sumstats[2,,1], 
+                            R = LD_matrix, 
+                            n = nrow(LD_matrix), 
+                            var_y = var(b),
+                            L = 1, #10
+                            scaled_prior_variance = 0.1, 
+                            estimate_residual_variance = TRUE, 
+                            estimate_prior_variance = FALSE, 
+                            standardize = TRUE) 
+  summary(fitted_bhat)$cs
+  
+  susieDF <- data.frame(SNP=names(fitted_bhat$X_column_scale_factors), PIP=fitted_bhat$pip)
+  susieDF <- base::merge(susieDF, subset(geneSub, select=c("SNP","BP","Nearest Gene","P, all studies")), by="SNP")
+  
+  after_plot <- ggplot(susieDF, aes(x=BP, y=PIP, label=SNP, color= -log(`P, all studies`) )) + 
+    geom_point() +  
+    geom_point(data=susieDF[susieDF$PIP == max(susieDF$PIP),], pch=21, fill=NA, size=4, colour="green", stroke=1) +
+    geom_segment(aes(xend=BP, yend=0, color=-log(`P, all studies`))) +
+    geom_text(aes(label=SNP),vjust="inward",hjust="inward", nudge_y = .15, nudge_x = .15) +
+    labs(title=paste(gene, "After Fine Mapping",sep="\n"), y="PIP", x="BP Position", color="-log(p-value)\nAll Studies") +
+    theme(plot.title = element_text(hjust = 0.5)) 
+  
+  plot_grid(before_plot, after_plot, nrow = 2) %>% print() 
+  # susie_plot(fitted_bhat, y="PIP", b=b, add_bar = T) 
+  
+  createDT_html(susieDF, paste("susieR Results: ", gene), scrollY = 200)
+  createDT_html(LD_matrix, paste("LD matrix from 1000 Genomes: ", gene), scrollY = 200)
+  return(susieDF)
+} 
+# LRRK2_results <- susie_on_gene("LRRK2", Nalls_SS) 
+```
+
+## Fine Map with Summary Statistics {.tabset .tabset-fade .tabset-pills}
+
+Only genes with at least 3 variants associated with them (from Nalls et al. (2019)) were included for fine mapping.
+
+```{r Run susieR, fig.height=8, fig.width=7, results = 'asis'} 
+geneList <- Nalls_SS %>% group_by(`Nearest Gene`) %>% tally() %>% subset(n>2)
+topSNPs <- data.table()
+
+for (gene in geneList$`Nearest Gene`){ 
+  cat("\n")
+  cat("### ", gene, "\n")
+  results <- susie_on_gene(gene, Nalls_SS)
+  topSNPs <- rbind(topSNPs, subset(results, PIP==max(PIP)) %>% as.data.table())
+  cat("\n")
+}
+```
+
+## Top SNPs
+
+```{r}
+createDT(topSNPs, "Potential Causal SNPs Identified by susieR", scrollY = 200)
+```
+
+
+```{r Individual Data, eval=F, include=F} 
+fitted = susie(R, b,
+                L = 1,
+                estimate_residual_variance = TRUE, 
+                estimate_prior_variance = FALSE,
+                scaled_prior_variance = 0.1,
+                verbose = TRUE)
+plot(fitted$pip, fitted_bhat$pip, ylim=c(0,1))
+plot(coef(fitted), coef(fitted_bhat)) 
+```
+ 
+```{r Using Z-scores , eval=F, include=F}
+fitted_z <- susie_z(z_scores, R = R, L = 10)
+summary(fitted_z)$cs
+susie_plot(fitted_z, y="PIP", b=b)
+```
+
+
+ 
+
