@@ -19,6 +19,6 @@ extracted using the [LDlink API](https://ldlink.nci.nih.gov/?tab=apiaccess){:tar
 
 ## Author
 
-<a href="https://bschilder.github.io/BMSchilder/" target="_blank">Brian M. Schilder, Bioinformatician II</a>
-<a href="www.rajlab.org" target="_blank">Raj Lab</a>
-<a href="https://icahn.mssm.edu/about/departments/neuroscience" target="_blank">Department of Neuroscience, Icahn School of Medicine at Mount Sinai</a>
+<a href="https://bschilder.github.io/BMSchilder/" target="_blank">Brian M. Schilder, Bioinformatician II</a>\
+<a href="www.rajlab.org" target="_blank">Raj Lab</a>\
+<a href="https://icahn.mssm.edu/about/departments/neuroscience" target="_blank">Department of Neuroscience, Icahn School of Medicine at Mount Sinai</a>\
