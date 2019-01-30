@@ -40,7 +40,7 @@
     -webkit-transition: .3s; /* Safari */
     transition:  .3s;
 }
-/*.author .item {
+.author .item {
     vertical-align: top;
     display: inline-block;
     text-align: center; 
@@ -49,7 +49,7 @@
     display: block;
     text-align: center; 
 }
-*/
+
 
 /* ### Table of Contents #### 
 selected row color = background-color */
