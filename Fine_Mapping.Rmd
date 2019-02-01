@@ -43,8 +43,9 @@ library(dplyr)
 library(ggplot2)
 library(plotly)
 library(cowplot)
-library(curl) 
-
+library(curl)
+library(biomaRt)
+library(sqldf) 
 # *** susieR ****
 # library(knitrBootstrap) #install_github('jimhester/knitrBootstrap')
 library(susieR) # devtools::install_github("stephenslab/susieR") 
@@ -64,11 +65,10 @@ library(locuscomparer); #devtools::install_github("boxiangliu/locuscomparer")
 sessionInfo()
 print(paste("susieR ", packageVersion("susieR")))
 ```
+ 
+## General Functions
 
-## Import Data
-
-Nalls et al. (2019) data: https://github.com/neurogenetics/meta5
-```{r Import Data}
+```{r}
 createDT <- function(DF, caption="", scrollY=400){
   data <- DT::datatable(DF, caption=caption,
     extensions = 'Buttons',
@@ -82,18 +82,63 @@ createDT <- function(DF, caption="", scrollY=400){
 }
 createDT_html <- function(DF, caption="", scrollY=400){
   print( htmltools::tagList( createDT(DF, caption, scrollY)) ) 
-}
-  
-
-# Nall (2018) Summary Stats
-Nalls_SS <- read_excel("Data/Nalls2018_S2_SummaryStats.xlsx", sheet = "Data")
-# lapply(Nalls_SS, function(x){print(paste(length(unique(x))))}) %>% data.frame() %>% t()
-createDT(Nalls_SS, caption = "Nalls (2018): Table S2. Detailed summary statistics on all nominated risk variants, known and novel")
-
-# Nall (2018) QTL Stats
-Nalls_QTL <- read_excel("Data/Nalls2018_S4_QTL-MR.xlsx") 
-createDT(Nalls_QTL, caption = "Nalls (2018) Table S4. Expanded summary statistics for QTL Mendelian randomization") 
+} 
 ```
+
+# Data Preprocessing
+
+## TSS Data
+
+Use bioMart to get TSS positions for each gene
+```{r}
+get_TSS_position <- function(gene){ 
+  mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+  # att <- listAttributes(mart)
+  # grep("transcription", att$name, value=TRUE)
+  TSS <- getBM(mart=mart,
+               attributes=c("hgnc_symbol","transcription_start_site", "version"), 
+               filters="hgnc_symbol", values=gene)
+} 
+```
+
+
+## Import GWAS Summary Statistics
+
+For each gene, get the position of top SNP (the one with the greatest effect size/Beta) 
+```{r}
+## Only the significant subset of results
+Nalls_SS_sig <- read_excel("Data/Nalls2018_S2_SummaryStats.xlsx", sheet = "Data")
+top_SNPs <- Nalls_SS_sig %>% group_by(`Nearest Gene`) %>% top_n(1, `Beta, all studies`) 
+# lapply(Nalls_SS, function(x){print(paste(length(unique(x))))}) %>% data.frame() %>% t()
+createDT(Nalls_SS_sig, caption = "Nalls (2018): Table S2. Detailed summary statistics on all nominated risk variants, known and novel")
+ 
+# Nall (2018) QTL Stats
+# Nalls_QTL <- read_excel("Data/Nalls2018_S4_QTL-MR.xlsx") 
+# createDT(Nalls_QTL, caption = "Nalls (2018) Table S4. Expanded summary statistics for QTL Mendelian randomization") 
+```
+
+## Assign SNPs to Gene
+
+Nalls et al. (2019) data: https://github.com/neurogenetics/meta5
+```{r}    
+get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=1000000){ 
+  topSNP_sub <- subset(top_SNPs, `Nearest Gene`==gene)
+  
+  ## Full dataset  
+  filePath <- "Data/META.PD.NALLS2014.PRS.tsv"# "Data/nallsEtal2019_no23andMe.tab.txt"
+  # Get col names
+  # strsplit( readLines(filePath, n = 2), "\t")   
+  minPos <- topSNP_sub$BP - bp_distance
+  maxPos <- topSNP_sub$BP + bp_distance
+  
+  geneSubset <- read.csv.sql(filePath, sep="\t", stringsAsFactors=F,
+                           sql = paste('select * from file where CHR =',topSNP_sub$CHR,
+                                       'AND POS BETWEEN', minPos, 'AND', maxPos)) 
+  geneSubset <- geneSubset %>% dplyr::rename(SNP=MarkerName)
+  return(geneSubset)
+} 
+```
+
 
 
 # susieR
@@ -111,90 +156,120 @@ createDT(Nalls_QTL, caption = "Nalls (2018) Table S4. Expanded summary statistic
 * LDlink API
   + To get the LD matrices for each set of variants (without having to download and process an entire VCF file), 
   use NIH's LDLink API suite (specifically the LDmatrix tool) which uses data from the 1000 Genomes Project. 
-  + You first need to register to get your token here: https://ldlink.nci.nih.gov/?tab=apiaccess
+  + You first need to register to [get your token here](https://ldlink.nci.nih.gov/?tab=apiaccess) 
   + Then specify which SNPs you want, and from which population(s)
+  + A [maximum of 300 SNPs](https://ldlink.nci.nih.gov/?tab=help#LDassoc) are permitted by LDmatrix 
+  + All input variants must be on the same chromosome and match a bi-allelic variant
 ```{r susieR Functions}   
-get_LDmatrix <- function(rs_list, token="df4298d58dc4", population_list=c("CEU","TSI","FIN","GBR","IBS"),R2_or_D="r2"){
-  populations <- ifelse(length(population_list)==1, population_list, paste(population_list, collapse="%2B"))
+get_LDmatrix <- function(rs_list, token="df4298d58dc4", 
+                         population_list=c("CEU","TSI","FIN","GBR","IBS"), 
+                         R2_or_D="r2"){
+  populations <- ifelse(length(population_list)==1, population_list, 
+                        paste(population_list, collapse="%2B"))
   rs_IDs <- paste(rs_list, collapse="%0A")
   con <-curl(paste("https://ldlink.nci.nih.gov/LDlinkRest/ldmatrix?snps=", rs_IDs, 
                    "&pop=",populations,
                    "&r2_d=",R2_or_D,
                    "&token=",token, 
                    sep=""))
-  open(con)
+  open(con) 
   LD_matrix <- read.delim(con, header = T, row.names = "RS_number" )  
   LD_matrix <- LD_matrix %>% data.matrix(rownames.force = T)
-  LD_matrix[is.na(LD_matrix) | LD_matrix<0] <- 0 
+  LD_matrix[is.na(LD_matrix)] <- 0 # | LD_matrix<0
    
   close(con)
   return(LD_matrix)
 }
+
+
  
-susie_on_gene <- function(gene, summary_stats){
+susie_on_gene <- function(gene, top_SNPs, SNP_limit=300){
+  geneSubset <- get_flanking_SNPs(gene, top_SNPs) 
+  geneSubset <- geneSubset%>% arrange(desc(abs(Effect)))
+  geneSubset <- geneSubset[1:SNP_limit,]
+  geneSubset$Coord <- paste(geneSubset$CHR,geneSubset$POS, sep="")
+  #paste("chr",geneSubset$CHR,":",geneSubset$POS, sep="")
   # Subset summary stats 
   # cat("\n Preparing summary stats...\n")
-  geneSub <- subset(summary_stats, `Nearest Gene` == gene)  
-  before_plot <-ggplot(geneSub, aes(x=BP, y=`Beta, all studies`, label=SNP, color= -log(`P, all studies`) )) + 
+  labelSNPs <- geneSubset[1:5,]
+  
+  before_plot <- ggplot(geneSubset, aes(x=Coord, y=Effect, label=SNP, color= -log(P.value) )) + 
     geom_hline(yintercept=0,alpha=.5, linetype=2, size=.5) +
     geom_point() + 
-    geom_segment(aes(xend=BP, yend=0, color=-log(`P, all studies`)), alpha=.5) +
-    geom_text(aes(label=paste(SNP)),vjust="inward",hjust="inward", nudge_y=.15, nudge_x=.25) +
-    labs(title=paste(gene, "Before Fine Mapping",sep="\n"), y="Beta", x="BP Position", color="-log(p-value)\nAll Studies") +
+    geom_point(data=labelSNPs[1,], 
+               pch=21, fill=NA, size=4, colour="red", stroke=1) +
+    geom_segment(aes(xend=Coord, yend=0, color= -log(P.value)), alpha=.5) +
+    geom_text(data=labelSNPs, aes(label=SNP), 
+              vjust="inward",hjust="inward", nudge_y=.05, nudge_x=.25) +
+    labs(title=paste(gene, "Before Fine Mapping",sep="\n"), y="Beta", x="BP Position",
+         color="-log(p-value)\nAll Studies") +
     theme(plot.title = element_text(hjust = 0.5))
   # Get LD matrix from NIH API
   # cat("\n Downloading LD matrix...\n")
-  LD_matrix <- get_LDmatrix(geneSub$SNP) 
+  LD_matrix <- get_LDmatrix(geneSubset$SNP )  
+   
   # Run Susie
-  # cat("\n Running SusieR...\n")
-  b <- geneSub$`Beta, all studies`#data$true_coef[,1]
-  se <- geneSub$`SE, all studies`  
-  fitted_bhat <- susie_bhat(bhat = b,#sumstats[1,,1], 
-                            shat = se, #sumstats[2,,1], 
+  # cat("\n Running SusieR...\n")  
+  geneSubset_filt <- subset(geneSubset, SNP %in% row.names(LD_matrix)  )
+  b <- geneSubset_filt$Effect
+  se <- geneSubset_filt$StdErr
+  
+  fitted_bhat <- susie_bhat(bhat = b,
+                            shat = se,
                             R = LD_matrix, 
                             n = nrow(LD_matrix), 
                             var_y = var(b),
-                            L = 1, #10
+                            L = 1, # Must lower to 1 if entering only 3 SNPs
                             scaled_prior_variance = 0.1, 
                             estimate_residual_variance = TRUE, 
                             estimate_prior_variance = FALSE, 
                             standardize = TRUE) 
   summary(fitted_bhat)$cs
   
-  susieDF <- data.frame(SNP=names(fitted_bhat$X_column_scale_factors), PIP=fitted_bhat$pip)
-  susieDF <- base::merge(susieDF, subset(geneSub, select=c("SNP","BP","Nearest Gene","P, all studies")), by="SNP")
+  susieDF <- data.frame(SNP=names(fitted_bhat$X_column_scale_factors), PIP=fitted_bhat$pip) %>%
+    base::merge(subset(geneSubset_filt, 
+                                select=c("SNP","Effect","P.value", "Coord")), by="SNP") %>%
+    arrange(desc(PIP))
   
-  after_plot <- ggplot(susieDF, aes(x=BP, y=PIP, label=SNP, color= -log(`P, all studies`) )) + 
+  labelSNPs_PIP <- susieDF[1:5,]
+  
+  after_plot <- ggplot(susieDF, aes(x=Coord, y=PIP, label=SNP, color= -log(P.value) )) + 
+    geom_hline(yintercept=0,alpha=.5, linetype=2, size=.5) +
     geom_point() +  
-    geom_point(data=susieDF[susieDF$PIP == max(susieDF$PIP),], pch=21, fill=NA, size=4, colour="green", stroke=1) +
-    geom_segment(aes(xend=BP, yend=0, color=-log(`P, all studies`))) +
-    geom_text(aes(label=SNP),vjust="inward",hjust="inward", nudge_y = .15, nudge_x = .15) +
-    labs(title=paste(gene, "After Fine Mapping",sep="\n"), y="PIP", x="BP Position", color="-log(p-value)\nAll Studies") +
-    theme(plot.title = element_text(hjust = 0.5)) 
+    geom_point(data=susieDF[susieDF$PIP == max(susieDF$PIP),], 
+               pch=21, fill=NA, size=4, colour="green", stroke=1) +
+    geom_segment(aes(xend=Coord, yend=0, color= -log(P.value))) +
+    geom_text(data=labelSNPs_PIP, aes(label=SNP),
+              vjust="inward",hjust="inward",nudge_x = .25) +
+    labs(title=paste(gene, "After Fine Mapping",sep="\n"), y="PIP", x="BP Position",
+         color="-log(p-value)\nAll Studies") +
+    theme(plot.title = element_text(hjust = 0.5))#theme(legend.position="none") 
   
   plot_grid(before_plot, after_plot, nrow = 2) %>% print() 
   # susie_plot(fitted_bhat, y="PIP", b=b, add_bar = T) 
   
   createDT_html(susieDF, paste("susieR Results: ", gene), scrollY = 200)
-  createDT_html(LD_matrix, paste("LD matrix from 1000 Genomes: ", gene), scrollY = 200)
+  # createDT_html(LD_matrix, paste("LD matrix from 1000 Genomes: ", gene), scrollY = 200)
   return(susieDF)
-} 
-# LRRK2_results <- susie_on_gene("LRRK2", Nalls_SS) 
+}  
 ```
+ 
 
 ## Fine Map with Summary Statistics {.tabset .tabset-fade .tabset-pills}
 
 Only genes with at least 3 variants associated with them (from Nalls et al. (2019)) were included for fine mapping.
 
 ```{r Run susieR, fig.height=8, fig.width=7, results = 'asis'} 
-geneList <- Nalls_SS %>% group_by(`Nearest Gene`) %>% tally() %>% subset(n>2)
-topSNPs <- data.table()
+geneList <- c("LRRK2")#unique(top_SNPs$`Nearest Gene`) 
+#Nalls_SS %>% group_by(`Nearest Gene`) %>% tally() %>% subset(n>2)
 
-for (gene in geneList$`Nearest Gene`){ 
+fineMapped_topSNPs <- data.table()
+
+for (gene in geneList){ 
   cat("\n")
   cat("### ", gene, "\n")
-  results <- susie_on_gene(gene, Nalls_SS)
-  topSNPs <- rbind(topSNPs, subset(results, PIP==max(PIP)) %>% as.data.table())
+  results <- susie_on_gene(gene, top_SNPs)
+  fineMapped_topSNPs <- rbind(fineMapped_topSNPs, subset(results, PIP==max(PIP)) %>% as.data.table())
   cat("\n")
 }
 ```
@@ -202,7 +277,7 @@ for (gene in geneList$`Nearest Gene`){
 ## Top SNPs
 
 ```{r}
-createDT(topSNPs, "Potential Causal SNPs Identified by susieR", scrollY = 200)
+createDT(fineMapped_topSNPs, "Potential Causal SNPs Identified by susieR", scrollY = 200)
 ```
 
 
@@ -223,6 +298,4 @@ summary(fitted_z)$cs
 susie_plot(fitted_z, y="PIP", b=b)
 ```
 
-
- 
 

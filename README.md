@@ -12,7 +12,7 @@ We utilize a variety of statistical and functional fine mapping methodologies, i
 
 ## Data
 
-* PD-associated SNPs are from [Nalls et al. (2019)](https://github.com/neurogenetics/meta5)
+* PD-associated SNPs are from the [Nalls et al. (2018) preprint](https://www.biorxiv.org/content/10.1101/388165v1). Filtered summary stats can be [found here](https://github.com/neurogenetics/meta5)
 * LD matrices are from the [1000 Genomes Project](http://www.internationalgenome.org/),
 extracted using the [LDlink API](https://ldlink.nci.nih.gov/?tab=apiaccess)
 
@@ -20,5 +20,5 @@ extracted using the [LDlink API](https://ldlink.nci.nih.gov/?tab=apiaccess)
 ## Author
 
 <a href="https://bschilder.github.io/BMSchilder/" target="_blank">Brian M. Schilder, Bioinformatician II</a>\
-<a href="www.rajlab.org" target="_blank">Raj Lab</a>\
+<a href="https://rajlab.org" target="_blank">Raj Lab</a>\
 <a href="https://icahn.mssm.edu/about/departments/neuroscience" target="_blank">Department of Neuroscience, Icahn School of Medicine at Mount Sinai</a>\
