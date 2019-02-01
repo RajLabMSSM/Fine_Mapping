@@ -260,7 +260,7 @@ susie_on_gene <- function(gene, top_SNPs, SNP_limit=300){
 Only genes with at least 3 variants associated with them (from Nalls et al. (2019)) were included for fine mapping.
 
 ```{r Run susieR, fig.height=8, fig.width=7, results = 'asis'} 
-geneList <- c("LRRK2")#unique(top_SNPs$`Nearest Gene`) 
+geneList <- c("LRRK2","GBAP1","SNCA","VPS13C","GCH1")#unique(top_SNPs$`Nearest Gene`) 
 #Nalls_SS %>% group_by(`Nearest Gene`) %>% tally() %>% subset(n>2)
 
 fineMapped_topSNPs <- data.table()
