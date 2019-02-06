@@ -4,3 +4,6 @@
 .Ruserdata
 *.DS_Store
 /Data
+*.vcf.gz.tbi
+*.vcf.gz
+*.vcf

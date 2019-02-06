@@ -15,6 +15,7 @@ We utilize a variety of statistical and functional fine mapping methodologies, i
 * PD-associated SNPs are from the [Nalls et al. (2018) preprint](https://www.biorxiv.org/content/10.1101/388165v1). Filtered summary stats can be [found here](https://github.com/neurogenetics/meta5)
 * LD matrices are from the [1000 Genomes Project](http://www.internationalgenome.org/),
 extracted using the [LDlink API](https://ldlink.nci.nih.gov/?tab=apiaccess)
+* Both Nalls et al. (2019) summary stats and 1000 Genomes Project LD calculations used human genome annotation GRCh37
 
 
 ## Author
