@@ -376,7 +376,7 @@ fineMapped_topSNPs <- data.table()
 for (gene in geneList){ 
   cat("\n")
   cat("### ", gene, "\n")
-  susieDF <- susie_on_gene(gene, top_SNPs, reference="1KG_Phase1")
+  susieDF <- susie_on_gene(gene, top_SNPs, reference="1KG_Phase3")
   before_after_plots(gene, susieDF)
   Nalls_vs_SusieR_overlap(Nalls_SS_sig, susieDF, max_SNPs=10)
   
