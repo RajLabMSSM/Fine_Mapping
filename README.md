@@ -2,6 +2,12 @@
 
 Identification of causal variants within genes that have been previously associated with Parkinson's Disease.\
 All data and results can viewed and downloaded via the following interactive Rmarkdown output files below:  
+
+### Current Results
+* [Fine mapping with Parkinson's and Alzheimer's Disease GWAS Summary Stat Data](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping.html)
+
+
+### Alternative Analyses
 * [Using LD matrix calculated from 1000 Genomes Project Phase 1 data (1/7/13); European superpopulation only](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_1KGphase1_EUR.html)
 * [Using LD matrix calculated from 1000 Genomes Project Phase 3 data (7/14/16); European superpopulation only](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_1KGphase3_EUR.html)
 * [Using LD matrix calculated from 1000 Genomes Project Phase 3 data (7/14/16); All populations](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_1KGphase3_allPops.html)

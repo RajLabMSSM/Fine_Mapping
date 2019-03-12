@@ -3,7 +3,13 @@
 .RData
 .Ruserdata
 *.DS_Store
-/Data
+/**/*.DS_Store
+/**/**/*.DS_Store
+/Data/Alzheimers/**/*.tsv
+/Data/Alzheimers/**/*.txt
+/Data/Parkinsons/**/*.tsv
+/Data/Parkinsons/**/*.txt
+
 *.vcf.gz.tbi
 *.vcf.gz
 *.vcf
