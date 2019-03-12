@@ -2,7 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-*.DS_Store
+.DS_Store
 /**/*.DS_Store
 /**/**/*.DS_Store
 /Data/Alzheimers/**/*.tsv
