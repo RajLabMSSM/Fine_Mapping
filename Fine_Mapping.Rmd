@@ -59,36 +59,36 @@ library(susieR) # devtools::install_github("stephenslab/susieR")
 
 sessionInfo()
 print(paste("susieR ", packageVersion("susieR"))) 
-
+root <- "~/../rajt01"
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS: 
 Data_dirs = list(
   # ++++++++ GWAS SUMMARY STATS ++++++++ #
   ## Nalls et al. (2019) GWAS
   "Nalls_2019" = list(topSS="Data/Parkinsons/Nalls_2019/Nalls2019_S2_SummaryStats.xlsx",
-                      fullSS="/hpc/users/rajt01/pd-omics/gwas/nallsEtal2019_no23andMe.tab.txt"),
+                      fullSS=file.path(root,"pd-omics/gwas/nallsEtal2019_no23andMe.tab.txt")),
   # 23andMe Parkinson's GWAS
-  "23andMe" = list(topSS="/hpc/users/rajt01/pd-omics/data/nallsEtAl2019/23andme/23andMe_indexSNPs.xlsx",
-                   fullSS="/hpc/users/rajt01/pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt"),
+  "23andMe" = list(topSS="Data/Parkinsons/23andme/23andMe_indexSNPs.xlsx",
+                   fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/23andMe/PD_all_post30APRIL2015_5.2_extended.txt")),
   ## IGAP Alzheimer's GWAS
   "IGAP" = list(topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
-                fullSS="/hpc/users/rajt01/ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv"),
+                fullSS=file.path(root,"ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv")),
   ## Marioni et al. (2018) Alzheimer's GWAS
   "Marioni_2018" = list(topSS=NA,
-                        fullSS="/hpc/users/rajt01/ad-omics/data/AD_GWAS/latest/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"),
+                        fullSS=file.path(root,"ad-omics/data/AD_GWAS/latest/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv")),
   ## Posthuma et al. (2018) Alzheimer's GWAS
   "Posthuma_2018" = list(topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
-                fullSS="/hpc/users/rajt01/ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv"),
+                fullSS=file.path(root,"ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv")),
 
   # ++++++++ eQTL SUMMARY STATS ++++++++ #
   ## MESA eQTLs: African Americans
   "MESA_AFA" = list(topSS=NA,
-                   fullSS="/hpc/users/rajt01/ad-omics/data/mesa/AFA_cis_eqtl_summary_statistics.txt"),
+                   fullSS=file.path(root,"ad-omics/data/mesa/AFA_cis_eqtl_summary_statistics.txt")),
   ## MESA eQTLs: Caucasians
   "MESA_CAU" = list(topSS=NA,
-                   fullSS="/hpc/users/rajt01/ad-omics/data/mesa/CAU_cis_eqtl_summary_statistics.txt.gz"),
+                   fullSS=file.path(root,"ad-omics/data/mesa/CAU_cis_eqtl_summary_statistics.txt.gz")),
   ## MESA eQTLs: Hispanics
   "MESA_HIS" = list(topSS=NA,
-                   fullSS="/hpc/users/rajt01/ad-omics/data/mesa/HIS_cis_eqtl_summary_statistics.txt.gz") 
+                   fullSS=file.path(root,"ad-omics/data/mesa/HIS_cis_eqtl_summary_statistics.txt.gz")) 
                  )
 
 
@@ -102,7 +102,7 @@ if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
   Data_dirs$Marioni_2018$fullSS <- "Data/Alzheimers/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"
   Data_dirs$Posthuma_2018$fullSS <- "Data/Alzheimers/Posthuma/phase3.beta.se.hrc.txt"
 } else{
-  vcf_folder = "vcf/1KG_Phase3" # Use previously downloaded files if working on Minerva node
+  vcf_folder = "vcf/1KG_Phase1" # Use previously downloaded files if working on Minerva node
 } 
 ```
  
