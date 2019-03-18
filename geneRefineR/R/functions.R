@@ -112,15 +112,15 @@ snps_to_genes <- function(snp_list){
   merged_df <- data.table(gene_results, key = "ensembl_gene_id")[data.table(snp_results, key = "ensembl")]
   return(merged_df)
 }
- 
 
-# 
+
+#
 # locations_to_snps <- function(locations){
 #   # listMarts()
 #   locations = gsub(pattern = "chr", replacement = "", locations)
 #   # CHR = lapply(locations, function(x){strsplit(x, ":")[[1]][1]}) %>% unlist()
-#   # POS = lapply(locations, function(x){strsplit(x, ":")[[1]][2]}) %>% unlist() 
-#   
+#   # POS = lapply(locations, function(x){strsplit(x, ":")[[1]][2]}) %>% unlist()
+#
 #   snp_mart = useMart("ENSEMBL_MART_SNP", dataset="hsapiens_snp")
 #   # View(listFilters(snp_mart))
 #   # View(listAttributes(snp_mart))
@@ -179,11 +179,11 @@ import_sig_GWAS <- function(file_path, caption="", sheet = 1,
 #   chrom_col = "CHR", position_col = "BP", snp_col="SNP",
 #   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
 #   caption= "Nalls et al. (2018) PD GWAS Summary Stats")
-# 
-# 
+#
+#
 # finemapped_PD <- finemap_geneList(top_SNPs, geneList=c("LRRK2","GBAP1","SNCA","VPS13C","GCH1"),
 #                                   file_path=Data_dirs$Nalls_2018$fullSS,
-#                                   snp_col = "MarkerName", pval_col = "P.value") 
+#                                   snp_col = "MarkerName", pval_col = "P.value")
 
 ## Get Flanking SNPs
 
@@ -227,8 +227,8 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
 #                                   file_path = "Data/Parkinsons/23andMe/PD_all_post30APRIL2015_5.2_extended.txt",
 #                                   snp_col = "SNP", pval_col = "pvalue", chrom_col = "CHR",
 #                                   position_col = "position", effect_col = "effect",stderr_col = "stderr")
-
-
+#
+#
 
 
 
@@ -255,7 +255,7 @@ gaston_LD <- function(flankingSNPs, reference="1KG_Phase1", superpopulation="EUR
   chrom <- flankingSNPs$CHR[1]
   # PHASE 3 DATA
   if(reference=="1KG_Phase3"){
-    cat("LD Reference Panel = 1KG_Phase3 \n") 
+    cat("LD Reference Panel = 1KG_Phase3 \n")
     if(vcf_folder==F){## With internet
       vcf_URL <- paste("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr",chrom,
                        ".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep="")
@@ -264,38 +264,38 @@ gaston_LD <- function(flankingSNPs, reference="1KG_Phase1", superpopulation="EUR
       vcf_URL <- paste(vcf_folder, "/ALL.chr",chrom,
                        ".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep="")
       popDat_URL = file.path(vcf_folder,"integrated_call_samples_v3.20130502.ALL.panel")
-    }  
-    
+    }
+
   # PHASE 1 DATA
   } else if (reference=="1KG_Phase1") {
-    cat("LD Reference Panel = 1KG_Phase1 \n") 
+    cat("LD Reference Panel = 1KG_Phase1 \n")
     if(vcf_folder==F){## With internet
       vcf_URL <- paste("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/ALL.chr",chrom,
-                       ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="") 
+                       ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
       popDat_URL = "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/phase1_integrated_calls.20101123.ALL.panel"
     }else{## WithOUT internet
       vcf_URL <- paste(vcf_folder,"/ALL.chr",chrom,
-                       ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="") 
+                       ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
       popDat_URL = file.path(vcf_folder, "phase1_integrated_calls.20101123.ALL.panel")
-    } 
+    }
   }
-  
+
   popDat <- read.delim(popDat_URL, header = F, row.names = NULL)
   colnames(popDat) <- c("sample","population","superpop","gender")
-  
+
   # library(Rsamtools); #BiocManager::install("Rsamtools")
-  system(paste("tabix -fh ",vcf_URL ,region, "> subset.vcf")) 
+  system(paste("tabix -fh ",vcf_URL ,region, "> subset.vcf"))
   vcf_name <- paste(basename(vcf_URL), ".tbi",sep="")
   file.remove(vcf_name)
   # Import w/ gaston and further subset
-  bed.file <- read.vcf("subset.vcf") 
+  bed.file <- read.vcf("subset.vcf")
   ## Subset rsIDs
   bed <- select.snps(bed.file, id %in% flankingSNPs$SNP)
   # Subset Individuals
   selectedInds <- subset(popDat, superpop == superpopulation)
   bed <- select.inds(bed, id %in% selectedInds$sample)
   # Cleanup extra files
-  remove(bed.file) 
+  remove(bed.file)
   file.remove("subset.vcf")
 
   # Calculate pairwise LD for all SNP combinations
@@ -304,19 +304,19 @@ gaston_LD <- function(flankingSNPs, reference="1KG_Phase1", superpopulation="EUR
   ld.x <- gaston::LD(bed, lim = c(1,ncol(bed)), measure ="r" )
   LD_matrix <- ld.x
   LD_matrix[!is.finite(LD_matrix)] <- 0
-  # LD plot  
+  # LD plot
   try({
-    leadSNP = subset(flankingSNPs, leadSNP==T)$SNP 
-    lead_index = match(leadSNP, rownames(LD_matrix))  
+    leadSNP = subset(flankingSNPs, leadSNP==T)$SNP
+    lead_index = match(leadSNP, rownames(LD_matrix))
     start = lead_index-10
     end = lead_index+10
-    LD.plot( LD_matrix[start:end, start:end], snp.positions = bed@snps$pos[start:end] ) 
+    LD.plot( LD_matrix[start:end, start:end], snp.positions = bed@snps$pos[start:end] )
   })
   # Double check subsetting
   # LD_matrix <- ld.x[row.names(ld.x) %in% flankingSNPs$SNP, colnames(ld.x) %in% flankingSNPs$SNP]
   return(LD_matrix)
 }
-# LD_matrix <- gaston_LD(flankingSNPs) 
+# LD_matrix <- gaston_LD(flankingSNPs)
 
 
 ## susieR Function
@@ -377,14 +377,14 @@ susie_on_gene <- function(gene, top_SNPs,
                             standardize = T
   )
   # Format results
-  
-  credible_set <- row.names(LD_matrix)[as.numeric(summary(fitted_bhat)$cs$variable)] 
-  
+  credible_set <- row.names(LD_matrix)[as.numeric(summary(fitted_bhat)$cs$variable)]
+
   geneSubset$Coord <- paste(geneSubset$CHR, geneSubset$POS, sep=":")
   susieDF <- data.frame(SNP=names(fitted_bhat$X_column_scale_factors), PIP=fitted_bhat$pip) %>%
-    base::merge(subset(geneSubset, select=c("CHR","POS","SNP","Effect","P","Coord","leadSNP", "credible_set")), by="SNP") %>%
+    base::merge(subset(geneSubset, select=c("CHR","POS","SNP","Effect","P","Coord","leadSNP")), by="SNP") %>%
     mutate(POS=as.numeric(POS))
   susieDF$credible_set <- ifelse(susieDF$SNP==credible_set, T, F)
+
   return(susieDF)
 }
 # susieDF <- susie_on_gene("LRRK2", top_SNPs,
@@ -395,48 +395,49 @@ susie_on_gene <- function(gene, top_SNPs,
 #                          effect_col = "BETA", stderr_col = "SE", position_col = "BP")
 
 ## Before-After Plots
-before_after_plots <- function(gene, susieDF, topVariants=3, before_var="P"){  
-  susieDF$logged_var <- -log10(susieDF[before_var])    
+before_after_plots <- function(gene, susieDF, before_var="P"){
   roundBreaks <- seq(plyr::round_any(min(susieDF$POS),10000), max(susieDF$POS),250000)
   ## Before fine-mapping
   if(before_var=="Effect"){
-    geneSubset <- susieDF %>% arrange(desc(abs(Effect))) 
+    geneSelect <- susieDF %>% arrange(desc(abs(Effect)))
   }else{
     # Sort by pval and then absolute Effect size
-    geneSubset <- susieDF %>% arrange()
+    geneSelect <- susieDF %>% arrange()
   }
   # Label original and fine mapped top snps
-  leadSNP_before <- subset(geneSubset, leadSNP==T)[1,]
-  leadSNP_after <- geneSubset[1,]
-  labelSNPs <- rbind(leadSNP_before, leadSNP_after) 
+  leadSNP_before <- subset(geneSelect, leadSNP==T)[1,]
+  leadSNP_after <- susieDF %>% arrange(desc(PIP))
+  leadSNP_after <- leadSNP_after[1,]
+  labelSNPs <- rbind(leadSNP_before, leadSNP_after)
   labelSNPs$type <- c("before", "after")
   labelSNPs$color <- c("red", "green")
-   
+
   yLimits <- c(min(-log10(susieDF[before_var])), max(-log10(susieDF[before_var]))*1.1)
-  
-  before_plot <- ggplot(geneSubset, aes(x=POS, y=-log10(eval(parse(text=before_var))), label=SNP, color= -log10(P) )) +
+  yLimits <- c(0,-log10(leadSNP_before$P)+5)
+
+  before_plot <- ggplot(geneSelect, aes(x=POS, y=-log10(eval(parse(text=before_var))), label=SNP, color= -log10(P) )) +
     ylim(yLimits) +
-    geom_hline(yintercept=0, alpha=.5, linetype=1, size=.5) + 
+    geom_hline(yintercept=0, alpha=.5, linetype=1, size=.5) +
     geom_point(alpha=.5) +
-    geom_point(data=labelSNPs[1,], pch=21, fill=NA, size=4, colour=labelSNPs[1,"color"], stroke=1) + 
-    geom_point(data=labelSNPs[2,], pch=21, fill=NA, size=4, colour=labelSNPs[2,"color"], stroke=1) + 
+    geom_point(data=labelSNPs[1,], pch=21, fill=NA, size=4, colour=labelSNPs[1,"color"], stroke=1) +
+    geom_point(data=labelSNPs[2,], pch=21, fill=NA, size=4, colour=labelSNPs[2,"color"], stroke=1) +
     geom_segment(aes(xend=POS, yend= yLimits[1], color= -log10(P)), alpha=.5) +
     geom_text_repel(data=labelSNPs, aes(label=SNP), color=labelSNPs$color, segment.alpha = .2, nudge_x = .5) +
     labs(title=paste(gene," (",length(susieDF$PIP)," variants)","\nBefore Fine Mapping",sep=""),
-         y=paste("-log10(",before_var,")",sep=""), x="Position", color="-log10(p-value)") +
+         y=paste("-log10(p-value)",sep=""), x="Position", color="-log10(p-value)") +
     theme(plot.title = element_text(hjust = 0.5)) +
     scale_x_continuous(breaks = roundBreaks)
 
   ## After fine-mapping
-  susieDF <- susieDF %>% arrange(desc(PIP)) 
+  susieDF <- susieDF %>% arrange(desc(PIP))
   yLimits <- c(min(susieDF$PIP), max(susieDF$PIP)+.1)
 
   after_plot <- ggplot(susieDF, aes(x=POS, y=PIP, label=SNP, color= -log10(P) )) +
     ylim(yLimits) +
     geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) +
     geom_point(alpha=.5) +
-    geom_point(data=labelSNPs[1,], pch=21, fill=NA, size=4, colour=labelSNPs[1,"color"], stroke=1) + 
-    geom_point(data=labelSNPs[2,], pch=21, fill=NA, size=4, colour=labelSNPs[2,"color"], stroke=1) + 
+    geom_point(data=labelSNPs[1,], pch=21, fill=NA, size=4, colour=labelSNPs[1,"color"], stroke=1) +
+    geom_point(data=labelSNPs[2,], pch=21, fill=NA, size=4, colour=labelSNPs[2,"color"], stroke=1) +
     geom_segment(aes(xend=POS, yend=yLimits[1], color= -log10(P)), alpha=.5) +
     geom_text_repel(data=labelSNPs, aes(label=SNP), color=labelSNPs$color, segment.alpha = .2, nudge_x = .5) +
     labs(title=paste(gene," (",length(susieDF$PIP)," variants)","\nAfter Fine Mapping",sep=""), y="PIP", x="Position",
@@ -491,7 +492,7 @@ finemap_geneList <- function(top_SNPs, geneList, file_path,
                              pval_col=pval_col, effect_col=effect_col, stderr_col=stderr_col,
                              LD_reference=LD_reference, superpopulation=superpopulation)
     try({
-      before_after_plots(gene, susieDF, topVariants=topVariants)
+      before_after_plots(gene, susieDF)
     })
     try({
       before_after_consensus(gene, top_SNPs, susieDF, max_SNPs=10)
