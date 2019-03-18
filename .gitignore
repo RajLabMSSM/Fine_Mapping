@@ -9,7 +9,8 @@
 /Data/Alzheimers/**/*.txt
 /Data/Parkinsons/**/*.tsv
 /Data/Parkinsons/**/*.txt
-
+/Data/Parkinsons/**/*.dat
+/Data/HRC.RSID.txt
 *.vcf.gz.tbi
 *.vcf.gz
 *.vcf

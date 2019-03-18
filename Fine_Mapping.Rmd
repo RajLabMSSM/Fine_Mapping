@@ -31,25 +31,10 @@ editor_options:
   chunk_output_type: inline
 --- 
 
-# Setup
-
 ```{r setup, message=F, warning=F, dpi = 600}
 # devtools::install_local("geneRefineR/", force = T)
 # library("geneRefineR") 
-source("geneRefineR/R/functions.R")
-
-# MINERVA PATHS TO SUMMARY STATISTICS DATASETS:
-## Local path
-Data_dir = "Data"
-## MESA eQTLs
-Data_dir = "/hpc/users/rajt01/ad-omics/data/mesa"
-## Nalls et al. (2019) GWAS
-Data_dir = "/hpc/users/rajt01/pd-omics/gwas"
-## 23andMe Parkinson's GWAS
-Data_dir = "/hpc/users/rajt01/pd-omics/data/nallsEtAl2019/23andme"
-## IGAP & Marion et al. (2018) Alzheimer's GWAS's
-Data_dir = "/hpc/users/rajt01/ad-omics/data/AD_GWAS/latest"
-
+source("geneRefineR/R/functions.R") 
 
 library(readxl)
 library(DT)
@@ -68,37 +53,149 @@ library(jsonlite)
 library(xml2)
 library(gaston)
 library(RCurl)
-
 # *** susieR ****
 # library(knitrBootstrap) #install_github('jimhester/knitrBootstrap')
 library(susieR) # devtools::install_github("stephenslab/susieR")
 
-
 sessionInfo()
-print(paste("susieR ", packageVersion("susieR")))
+print(paste("susieR ", packageVersion("susieR"))) 
+
+# MINERVA PATHS TO SUMMARY STATISTICS DATASETS: 
+Data_dirs = list(
+  # ++++++++ GWAS SUMMARY STATS ++++++++ #
+  ## Nalls et al. (2019) GWAS
+  "Nalls_2019" = list(topSS="Data/Parkinsons/Nalls_2019/Nalls2019_S2_SummaryStats.xlsx",
+                      fullSS="/hpc/users/rajt01/pd-omics/gwas/nallsEtal2019_no23andMe.tab.txt"),
+  ## 23andMe Parkinson's GWAS
+  "23andMe" = list(topSS="/hpc/users/rajt01/pd-omics/data/nallsEtAl2019/23andme/23andMe_indexSNPs.xlsx",
+                   fullSS="/hpc/users/rajt01/pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt"),
+  ## IGAP Alzheimer's GWAS
+  "IGAP" = list(topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
+                fullSS="/hpc/users/rajt01/ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv"),
+  ## Marioni et al. (2018) Alzheimer's GWAS
+  "Marioni_2018" = list(topSS=NA,
+                        fullSS="/hpc/users/rajt01/ad-omics/data/AD_GWAS/latest/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"),
+  ## Posthuma et al. (2018) Alzheimer's GWAS
+  "Posthuma_2018" = list(topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
+                fullSS="/hpc/users/rajt01/ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv"),
+
+  # ++++++++ eQTL SUMMARY STATS ++++++++ #
+  ## MESA eQTLs: African Americans
+  "MESA_AFA" = list(topSS=NA,
+                   fullSS="/hpc/users/rajt01/ad-omics/data/mesa/AFA_cis_eqtl_summary_statistics.txt"),
+  ## MESA eQTLs: Caucasians
+  "MESA_CAU" = list(topSS=NA,
+                   fullSS="/hpc/users/rajt01/ad-omics/data/mesa/CAU_cis_eqtl_summary_statistics.txt.gz"),
+  ## MESA eQTLs: Hispanics
+  "MESA_HIS" = list(topSS=NA,
+                   fullSS="/hpc/users/rajt01/ad-omics/data/mesa/HIS_cis_eqtl_summary_statistics.txt.gz") 
+                 )
+
+
+# Direct to local data files if not working on Minerva
+if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
+  vcf_folder = F # Use internet if I'm working from my laptop
+  Data_dirs$Nalls_2019$fullSS <- "Data/Parkinsons/Nalls_2019/nallsEtal2019_no23andMe.tab.txt"
+  Data_dirs$`23andMe`$topSS <- "Data/Parkinsons/23andMe/23andMe_indexSNPs.xlsx"
+  Data_dirs$`23andMe`$fullSS <- "Data/Parkinsons/23andMe/PD_all_post30APRIL2015_5.2_extended.txt"
+  Data_dirs$IGAP$fullSS <- "Data/Alzheimers/IGAP/IGAP_stage_1.1000G.phase3.20130502.tsv"
+  Data_dirs$Marioni_2018$fullSS <- "Data/Alzheimers/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"
+  Data_dirs$Posthuma_2018$fullSS <- "Data/Alzheimers/Posthuma/phase3.beta.se.hrc.txt"
+} else{
+  vcf_folder = "vcf/1KG_Phase3" # Use previously downloaded files if working on Minerva node
+} 
 ```
+ 
+# Parkinson's Disease
 
-## Finemap PD Genes: Nalls (2018) {.tabset .tabset-fade .tabset-pills}
+## Nalls et. al. (2019) {.tabset .tabset-fade .tabset-pills}
 
-```{r Finemap PD Genes: Nalls (2018), results = 'asis', fig.height=8, fig.width=7} 
-list[top_SNPs, SumStats_sig] <- import_sig_GWAS(
-  file_path = file.path(Data_dir,"/Parkinsons/Nalls2018_S2_SummaryStats.xlsx"),
+```{r PD: Nalls (2019), results = 'asis', fig.height=8, fig.width=7} 
+# Preprocessing  
+add_snp_info <-function(snpInfo_path, fullSS_path, newSS_path){  
+   # sqldf::read.csv.sql(file=snpInfo_path, header = T, sep = "\t",
+  #                     sql = paste("select * from file where location IN (", paste("'",snp_locs,"'", collapse=",",sep=""),")",sep="")
+  #                     ) 
+  cat("\nLoading SNP Info file...\n")
+  snp_ids <- fread(snpInfo_path,header = T, stringsAsFactors = F, key="location", colClasses = rep("character",2))  
+ 
+  cat("\nLoading full SS file...\n")
+  fullSS <- fread(fullSS_path, stringsAsFactors = F,
+                  colClasses = c(rep("character",3), rep("numeric",7), "character", rep("numeric",4)))
+  fullSS$MarkerName <- gsub("chr","",fullSS$MarkerName)
+  fullSS <- fullSS %>% rename(location="MarkerName")
+  fullSS <- data.table(fullSS, key="location") 
+  dim(fullSS)
+  cat("\nMerging files...\n")
+  SS_merged <- snp_ids[fullSS] 
+  dim(SS_merged)
+  cat("\nWriting new file...\n")
+  fwrite(SS_merged, newSS_path, sep = "\t", quote = F, row.names = F)
+  remove(snp_ids, fullSS, SS_merged)  
+} 
+# add_snp_info(snpInfo_path = "Data/HRC.RSID.txt",
+#                      fullSS_path = "Data/Parkinsons/Nalls_2019/nallsEtal2019_no23andMe.tab.txt",
+#                      newSS_path="Data/Parkinsons/Nalls_2019/nallsEtal2019_no23andMe_extended.txt")
+# 
+
+top_SNPs <- import_sig_GWAS(
+  file_path = Data_dirs$Nalls_2019$topSS,
   sheet="Data",
   chrom_col = "CHR", position_col = "BP", snp_col="SNP",
   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
   caption= "Nalls et al. (2018) PD GWAS Summary Stats")
 
 
-finemapped_PD <- finemap_geneList(top_SNPs, geneList=c("LRRK2","GBAP1","SNCA","VPS13C","GCH1"), #unique(top_SNPs$Gene) 
-                 filePath="Data/Parkinsons/META.PD.NALLS2014.PRS.tsv",
-                  snp_col = "MarkerName", pval_col = "P.value")
+finemapped_PD <- finemap_geneList(top_SNPs, geneList=c("LRRK2","GBAP1","SNCA","VPS13C","GCH1"),
+                 file_path=Data_dirs$Nalls_2019$fullSS,
+                  snp_col = "MarkerName", pval_col = "P.value", vcf_folder = vcf_folder)
+
+
+
 ```
 
-## Finemap AD Genes: Posthuma (2019) {.tabset .tabset-fade .tabset-pills}
+## 23andMe {.tabset .tabset-fade .tabset-pills}
 
-```{r Finemap AD Genes: Posthuma (2019) , results = 'asis', fig.height=8, fig.width=7} 
-list[top_SNPs, SumStats_sig] <- import_sig_GWAS(
-  file_path = file.path(Data_dir,"Alzheimers/Posthuma/AD_target_SNP.xlsx"),
+```{r PD: 23andMe, results = 'asis', fig.height=8, fig.width=7}
+# Preprocessing  
+add_snpIDs_to_fullSS <-function(snpInfo_path, fullSS_path){ 
+  snp_ids <- fread(snpInfo_path, 
+                    select=c("all.data.id", "assay.name", "scaffold", "position"),
+                    key="all.data.id")
+  snp_ids$scaffold <- gsub("chr", "",snp_ids$scaffold)
+  fullSS <- fread(fullSS_path,  key="all.data.id")
+  dim(fullSS)
+  SS_merged <- snp_ids[fullSS] %>% rename(SNP="assay.name", CHR="scaffold")
+  dim(SS_merged)
+  fwrite(SS_merged, "Data/Parkinsons/23andMe/PD_all_post30APRIL2015_5.2_extended.txt",
+         sep = "\t", quote = F, row.names = F)
+  remove(snp_ids, fullSS, SS_merged)  
+}
+# add_snpIDs_to_fullSS(snpInfo_path = "Data/Parkinsons/23andMe/all_snp_info-5.2.txt",
+#                      fullSS_path = "Data/Parkinsons/23andMe/PD_all_post30APRIL2015_5.2.dat")
+
+top_SNPs <- import_sig_GWAS(
+  file_path = Data_dirs$`23andMe`$topSS, 
+  chrom_col = "scaffold", position_col = "position", snp_col="assay.name",
+  pval_col="pvalue", effect_col="OR", gene_col="gene.symbol",
+  caption= "23andMe (2019) PD GWAS Summary Stats")
+
+#,"MAPT","SNCA","PDZRN4"
+finemapped_PD <- finemap_geneList(top_SNPs, geneList=c("LRRK2"),
+                 file_path=Data_dirs$`23andMe`$fullSS,
+                 snp_col = "SNP", pval_col = "pvalue", chrom_col = "CHR",
+                 position_col = "position", effect_col = "effect", stderr_col = "stderr",
+                 vcf_folder = vcf_folder)  
+```
+
+
+# Alzheimer's Disease
+
+## Posthuma (2018) {.tabset .tabset-fade .tabset-pills}
+
+```{r AD: Posthuma (2018) , results = 'asis', fig.height=8, fig.width=7} 
+top_SNPs <- import_sig_GWAS(
+  file_path = Data_dirs$Posthuma_2018$topSS,
   sheet = 3,
   chrom_col = "Chr", position_col = "bp", snp_col="SNP",
   pval_col="P", effect_col="Z", gene_col="Gene",
@@ -106,15 +203,15 @@ list[top_SNPs, SumStats_sig] <- import_sig_GWAS(
 
 
 finemapped_AD <- finemap_geneList(top_SNPs, geneList=c("CLU/PTK2B","APOE"),
-                 filePath="Data/Alzheimers/Posthuma/phase3.beta.se.hrc.txt",
-                  effect_col = "BETA", stderr_col = "SE", position_col = "BP")
+                 file_path=Data_dirs$Posthuma_2018$fullSS,
+                  effect_col = "BETA", stderr_col = "SE", position_col = "BP", vcf_folder = vcf_folder)
 ```
 
 ## Finemap AD Genes: IGAP {.tabset .tabset-fade .tabset-pills}
 
-```{r Finemap AD Genes: IGAP, results = 'asis', fig.height=8, fig.width=7} 
-list[top_SNPs, SumStats_sig] <- import_sig_GWAS(
-  file_path = file.path(Data_dir,"Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx"),
+```{r AD: IGAP, results = 'asis', fig.height=8, fig.width=7} 
+top_SNPs <- import_sig_GWAS(
+  file_path = Data_dirs$IGAP$topSS,
   sheet = 1,
   chrom_col = "CHR", position_col = "Position", snp_col="SNP",
   pval_col="Overall_P", effect_col="Overall_OR", gene_col="Closest gene",
@@ -122,9 +219,9 @@ list[top_SNPs, SumStats_sig] <- import_sig_GWAS(
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
 finemapped_AD <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
-                   filePath=file.path(Data_dir,"Alzheimers/IGAP/IGAP_stage_1.1000G.phase3.20130502.tsv"),
+                   file_path=Data_dirs$IGAP$fullSS,
                    chrom_col = "CHROM",  pval_col = "PVAL",snp_col = "ID",
-                    effect_col = "BETA", stderr_col = "SE", position_col = "POS")
+                    effect_col = "BETA", stderr_col = "SE", position_col = "POS", vcf_folder = vcf_folder)
 ```
 
 
