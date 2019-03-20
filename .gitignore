@@ -11,6 +11,7 @@
 /Data/Parkinsons/**/*.txt
 /Data/Parkinsons/**/*.dat
 /Data/HRC.RSID.txt
+/Data/eQTL/MESA/*.txt
 *.vcf.gz.tbi
 *.vcf.gz
 *.vcf
