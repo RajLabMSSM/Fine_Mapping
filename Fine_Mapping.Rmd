@@ -70,7 +70,8 @@ Data_dirs = list(
                       fullSS=file.path(root,"pd-omics/gwas/nallsEtal2019_no23andMe.tab")),
   # 23andMe Parkinson's GWAS 
   "23andMe" = list(topSS="Data/Parkinsons/23andMe/23andMe_indexSNPs.xlsx",
-                   fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt")),
+                   # fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt")),
+                   fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.noChr.rsid.tab")), 
   ## IGAP Alzheimer's GWAS
   "IGAP" = list(topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
                 fullSS=file.path(root,"ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv")),
