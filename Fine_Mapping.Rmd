@@ -59,8 +59,7 @@ library(susieR) # devtools::install_github("stephenslab/susieR")
 
 sessionInfo()
 print(paste("susieR ", packageVersion("susieR"))) 
-
-
+ 
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS: 
 root <- "../../../"
 Data_dirs = list(
@@ -71,15 +70,15 @@ Data_dirs = list(
   # 23andMe Parkinson's GWAS 
   "23andMe" = list(topSS="Data/Parkinsons/23andMe/23andMe_indexSNPs.xlsx",
                    # fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt")),
-                   fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.noChr.rsid.tab")), 
+                   fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.noChr.rsid.tab")),  
   ## IGAP Alzheimer's GWAS
   "IGAP" = list(topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
                 fullSS=file.path(root,"ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv")),
   ## Marioni et al. (2018) Alzheimer's GWAS
   "Marioni_2018" = list(topSS=NA,
                         fullSS=file.path(root,"ad-omics/data/AD_GWAS/latest/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv")),
-  ## Posthuma et al. (2018) Alzheimer's GWAS
-  "Posthuma_2018" = list(topSS="Data/Alzheimers/Posthuma/AD_target_SNP.xlsx",
+  ## Posthuma et al. (2018) Alzheimer's GWAS 
+  "Posthuma_2018" = list(topSS="Data/Alzheimers/Posthuma/AD_target_SNP.xlsx", 
                 fullSS=file.path(root,"ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv")),
 
   # ++++++++ eQTL SUMMARY STATS ++++++++ #
@@ -93,7 +92,7 @@ Data_dirs = list(
   "MESA_HIS" = list(topSS="Data/eQTL/MESA/HIS_eQTL_PTK2B.txt",
                    fullSS=file.path(root,"ad-omics/data/mesa/HIS_cis_eqtl_summary_statistics.txt.gz")) 
   )
-
+ 
 
 # Direct to local data files if not working on Minerva
 if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
