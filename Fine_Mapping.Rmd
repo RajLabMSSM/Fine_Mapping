@@ -63,7 +63,7 @@ root <- "../../.."
 Data_dirs = list(
   # ++++++++ GWAS SUMMARY STATS ++++++++ # 
   # Nall et al. (2019) w/ 23andMe Parkinson's GWAS 
-  "Nalls_23andMe" = list(topSS="Data/Parkinsons/Nalls_23andMe/23andMe_indexSNPs.xlsx",
+  "Nalls_23andMe" = list(topSS="Data/Parkinsons/Nalls_23andMe/Nalls2019_S2_SummaryStats.xlsx",
                    # fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt")),
                    fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt")),  
   ## IGAP Alzheimer's GWAS
@@ -108,6 +108,7 @@ if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
 ```{r PD: Nalls_23andMe, results = 'asis', fig.height=8, fig.width=7} 
 top_SNPs <- import_topSNPs(
   file_path = Data_dirs$Nalls_23andMe$topSS,
+  sheet="Data",
   chrom_col = "CHR", position_col = "BP", snp_col="SNP",
   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
   caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats")
@@ -115,7 +116,9 @@ top_SNPs <- import_topSNPs(
 
 finemapped_PD_Nalls_23andMe <- finemap_geneList(top_SNPs, geneList=c("LRRK2"),#c("LRRK2","GBAP1","SNCA","VPS13C","GCH1"),
                  file_path=Data_dirs$Nalls_23andMe$fullSS,
-                  snp_col = "MarkerName", pval_col = "P.value", vcf_folder = vcf_folder)
+                 chrom_col = "CHR", position_col = "POS", snp_col = "SNP",
+                 pval_col = "p", effect_col = "beta", stderr_col = "se", 
+                 vcf_folder = vcf_folder)
 ```
 
 
