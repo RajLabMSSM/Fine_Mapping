@@ -59,11 +59,11 @@ library(susieR) # devtools::install_github("stephenslab/susieR")
 sessionInfo()
 print(paste("susieR ", packageVersion("susieR")))  
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS:
-root <- "../../../"
+root <- "../../.."
 Data_dirs = list(
   # ++++++++ GWAS SUMMARY STATS ++++++++ # 
   # Nall et al. (2019) w/ 23andMe Parkinson's GWAS 
-  "23andMe" = list(topSS="Data/Parkinsons/23andMe/23andMe_indexSNPs.xlsx",
+  "Nalls_23andMe" = list(topSS="Data/Parkinsons/Nalls_23andMe/23andMe_indexSNPs.xlsx",
                    # fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt")),
                    fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt")),  
   ## IGAP Alzheimer's GWAS
@@ -92,9 +92,6 @@ Data_dirs = list(
 # Direct to local data files if not working on Minerva
 if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
   vcf_folder = F # Use internet if I'm working from my laptop
-  Data_dirs$Nalls_2019$fullSS <- "Data/Parkinsons/Nalls_2019/nallsEtal2019_no23andMe.tab.txt"
-  Data_dirs$`23andMe`$topSS <- "Data/Parkinsons/23andMe/23andMe_indexSNPs.xlsx"
-  Data_dirs$`23andMe`$fullSS <- "Data/Parkinsons/23andMe/PD_all_post30APRIL2015_5.2_extended.txt"
   Data_dirs$IGAP$fullSS <- "Data/Alzheimers/IGAP/IGAP_stage_1.1000G.phase3.20130502.tsv"
   Data_dirs$Marioni_2018$fullSS <- "Data/Alzheimers/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"
   Data_dirs$Posthuma_2018$fullSS <- "Data/Alzheimers/Posthuma/phase3.beta.se.hrc.txt"
@@ -108,17 +105,17 @@ if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
 
 ## Nalls et. al. (2019) w/ 23andMe {.tabset .tabset-fade .tabset-pills}
 
-```{r PD: Nalls_23andMe, results = 'asis', fig.height=8, fig.width=7, eval=F} 
+```{r PD: Nalls_23andMe, results = 'asis', fig.height=8, fig.width=7} 
 top_SNPs <- import_topSNPs(
-  file_path = Data_dirs$Nalls_2019$topSS,
+  file_path = Data_dirs$Nalls_23andMe$topSS,
   sheet="Data",
   chrom_col = "CHR", position_col = "BP", snp_col="SNP",
   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
-  caption= "Nalls et al. (2018) & 23andMe PD GWAS Summary Stats")
+  caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats")
 
 
 finemapped_PD_Nalls_23andMe <- finemap_geneList(top_SNPs, geneList=c("LRRK2"),#c("LRRK2","GBAP1","SNCA","VPS13C","GCH1"),
-                 file_path=Data_dirs$Nalls_2019$fullSS,
+                 file_path=Data_dirs$Nalls_23andMe$fullSS,
                   snp_col = "MarkerName", pval_col = "P.value", vcf_folder = vcf_folder)
 ```
 
