@@ -33,8 +33,8 @@ editor_options:
 
 ```{r setup, message=F, warning=F, dpi = 600}
 # devtools::install_local("geneRefineR/", force = T)
-# library("geneRefineR") 
-source("geneRefineR/R/functions.R") 
+# library("echolocatoR") 
+source("echolocatoR/R/functions.R") 
 
 library(readxl)
 library(DT)
@@ -59,43 +59,64 @@ library(susieR) # devtools::install_github("stephenslab/susieR")
 sessionInfo()
 print(paste("susieR ", packageVersion("susieR")))  
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS:
-root <- "../../.."
+# root <- "../../.."
+root <- "sc/orga/projects"
 Data_dirs = list(
   # ++++++++ GWAS SUMMARY STATS ++++++++ # 
-  # Nall et al. (2019) w/ 23andMe Parkinson's GWAS 
-  "Nalls_23andMe" = list(topSS="Data/Parkinsons/Nalls_23andMe/Nalls2019_S2_SummaryStats.xlsx",
+  # Nall et al. (2019) w/ 23andMe
+  "Nalls_23andMe" = list(type="Parkinson's GWAS", 
+                         topSS="Data/Parkinsons/Nalls_23andMe/Nalls2019_TableS2.xlsx",
                    # fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt")),
-                   fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt")),  
-  ## IGAP Alzheimer's GWAS
-  "IGAP" = list(topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
-                fullSS=file.path(root,"ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv")),
-  ## Marioni et al. (2018) Alzheimer's GWAS
-  "Marioni_2018" = list(topSS=NA,
-                        fullSS=file.path(root,"ad-omics/data/AD_GWAS/latest/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv")),
-  ## Posthuma et al. (2018) Alzheimer's GWAS 
-  "Posthuma_2018" = list(topSS="Data/Alzheimers/Posthuma/AD_target_SNP.xlsx", 
-                fullSS=file.path(root,"ad-omics/data/AD_GWAS/latest/IGAP_stage_1.1000G.phase3.20130502.tsv")),
+                   fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt"),
+                   reference="https://www.biorxiv.org/content/10.1101/388165v3"),  
+  
+  ## IGAP 
+  "IGAP" = list(type="Alzheimer's GWAS", 
+                topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
+                fullSS=file.path(root,"ad-omics/data/AD_GWAS/IGAP/IGAP_stage_1.1000G.phase3.20130502.tsv"),
+                reference="https://www.nature.com/articles/ng.2802"),
+  
+  ## Marioni et al. (2018) 
+  "Marioni_2018" = list(type="Alzheimer's GWAS", 
+                        topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
+                        fullSS=file.path(root,"ad-omics/data/AD_GWAS/Marion_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"),
+                        reference="https://www.nature.com/articles/s41398-018-0150-6"),
+  
+  ## Jansen et al. (2018) 
+  "Posthuma_2018" = list(type="Alzheimer's GWAS", 
+                         topSS="Data/Alzheimers/Posthuma_2018/AD_target_SNP.xlsx", 
+                         fullSS=file.path(root,"ad-omics/data/AD_GWAS/Posthuma_2018/phase3.beta.se.hrc.txt"),
+                reference="https://www.nature.com/articles/s41588-018-0311-9"),
+  
+  ## Kunkle et al. (2018) Alzheimer's GWAS 
+  "Kunkle_2019" = list(type="Alzheimer's GWAS",
+                       topSS="Data/Alzheimers/Kunkle_2019/AD_target_SNP.xlsx", 
+                       fullSS=file.path(root,NA),
+                       reference="https://www.nature.com/articles/s41588-019-0358-2"),
 
   # ++++++++ eQTL SUMMARY STATS ++++++++ #
   ## MESA eQTLs: African Americans
-  "MESA_AFA" = list(topSS="Data/eQTL/MESA/AFA_eQTL_PTK2B.txt",
-                   fullSS=file.path(root,"ad-omics/data/mesa/AFA_cis_eqtl_summary_statistics.txt")),
+  "MESA_AFA" = list(type="eQTL",
+                    topSS="Data/eQTL/MESA/AFA_eQTL_PTK2B.txt",
+                    fullSS=file.path(root,"ad-omics/data/mesa/AFA_cis_eqtl_summary_statistics.txt"), 
+                    reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
   ## MESA eQTLs: Caucasians
-  "MESA_CAU" = list(topSS="Data/eQTL/MESA/CAU_eQTL_PTK2B.txt",
-                   fullSS=file.path(root,"ad-omics/data/mesa/CAU_cis_eqtl_summary_statistics.txt.gz")),
+  "MESA_CAU" = list(type="eQTL",
+                    topSS="Data/eQTL/MESA/CAU_eQTL_PTK2B.txt",
+                    fullSS=file.path(root,"ad-omics/data/mesa/CAU_cis_eqtl_summary_statistics.txt"),
+                    reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
   ## MESA eQTLs: Hispanics
-  "MESA_HIS" = list(topSS="Data/eQTL/MESA/HIS_eQTL_PTK2B.txt",
-                   fullSS=file.path(root,"ad-omics/data/mesa/HIS_cis_eqtl_summary_statistics.txt.gz")) 
+  "MESA_HIS" = list(type="eQTL",
+                    topSS="Data/eQTL/MESA/HIS_eQTL_PTK2B.txt",
+                    fullSS=file.path(root,"ad-omics/data/mesa/HIS_cis_eqtl_summary_statistics.txt"),
+                    reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa") 
   )
- 
+
+Data_dirs_table <- Data_dirs_to_table(Data_dirs, writeCSV = "directories_table.csv")
 
 # Direct to local data files if not working on Minerva
 if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
   vcf_folder = F # Use internet if I'm working from my laptop
-  Data_dirs$IGAP$fullSS <- "Data/Alzheimers/IGAP/IGAP_stage_1.1000G.phase3.20130502.tsv"
-  Data_dirs$Marioni_2018$fullSS <- "Data/Alzheimers/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"
-  Data_dirs$Posthuma_2018$fullSS <- "Data/Alzheimers/Posthuma/phase3.beta.se.hrc.txt"
-  Data_dirs$MESA_CAU$fullSS <- "Data/eQTL/MESA/CAU_cis_eqtl_summary_statistics.txt" 
 } else{
   vcf_folder = "../1000_Genomes_VCFs/Phase1" # Use previously downloaded files if working on Minerva node
 }  
@@ -126,7 +147,7 @@ finemapped_PD_Nalls_23andMe <- finemap_geneList(top_SNPs, geneList=c("LRRK2"),#c
 
 ## Posthuma (2018) {.tabset .tabset-fade .tabset-pills}
 
-```{r AD: Posthuma (2018) , results = 'asis', fig.height=8, fig.width=7, eval=F} 
+```{r AD: Posthuma (2018) , results = 'asis', fig.height=8, fig.width=7} 
 top_SNPs <- import_topSNPs(
   file_path = Data_dirs$Posthuma_2018$topSS,
   sheet = 3,
@@ -141,6 +162,24 @@ finemapped_AD_Posthuma <- finemap_geneList(top_SNPs, geneList=c("CLU/PTK2B","APO
                  vcf_folder = vcf_folder)
 ```
 
+## Marioni (2018) {.tabset .tabset-fade .tabset-pills}
+
+```{r AD: Marioni (2018) , results = 'asis', fig.height=8, fig.width=7} 
+top_SNPs <- import_topSNPs(
+  file_path = Data_dirs$Marioni_2018$topSS,
+  sheet = "Table S9",
+  chrom_col = "topSNP_chr", position_col = "topSNP_bp", snp_col="topSNP",
+  pval_col="p_GWAS", effect_col="b_GWAS", gene_col="Gene",
+  caption= "Marioni et al. (2018) AD GWAS Summary Stats")
+
+
+finemapped_AD_Marioni <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
+                 file_path=Data_dirs$Marioni_2018$fullSS,
+                 effect_col = "BETA", stderr_col = "SE", position_col = "BP", 
+                 vcf_folder = vcf_folder)
+```
+
+
 ## IGAP {.tabset .tabset-fade .tabset-pills}
 
 ```{r AD: IGAP, results = 'asis', fig.height=8, fig.width=7} 
@@ -152,20 +191,38 @@ top_SNPs <- import_topSNPs(
   caption= "IGAP: AD GWAS Summary Stats")
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
-finemapped_AD_IGAP <- finemap_geneList(top_SNPs, geneList=c("CLU"), 
+finemapped_AD_IGAP <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
                    file_path=Data_dirs$IGAP$fullSS,
                    chrom_col = "CHROM",  pval_col = "PVAL", snp_col = "SNP",
                    effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                    vcf_folder = vcf_folder, num_causal = 1)
 ```
 
+## Kunkle (2019) {.tabset .tabset-fade .tabset-pills}
+
+```{r AD: Kunkle (2019), results = 'asis', fig.height=8, fig.width=7} 
+top_SNPs <- import_topSNPs(
+  file_path = Data_dirs$Kunkle_2019$topSS,
+  sheet = "Supplementary Table 6",
+  chrom_col = "Chr", position_col = "Basepair", snp_col="SNP",
+  pval_col="P", effect_col="Beta", gene_col="Locus",
+  caption= "Kunkle (2019): AD GWAS Summary Stats")
+# genes <- snps_to_genes(snp_list=top_SNPs$SNP )
+
+finemapped_AD_Kunkle <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
+                   file_path=Data_dirs$IGAP$fullSS,
+                   chrom_col = "Chromosome",  position_col = "Position", pval_col = "Pvalue",
+                   snp_col = "MarkerName", effect_col = "Beta", stderr_col = "SE", 
+                   vcf_folder = vcf_folder, num_causal = 1)
+```
+
 # eQTL
 
-AFR = AFA = African
-AMR = Ad Mixed American
-EAS = East Asian
-EUR = CAU = European
-SAS = South Asian
+- AFR = AFA = African  
+- AMR = Ad Mixed American  
+- EAS = East Asian  
+- EUR = CAU = European  
+- SAS = South Asian  
 
 ## MESA - AFA {.tabset .tabset-fade .tabset-pills}
 
@@ -196,8 +253,11 @@ finemapped_eQTL_MESA.HIS <- finemap_eQTL(population, gene = "PTK2B",
 
 ```{r Merge Results}
 # finemapped_eQTL_MESA.AFA <- finemapped_eQTL_MESA.HIS<- finemapped_eQTL_MESA.CAU
-named_results_list <- list("Nalls_23andMe"=finemapped_PD_Nalls_23andMe,
+named_results_list <- list("Nalls_23andMe"=finemapped_PD_Nalls_23andMe, 
                            "IGAP"=finemapped_AD_IGAP,
+                           "Posthuma_2018"=finemapped_AD_Posthuma,
+                           "Marioni_2018"=finemapped_AD_Marioni,
+                           "Kunkle_2019"=finemapped_AD_Kunkle,
                            "eQTL_MESA.AFA"=finemapped_eQTL_MESA.AFA, 
                            "eQTL_MESA.CAU"=finemapped_eQTL_MESA.CAU, 
                            "eQTL_MESA.HIS"=finemapped_eQTL_MESA.HIS)

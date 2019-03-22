@@ -15,21 +15,43 @@ All data and results can viewed and downloaded via the following interactive Rma
 
 ## Methods
 
-We utilize a variety of statistical and functional fine mapping methodologies, including:
-* [susieR](https://github.com/stephenslab/susieR)
-* [CAVIAR](http://genetics.cs.ucla.edu/caviar/)
-* [DAP](https://github.com/xqwen/dap)
+![](./echolocatoR/images/echo_logo_sm.png)
+
+* echolatoR is an open-source R library that wraps and extends several commonly used genetic and functional fine mapping tools:
+
+It incorporates a variety of statistical and functional fine mapping methodologies, including:  
+* [susieR](https://github.com/stephenslab/susieR)  
+* [PAINTOR](https://github.com/gkichaev/PAINTOR_V3.0)  
+* [CAVIAR](http://genetics.cs.ucla.edu/caviar/)  
+* [DAP](https://github.com/xqwen/dap)  
+
 
 ## Data
 
-* The PD GWAS summary statistics used here are from the [Nalls et al. (2018) preprint](https://www.biorxiv.org/content/10.1101/388165v1). Summary statistics (limited to only the top SNPs identified by Nalls et al. (2018) via a different fine mapping protocol) can be [found here](https://github.com/neurogenetics/meta5)
-* LD matrices are calculated using .vcf files from the [1000 Genomes Project](http://www.internationalgenome.org/) (Phase 1 or Phase 3), and the LD function within the R package [gaston](https://cran.r-project.org/web/packages/gaston/gaston.pdf)
-* Both Nalls et al. (2019) summary stats and 1000 Genomes Project LD calculations used human genome annotation GRCh37
+### Parkinson's Disease GWAS
 
+* [Nalls et al. (2019) & 23andMe](https://www.biorxiv.org/content/10.1101/388165v3)
+    * Both Nalls et al. (2019) summary stats and 1000 Genomes Project LD calculations used human genome annotation GRCh37.
+
+
+### Alzheimer's Disease GWAS
+
+* [IGAP](https://www.nature.com/articles/ng.2802)
+* [Marioni et al. (2018)](https://www.nature.com/articles/s41398-018-0150-6)
+* [Posthuma et al. (2018)](https://www.nature.com/articles/s41588-018-0311-9)
+* [Kunkle et al. (2019)](https://www.nature.com/articles/s41588-019-0358-2)
+
+### eQTL
+
+* [MESA - (AFA, CAU & HIS subpopulations](https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa)
+
+
+<hr>
 
 ## Author
 
 <a href="https://bschilder.github.io/BMSchilder/" target="_blank">Brian M. Schilder, Bioinformatician II</a>\
 <a href="https://rajlab.org" target="_blank">Raj Lab</a>\
 <a href="https://icahn.mssm.edu/about/departments/neuroscience" target="_blank">Department of Neuroscience, Icahn School of Medicine at Mount Sinai</a>\
+![](./web/images/sinai.png)
 
