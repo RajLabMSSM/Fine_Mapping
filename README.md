@@ -1,6 +1,6 @@
 # Fine_Mapping
 
-Identification of causal variants within genes that have been previously associated with Parkinson's Disease.\
+Identification of causal variants within genes that have been previously associated with Parkinson's Disease or Alzheimer's Disease.\
 All data and results can viewed and downloaded via the following interactive Rmarkdown output files below:  
 
 ### Current Results
@@ -41,7 +41,7 @@ All data and results can viewed and downloaded via the following interactive Rma
 
 ### eQTL
 
-* [MESA - (AFA, CAU & HIS subpopulations](https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa)
+* [MESA - (AFA, CAU & HIS subpopulations)](https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa)
 
 
 <hr>
@@ -50,6 +50,6 @@ All data and results can viewed and downloaded via the following interactive Rma
 
 <a href="https://bschilder.github.io/BMSchilder/" target="_blank">Brian M. Schilder, Bioinformatician II</a>\
 <a href="https://rajlab.org" target="_blank">Raj Lab</a>\
-<a href="https://icahn.mssm.edu/about/departments/neuroscience" target="_blank">Department of Neuroscience, Icahn School of Medicine at Mount Sinai</a>\
+<a href="https://icahn.mssm.edu/about/departments/neuroscience" target="_blank">Department of Neuroscience, Icahn School of Medicine at Mount Sinai</a>\  
 ![](./web/images/sinai.png)
 
