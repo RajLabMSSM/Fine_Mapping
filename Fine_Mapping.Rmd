@@ -118,7 +118,7 @@ Data_dirs_table <- Data_dirs_to_table(Data_dirs, writeCSV = "directories_table.c
 if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
   vcf_folder = F # Use internet if I'm working from my laptop
 } else{
-  vcf_folder = "../1000_Genomes_VCFs/Phase1" # Use previously downloaded files if working on Minerva node
+  vcf_folder = F#"../1000_Genomes_VCFs/Phase1" # Use previously downloaded files if working on Minerva node
 }  
 ```
  
