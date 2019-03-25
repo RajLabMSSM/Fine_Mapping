@@ -424,7 +424,7 @@ susie_on_gene <- function(gene, top_SNPs,
                                     population=superpopulation)
   ### Get LD matrix
   cat("\n + Creating LD matrix... \n")
-  LD_matrix <- gaston_LD(flankingSNPs = flankingSNPs, gene=gene, reference = LD_reference, superpopulation = superpopulation, vcf_folder = vcf_folder)
+  LD_matrix <- gaston_LD(flankingSNPs = flankingSNPs, gene=gene, file_path=file_path, reference = LD_reference, superpopulation = superpopulation, vcf_folder = vcf_folder)
   ## Turn LD matrix into positive semi-definite matrix
   # LD_matrix2 <- ifelse(matrixcalc::is.positive.semi.definite(LD_matrix),
   #        LDmatrix,
