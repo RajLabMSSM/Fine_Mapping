@@ -60,7 +60,7 @@ sessionInfo()
 print(paste("susieR ", packageVersion("susieR")))  
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS:
 # root <- "../../.."
-root <- "sc/orga/projects"
+root <- "~/../../../sc/orga/projects"
 Data_dirs = list(
   # ++++++++ GWAS SUMMARY STATS ++++++++ # 
   # Nall et al. (2019) w/ 23andMe
