@@ -78,8 +78,8 @@ Data_dirs = list(
   
   ## Marioni et al. (2018) 
   "Marioni_2018" = list(type="Alzheimer's GWAS", 
-                        topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
-                        fullSS=file.path(root,"ad-omics/data/AD_GWAS/Marion_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"),
+                        topSS="Data/Alzheimers/Marioni_2018/Marioni2018_supplementary_tables.xlsm",
+                        fullSS=file.path(root,"ad-omics/data/AD_GWAS/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"),
                         reference="https://www.nature.com/articles/s41398-018-0150-6"),
   
   ## Jansen et al. (2018) 
@@ -90,7 +90,7 @@ Data_dirs = list(
   
   ## Kunkle et al. (2018) Alzheimer's GWAS 
   "Kunkle_2019" = list(type="Alzheimer's GWAS",
-                       topSS="Data/Alzheimers/Kunkle_2019/AD_target_SNP.xlsx", 
+                       topSS="Data/Alzheimers/Kunkle_2019/Kunkle2019_supplementary_tables.xlsx", 
                        fullSS=file.path(root,NA),
                        reference="https://www.nature.com/articles/s41588-019-0358-2"),
 
