@@ -171,7 +171,6 @@ top_SNPs <- import_topSNPs(
   pval_col="p_GWAS", effect_col="b_GWAS", gene_col="Gene",
   caption= "Marioni et al. (2018) AD GWAS Summary Stats")
 
-
 finemapped_AD_Marioni <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                  file_path=Data_dirs$Marioni_2018$fullSS,
                  effect_col = "BETA", stderr_col = "SE", position_col = "BP", 

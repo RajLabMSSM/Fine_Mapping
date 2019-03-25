@@ -151,7 +151,7 @@ import_topSNPs <- function(file_path, caption="", sheet = 1,
                            chrom_col="CHR", position_col="POS", snp_col="SNP",
                            pval_col="P", effect_col="Effect", gene_col="Gene"){
   ## Only the significant subset of results
-  if(endsWith(file_path, ".xlsx")){
+  if(endsWith(file_path, ".xlsx") | endsWith(file_path, ".xlsm")){
     top_SNPs <- read_excel(path = file_path, sheet = sheet)
   } else if (endsWith(file_path, ".csv")){
     top_SNPs <- fread(file=file_path, sep = ",", header = T, stringsAsFactors = F )
