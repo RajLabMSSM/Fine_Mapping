@@ -15,7 +15,7 @@ All data and results can viewed and downloaded via the following interactive Rma
 
 ## Methods
 
-![](./echolocatoR/images/echo_logo_sm.png)
+![Batty](./echolocatoR/images/echo_logo_sm.png)
 
 #### echolatoR is an open-source R library that wraps and extends several commonly used genetic and functional fine mapping tools:
 * [susieR](https://github.com/stephenslab/susieR)  
