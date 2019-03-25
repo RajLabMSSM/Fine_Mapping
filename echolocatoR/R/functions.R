@@ -205,8 +205,8 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
     minPos <- as.numeric(topSNP_sub$POS) - bp_distance
     maxPos <- as.numeric(topSNP_sub$POS) + bp_distance
     # Specify subset file name
-    pop <- translate_population(population)
-    file_subset <- paste(dirname(file_path),"/",gene,"_",pop,"_subset.txt",sep="") 
+    superpop <- translate_population(population)
+    file_subset <- paste(dirname(file_path),"/",gene,"_",superpop,"_subset.txt",sep="") 
     if(file.exists(file_subset)){
       cat("Subset file already exists. Importing",file_subset,"...\n")
     } else {
@@ -443,8 +443,7 @@ susie_on_gene <- function(gene, top_SNPs,
   )
   # Format results
   cat("\n Credible Set: \n")
-  credible_set <- geneSubset[ as.numeric(strsplit(summary(fitted_bhat)$cs$variable,",")[[1]]), ]
-  credible_set
+  credible_set <- geneSubset[ as.numeric(strsplit(summary(fitted_bhat)$cs$variable,",")[[1]]), ] 
   # cat("\n Susie Plot: Credible Set")
   # susie_plot(fitted_bhat, y="PIP", b=b, add_bar = T, add_legend = T)
   
@@ -493,7 +492,7 @@ before_after_plots <- function(gene, susieDF, before_var="P"){
     ylim(yLimits1) +
     geom_hline(yintercept=0, alpha=.5, linetype=1, size=.5) +
     geom_point(alpha=.5) +
-    geom_point(data=labelSNPs[labelSNPs$type=="before",], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="before","Color"], stroke=1) +
+    geom_point(data=labelSNPs[labelSNPs$type=="before",], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="before","color"], stroke=1) +
     geom_point(data=labelSNPs[labelSNPs$type=="after",][1,], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="after","color"][1], stroke=1) +
     geom_segment(aes(xend=POS, yend=yLimits1[1], color= -log10(P) ), alpha=.5) +
     geom_text_repel(data=labelSNPs, aes(label=SNP), color=labelSNPs$color, segment.alpha = .5, nudge_x = .5) +
@@ -509,7 +508,7 @@ before_after_plots <- function(gene, susieDF, before_var="P"){
     # ylim(yLimits) +
     geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) +
     geom_point(alpha=.5) +
-    geom_point(data=labelSNPs[labelSNPs$type=="before",], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="before","Color"], stroke=1) +
+    geom_point(data=labelSNPs[labelSNPs$type=="before",], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="before","color"], stroke=1) +
     geom_point(data=labelSNPs[labelSNPs$type=="after",][1,], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="after","color"][1], stroke=1) +
     geom_segment(aes(xend=POS, yend=yLimits2[1], color= -log10(P)), alpha=.5) +
     geom_text_repel(data=labelSNPs, aes(label=SNP), color=labelSNPs$color, segment.alpha = .5, nudge_x = .5) +
@@ -632,8 +631,8 @@ translate_population <- function(population){
 }
 
 finemap_eQTL <- function(population, gene, fullSS_path, num_causal=1){ 
-  pop <- translate_population(population)
-  subset_path <- paste("Data/eQTL/MESA/",gene,"_",pop,"_subset.txt",sep="")
+  superpop <- translate_population(population)
+  subset_path <- paste("Data/eQTL/MESA/",gene,"_",superpop,"_subset.txt",sep="")
   subset_eQTL_SS(fullSS_path=fullSS_path,
                  output_path=subset_path,
                  gene=gene)

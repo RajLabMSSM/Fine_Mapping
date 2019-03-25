@@ -135,10 +135,10 @@ top_SNPs <- import_topSNPs(
 
 
 finemapped_PD_Nalls_23andMe <- finemap_geneList(top_SNPs, geneList=c("LRRK2"),#c("LRRK2","GBAP1","SNCA","VPS13C","GCH1"),
-                 file_path=Data_dirs$Nalls_23andMe$fullSS,
+                 file_path= Data_dirs$Nalls_23andMe$fullSS,#"./LRRK2_EUR_subset.txt",
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
-                 vcf_folder = vcf_folder)
+                 vcf_folder = vcf_folder, superpopulation = "EUR")
 ```
 
 
