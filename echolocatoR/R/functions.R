@@ -313,7 +313,7 @@ download_all_vcfs <- function(vcf_folder="../1000_Genomes_VCFs"){
 
 
 
-gaston_LD <- function(flankingSNPs, reference="1KG_Phase1", superpopulation="EUR", vcf_folder=F){
+gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulation="EUR", vcf_folder=F){
   # Download portion of vcf from 1KG website
   region <- paste(flankingSNPs$CHR[1],":",min(flankingSNPs$POS),"-",max(flankingSNPs$POS), sep="")
   chrom <- flankingSNPs$CHR[1]
@@ -344,15 +344,24 @@ gaston_LD <- function(flankingSNPs, reference="1KG_Phase1", superpopulation="EUR
     }
   }
   
+  phase <- gsub("1KG_","",reference) 
   popDat <- read.delim(popDat_URL, header = F, row.names = NULL)
   colnames(popDat) <- c("sample","population","superpop","gender")
   
   # library(Rsamtools); #BiocManager::install("Rsamtools")
-  system(paste("tabix -fh ",vcf_URL,region, "> subset.vcf"))
-  vcf_name <- paste(basename(vcf_URL), ".tbi",sep="")
-  file.remove(vcf_name)
+  subset_vcf <- file.path("../1000_Genomes_VCFs", phase, paste(gene,"subset.vcf",sep="_"))
+  # Create directory if it doesn't exist
+  if(!dir.exists(dirname(dirname(subset_vcf))) ) {
+    dir.create(path = dirname(subset_vcf),recursive =  T)
+  }else(cat("Creating '../1000_Genomes_VCFs' directory.\n"))
+  # Download and subset vcf if the subset doesn't exist already
+  if(!file.exists(subset_vcf)){
+    system(paste("tabix -fh",vcf_URL,region, ">", subset_vcf))
+    vcf_name <- paste(basename(vcf_URL), ".tbi",sep="")
+    # file.remove(vcf_name)
+  }else{cat("Identified matching VCF subset file. Importing...", subset_vcf,"\n")} 
   # Import w/ gaston and further subset
-  bed.file <- read.vcf("subset.vcf")
+  bed.file <- read.vcf(subset_vcf)
   ## Subset rsIDs
   bed <- select.snps(bed.file, id %in% flankingSNPs$SNP)
   # Subset Individuals
@@ -360,7 +369,7 @@ gaston_LD <- function(flankingSNPs, reference="1KG_Phase1", superpopulation="EUR
   bed <- select.inds(bed, id %in% selectedInds$sample)
   # Cleanup extra files
   remove(bed.file)
-  file.remove("subset.vcf")
+  # file.remove("subset.vcf")
   
   # Calculate pairwise LD for all SNP combinations
   #### "Caution that the LD matrix has to be correlation matrix" -SuSiER documentation
@@ -413,7 +422,7 @@ susie_on_gene <- function(gene, top_SNPs,
                                     population=superpopulation)
   ### Get LD matrix
   cat("\n + Creating LD matrix... \n")
-  LD_matrix <- gaston_LD(flankingSNPs, LD_reference, superpopulation, vcf_folder = vcf_folder)
+  LD_matrix <- gaston_LD(flankingSNPs = flankingSNPs, gene=gene, reference = LD_reference, superpopulation = superpopulation, vcf_folder = vcf_folder)
   ## Turn LD matrix into positive semi-definite matrix
   # LD_matrix2 <- ifelse(matrixcalc::is.positive.semi.definite(LD_matrix),
   #        LDmatrix,

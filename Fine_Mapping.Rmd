@@ -135,7 +135,7 @@ top_SNPs <- import_topSNPs(
 
 
 finemapped_PD_Nalls_23andMe <- finemap_geneList(top_SNPs, geneList=c("LRRK2"),#c("LRRK2","GBAP1","SNCA","VPS13C","GCH1"),
-                 file_path= Data_dirs$Nalls_23andMe$fullSS,#"./LRRK2_EUR_subset.txt",
+                 file_path= Data_dirs$Nalls_23andMe$fullSS,#"./LRRK2_EUR_subset.txt",#
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
                  vcf_folder = vcf_folder, superpopulation = "EUR")
@@ -149,13 +149,13 @@ finemapped_PD_Nalls_23andMe <- finemap_geneList(top_SNPs, geneList=c("LRRK2"),#c
 ```{r AD: Posthuma (2018) , results = 'asis', fig.height=8, fig.width=7} 
 top_SNPs <- import_topSNPs(
   file_path = Data_dirs$Posthuma_2018$topSS,
-  sheet = 3,
+  sheet = "Overall (phase 3)",
   chrom_col = "Chr", position_col = "bp", snp_col="SNP",
   pval_col="P", effect_col="Z", gene_col="Gene",
   caption= "Posthuma et al. (2018) AD GWAS Summary Stats")
 
 
-finemapped_AD_Posthuma <- finemap_geneList(top_SNPs, geneList=c("CLU/PTK2B","APOE"),
+finemapped_AD_Posthuma <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                  file_path=Data_dirs$Posthuma_2018$fullSS,
                  effect_col = "BETA", stderr_col = "SE", position_col = "BP", 
                  vcf_folder = vcf_folder)
