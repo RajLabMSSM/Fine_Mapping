@@ -356,7 +356,9 @@ gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulatio
   }else(cat("Creating '../1000_Genomes_VCFs' directory.\n"))
   # Download and subset vcf if the subset doesn't exist already
   if(!file.exists(subset_vcf)){
-    system(paste("tabix -fh",vcf_URL,region, ">", subset_vcf))
+    tabix_cmd <- paste("tabix -fh",vcf_URL, region, ">", subset_vcf)
+    cat(tabix_cmd)
+    system(tabix_cmd)
     vcf_name <- paste(basename(vcf_URL), ".tbi",sep="")
     # file.remove(vcf_name)
   }else{cat("Identified matching VCF subset file. Importing...", subset_vcf,"\n")} 
@@ -430,6 +432,7 @@ susie_on_gene <- function(gene, top_SNPs,
   
   ## Subset summary stats to only include SNPs found in query
   geneSubset <- flankingSNPs %>% subset(SNP %in% unique(row.names(LD_matrix), colnames(LD_matrix) ) )
+  geneSubset <- geneSubset[complete.cases(geneSubset),] # Remove any NAs
   LD_matrix <- LD_matrix[geneSubset$SNP,  geneSubset$SNP]
   
   b <- geneSubset$Effect

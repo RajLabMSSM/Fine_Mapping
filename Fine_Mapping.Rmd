@@ -154,11 +154,11 @@ top_SNPs <- import_topSNPs(
   pval_col="P", effect_col="Z", gene_col="Gene",
   caption= "Posthuma et al. (2018) AD GWAS Summary Stats")
 
-
 finemapped_AD_Posthuma <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
-                 file_path=Data_dirs$Posthuma_2018$fullSS,
-                 effect_col = "BETA", stderr_col = "SE", position_col = "BP", 
-                 vcf_folder = vcf_folder)
+                 file_path=Data_dirs$Posthuma_2018$fullSS,#"Data/Alzheimers/Posthuma_2018/phase3.beta.se.hrc.txt",#
+                 effect_col = "BETA", stderr_col = "SE", position_col = "BP",
+                 snp_col = "SNP", pval_col = "P",
+                 vcf_folder = vcf_folder, superpopulation = "EUR")
 ```
 
 ## Marioni (2018) {.tabset .tabset-fade .tabset-pills}
