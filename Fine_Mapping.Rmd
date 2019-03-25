@@ -128,8 +128,7 @@ if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
 
 ```{r PD: Nalls_23andMe, results = 'asis', fig.height=8, fig.width=7} 
 top_SNPs <- import_topSNPs(
-  file_path = Data_dirs$Nalls_23andMe$topSS,
-  sheet="Data",
+  file_path = Data_dirs$Nalls_23andMe$topSS, 
   chrom_col = "CHR", position_col = "BP", snp_col="SNP",
   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
   caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats")
