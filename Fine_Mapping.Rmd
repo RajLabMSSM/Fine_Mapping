@@ -204,7 +204,7 @@ top_SNPs <- import_topSNPs(
   file_path = Data_dirs$Kunkle_2019$topSS,
   sheet = "Supplementary Table 6",
   chrom_col = "Chr", position_col = "Basepair", snp_col="SNP",
-  pval_col="P", effect_col="Beta", gene_col="Locus",
+  pval_col="P", effect_col="Beta", gene_col="LOCUS",
   caption= "Kunkle (2019): AD GWAS Summary Stats")
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
