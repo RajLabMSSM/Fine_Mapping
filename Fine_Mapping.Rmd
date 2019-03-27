@@ -244,15 +244,19 @@ finemapped_eQTL_MESA.CAU <- finemap_eQTL(superpopulation, gene = "PTK2B",
 
 ```{r eQTL: MESA - HIS, results = 'asis', fig.height=8, fig.width=7}
 superpopulation <- "HIS"
-finemapped_eQTL_MESA.HIS <- finemap_eQTL(superpopulation, gene = "PTK2B", 
+try({
+  finemapped_eQTL_MESA.HIS <- finemap_eQTL(superpopulation, gene = "PTK2B", 
                                          fullSS_path = Data_dirs$MESA_HIS$fullSS)
+})
+
 ```
 
 
 # Merge Results
 
 ```{r Merge Results}
-# finemapped_eQTL_MESA.AFA <- finemapped_eQTL_MESA.HIS<- finemapped_eQTL_MESA.CAU
+try({
+  # finemapped_eQTL_MESA.AFA <- finemapped_eQTL_MESA.HIS<- finemapped_eQTL_MESA.CAU
 named_results_list <- list("Nalls_23andMe"=finemapped_PD_Nalls_23andMe, 
                            "IGAP"=finemapped_AD_IGAP,
                            "Posthuma_2018"=finemapped_AD_Posthuma,
@@ -265,5 +269,7 @@ merged_results <- merge_finemapping_results(named_results_list, csv_path ="merge
 createDT(merged_results, caption = "Finemapped Credible Sets for Multiple Datasets")
 
 table(as.character(merged_results$SNP))
+})
+
 ```
 

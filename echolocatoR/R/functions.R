@@ -460,7 +460,7 @@ susie_on_gene <- function(gene, top_SNPs,
   )
   # Format results
   cat("\n Credible Set: \n")
-  credible_set <- geneSubset[ as.numeric(strsplit(summary(fitted_bhat)$cs$variable,",")[[1]]), ] 
+  credible_set <- geneSubset[ as.numeric(strsplit( as.character(summary(fitted_bhat)$cs$variable) ,",")[[1]]), ] 
   # cat("\n Susie Plot: Credible Set")
   # susie_plot(fitted_bhat, y="PIP", b=b, add_bar = T, add_legend = T)
   
