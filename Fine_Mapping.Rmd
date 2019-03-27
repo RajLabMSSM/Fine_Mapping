@@ -210,7 +210,7 @@ top_SNPs <- import_topSNPs(
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
 finemapped_AD_Kunkle <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
-                   file_path=Data_dirs$IGAP$fullSS,
+                   file_path=Data_dirs$Kunkle_2019$fullSS,
                    chrom_col = "Chromosome",  position_col = "Position", pval_col = "Pvalue",
                    snp_col = "MarkerName", effect_col = "Beta", stderr_col = "SE", 
                    vcf_folder = vcf_folder, num_causal = 1)
