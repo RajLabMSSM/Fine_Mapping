@@ -504,16 +504,23 @@ susie_on_gene <- function(gene, top_SNPs,
                             standardize = T
   )
   # Format results
-  cat("\n Credible Set: \n")
-  credible_set <- geneSubset[ as.numeric(strsplit( as.character(summary(fitted_bhat)$cs$variable) ,",")[[1]]), ] 
-  # cat("\n Susie Plot: Credible Set")
-  # susie_plot(fitted_bhat, y="PIP", b=b, add_bar = T, add_legend = T)
-  
   geneSubset$Coord <- paste(geneSubset$CHR, geneSubset$POS, sep=":")
   susieDF <- data.frame(SNP=names(fitted_bhat$X_column_scale_factors), PIP=fitted_bhat$pip) %>%
     base::merge(subset(geneSubset, select=c("CHR","POS","SNP","Effect","P","Coord","leadSNP")), by="SNP") %>%
     mutate(POS=as.numeric(POS))
+  # Add credible set
+  cat("\n Credible Set: \n")
+  try({
+    credible_set <- geneSubset[ as.numeric(strsplit( as.character(summary(fitted_bhat)$cs$variable) ,",")[[1]]), ] 
+  }) 
+  if(!exists("credible_set")){
+    cat("\n ****** Could NOT identify credible set. Default to SNPs with the top 5 PIPs ******\n") 
+    CS <- susieDF %>% arrange(desc(PIP))
+    credible_set <- CS$SNP[1:5]
+  }
   susieDF$credible_set <- ifelse(susieDF$SNP %in% credible_set$SNP, T, F)
+  # cat("\n Susie Plot: Credible Set")
+  # susie_plot(fitted_bhat, y="PIP", b=b, add_bar = T, add_legend = T)
   return(susieDF)
 }
 # susieDF <- susie_on_gene("LRRK2", top_SNPs,
