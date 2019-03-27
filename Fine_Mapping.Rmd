@@ -176,7 +176,7 @@ finemapped_AD_Marioni <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                  file_path=Data_dirs$Marioni_2018$fullSS,#"Data/Alzheimers/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv", #,
                  effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                  snp_col = "SNP",chrom_col = "CHROM", pval_col = "PVAL",
-                 vcf_folder = vcf_folder, superpopulation = "EUR")
+                 vcf_folder = vcf_folder, superpopulation = "EUR", superpopulation = "EUR")
 ```
 
 
@@ -195,12 +195,12 @@ finemapped_AD_IGAP <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                    file_path=Data_dirs$IGAP$fullSS,
                    chrom_col = "CHROM",  pval_col = "PVAL", snp_col = "SNP",
                    effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
-                   vcf_folder = vcf_folder, num_causal = 1)
+                   vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR")
 ```
 
 ## Kunkle (2019) {.tabset .tabset-fade .tabset-pills}
 
-```{r AD: Kunkle (2019), results = 'asis', fig.height=8, fig.width=7} 
+```{r AD: Kunkle (2019), results = 'asis', fig.height=8, fig.width=7, eval=F} 
 top_SNPs <- import_topSNPs(
   file_path = Data_dirs$Kunkle_2019$topSS,
   sheet = "Supplementary Table 6",
@@ -210,10 +210,10 @@ top_SNPs <- import_topSNPs(
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
 finemapped_AD_Kunkle <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
-                   file_path=Data_dirs$Kunkle_2019$fullSS,
+                   file_path="Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage2_results.txt",#Data_dirs$Kunkle_2019$fullSS,
                    chrom_col = "Chromosome",  position_col = "Position", pval_col = "Pvalue",
                    snp_col = "MarkerName", effect_col = "Beta", stderr_col = "SE", 
-                   vcf_folder = vcf_folder, num_causal = 1)
+                   vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR")
 ```
 
 # eQTL

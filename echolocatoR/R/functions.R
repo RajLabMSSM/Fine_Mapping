@@ -186,7 +186,7 @@ import_topSNPs <- function(file_path, caption="", sheet = 1,
 
 column_dictionary <- function(file_path){
   # Get the index of each column name
-  cNames <- colnames(read.delim(file_path, nrows = 2))
+  cNames <- colnames(fread(file_path, nrows = 2))
   colDict <- setNames(1:length(cNames), cNames  )
   return(colDict)
 }
@@ -195,7 +195,7 @@ column_dictionary <- function(file_path){
 
 get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
                               chrom_col="CHR", position_col="POS", snp_col="SNP",
-                              pval_col="P", effect_col="Effect", stderr_col="StdErr", population=""){
+                              pval_col="P", effect_col="Effect", stderr_col="StdErr", superpopulation=""){
   
   colDict <- column_dictionary(file_path)
   if(gene %in% top_SNPs$Gene==F){
@@ -205,7 +205,7 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
     minPos <- as.numeric(topSNP_sub$POS) - bp_distance
     maxPos <- as.numeric(topSNP_sub$POS) + bp_distance
     # Specify subset file name
-    superpop <- translate_population(population)
+    superpop <- translate_population(superpopulation)
     file_subset <- paste(dirname(file_path),"/",gene,"_",superpop,"_subset.txt",sep="") 
     if(file.exists(file_subset)){
       cat("Subset file already exists. Importing",file_subset,"...\n")
@@ -222,29 +222,34 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
       cat("Extraction completed in", round(end-start, 2),"seconds \n")
     }
     query <- fread(file_subset, header=T, stringsAsFactors = F, sep = "\t")
-    dim(query)
-    # query <- sqldf::read.csv.sql(file_path, sep="\t", stringsAsFactors=F,
-    #                              sql = paste('select * from file where',chrom_col,'=',topSNP_sub$CHR,
-    #                                          'AND',position_col,'BETWEEN', minPos, 'AND', maxPos))
-    if(stderr_col=="calculate"){
-      cat("Calculating Standard Error...\n")
-      query$StdErr <- subset(query, select=effect_col) / subset(query, select="statistic")
-      stderr_col="StdErr"
+    if(dim(query)[1]==0){ 
+      file.remove(file_subset)
+      stop("\n Could not find any rows in full data that matched query :(") 
+    }else{ 
+      # query <- sqldf::read.csv.sql(file_path, sep="\t", stringsAsFactors=F,
+      #                              sql = paste('select * from file where',chrom_col,'=',topSNP_sub$CHR,
+      #                                          'AND',position_col,'BETWEEN', minPos, 'AND', maxPos))
+      if(stderr_col=="calculate"){
+        cat("Calculating Standard Error...\n")
+        query$StdErr <- subset(query, select=effect_col) / subset(query, select="statistic")
+        stderr_col="StdErr"
+      }
+      geneSubset <- subset(query, select=c(chrom_col,position_col, snp_col, pval_col, effect_col, stderr_col) )
+      geneSubset <- geneSubset %>% dplyr::rename(CHR=chrom_col,POS=position_col, SNP=snp_col,
+                                                 P=pval_col, Effect=effect_col, StdErr=stderr_col) %>%
+        mutate(Location=paste(CHR,":",POS,sep=""))
+      ## Remove SNPs with NAs in stats
+      geneSubset[(geneSubset$P<=0)|(geneSubset$P>1),"P"] <- 1
+      # Get just one SNP per location (just pick the first one)
+      geneSubset <- geneSubset %>% group_by(Location) %>% slice(1)
+      # Mark lead SNP
+      geneSubset$leadSNP <- ifelse(geneSubset$SNP==topSNP_sub$SNP, T, F)
+      # Only convert to numeric AFTER removing NAs (otherwise as.numeric will turn them into 0s)
+      geneSubset <- geneSubset  %>%
+        mutate(Effect=as.numeric(Effect), StdErr=as.numeric(StdErr), P=as.numeric(P))
+      return(geneSubset)
     }
-    geneSubset <- subset(query, select=c(chrom_col,position_col, snp_col, pval_col, effect_col, stderr_col) )
-    geneSubset <- geneSubset %>% dplyr::rename(CHR=chrom_col,POS=position_col, SNP=snp_col,
-                                               P=pval_col, Effect=effect_col, StdErr=stderr_col) %>%
-      mutate(Location=paste(CHR,":",POS,sep=""))
-    ## Remove SNPs with NAs in stats
-    geneSubset[(geneSubset$P<=0)|(geneSubset$P>1),"P"] <- 1
-    # Get just one SNP per location (just pick the first one)
-    geneSubset <- geneSubset %>% group_by(Location) %>% slice(1)
-    # Mark lead SNP
-    geneSubset$leadSNP <- ifelse(geneSubset$SNP==topSNP_sub$SNP, T, F)
-    # Only convert to numeric AFTER removing NAs (otherwise as.numeric will turn them into 0s)
-    geneSubset <- geneSubset  %>%
-      mutate(Effect=as.numeric(Effect), StdErr=as.numeric(StdErr), P=as.numeric(P))
-    return(geneSubset)
+   
   }
 }
 
@@ -421,7 +426,7 @@ susie_on_gene <- function(gene, top_SNPs,
   flankingSNPs <- get_flanking_SNPs(gene, top_SNPs, bp_distance=bp_distance, file_path=file_path,
                                     chrom_col=chrom_col, position_col=position_col, snp_col=snp_col,
                                     pval_col=pval_col, effect_col=effect_col, stderr_col=stderr_col, 
-                                    population=superpopulation)
+                                    superpopulation=superpopulation)
   ### Get LD matrix
   cat("\n + Creating LD matrix... \n")
   LD_matrix <- gaston_LD(flankingSNPs = flankingSNPs, gene=gene, reference = LD_reference, superpopulation = superpopulation, vcf_folder = vcf_folder)
