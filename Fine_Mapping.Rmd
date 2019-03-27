@@ -150,9 +150,9 @@ finemapped_PD_Nalls_23andMe <- finemap_geneList(top_SNPs, geneList=c("LRRK2"),
 ```{r AD: Posthuma (2018) , results = 'asis', fig.height=8, fig.width=7} 
 top_SNPs <- import_topSNPs(
   file_path = Data_dirs$Posthuma_2018$topSS,
-  sheet = "Overall (phase 3)",
+  sheet = "Table S8",
   chrom_col = "Chr", position_col = "bp", snp_col="SNP",
-  pval_col="P", effect_col="Z", gene_col="Gene",
+  pval_col="P", effect_col="Zscore", gene_col="nearestGene",
   caption= "Posthuma et al. (2018) AD GWAS Summary Stats")
 
 finemapped_AD_Posthuma <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
