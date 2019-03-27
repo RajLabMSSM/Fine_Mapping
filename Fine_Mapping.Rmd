@@ -227,24 +227,24 @@ finemapped_AD_Kunkle <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
 ## MESA - AFA {.tabset .tabset-fade .tabset-pills}
 
 ```{r eQTL: MESA - AFA, results = 'asis', fig.height=8, fig.width=7}
-population <- "AFA"
-finemapped_eQTL_MESA.AFA <- finemap_eQTL(population, gene =  "PTK2B", 
+superpopulation <- "AFA"
+finemapped_eQTL_MESA.AFA <- finemap_eQTL(superpopulation, gene =  "PTK2B", 
                                          fullSS_path = Data_dirs$MESA_AFA$fullSS)
 ```
 
 ## MESA - CAU {.tabset .tabset-fade .tabset-pills}
 
 ```{r eQTL: MESA - CAU, results = 'asis', fig.height=8, fig.width=7}
-population <- "CAU"
-finemapped_eQTL_MESA.CAU <- finemap_eQTL(population, gene = "PTK2B", 
+superpopulation <- "CAU"
+finemapped_eQTL_MESA.CAU <- finemap_eQTL(superpopulation, gene = "PTK2B", 
                                          fullSS_path = Data_dirs$MESA_CAU$fullSS)
 ```
 
 ## MESA - HIS {.tabset .tabset-fade .tabset-pills}
 
 ```{r eQTL: MESA - HIS, results = 'asis', fig.height=8, fig.width=7}
-population <- "HIS"
-finemapped_eQTL_MESA.HIS <- finemap_eQTL(population, gene = "PTK2B", 
+superpopulation <- "HIS"
+finemapped_eQTL_MESA.HIS <- finemap_eQTL(superpopulation, gene = "PTK2B", 
                                          fullSS_path = Data_dirs$MESA_HIS$fullSS)
 ```
 

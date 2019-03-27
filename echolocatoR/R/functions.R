@@ -641,14 +641,14 @@ subset_eQTL_SS <- function(fullSS_path, output_path, gene, gene_col="gene_name" 
   # dim(query)
 }
 
-translate_population <- function(population){
+translate_population <- function(superpopulation){
   pop_dict <- list("AFA"="AFR", "CAU"="EUR", "HIS"="AMR", 
                    "AFR"="AFR","EUR"="EUR", "AMR"="AMR")
-  return(pop_dict[population][[1]])
+  return(pop_dict[superpopulation][[1]])
 }
 
-finemap_eQTL <- function(population, gene, fullSS_path, num_causal=1){ 
-  superpop <- translate_population(population)
+finemap_eQTL <- function(superpopulation, gene, fullSS_path, num_causal=1){ 
+  superpop <- translate_population(superpopulation)
   subset_path <- paste("Data/eQTL/MESA/",gene,"_",superpop,"_subset.txt",sep="")
   subset_eQTL_SS(fullSS_path=fullSS_path,
                  output_path=subset_path,
@@ -665,7 +665,7 @@ finemap_eQTL <- function(population, gene, fullSS_path, num_causal=1){
                                       file_path = subset_path,
                                       chrom_col = "chr",  pval_col = "pvalue", snp_col = "snps",
                                       effect_col = "beta", position_col = "pos_snps",
-                                      stderr_col = "calculate",superpopulation = pop,
+                                      stderr_col = "calculate",superpopulation = superpop,
                                       vcf_folder = vcf_folder, num_causal = num_causal)
   return(finemapped_eQTL)
 }
