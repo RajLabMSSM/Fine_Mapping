@@ -83,15 +83,14 @@ createDT <- function(DF, caption="", scrollY=400){
 
 createDT_html <- function(DF, caption="", scrollY=400){
   htmltools::tagList( createDT(DF, caption, scrollY))
+} 
+
+
+get_dataset_name <- function(file_path){
+  dataset_name <- strsplit(dirname(file_path), "/")[[1]][3]
+  return(dataset_name)
 }
 
-# https://stackoverflow.com/questions/42866055/rshiny-download-button-within-rmarkdown
-# downloadHandler(filename = function() {
-#     return(paste('Example', input$SS, '.csv', sep=''))
-#
-#  }, content = function(file) {
-#    write.csv(RandomSample(), file)
-#  })
 
 Data_dirs_to_table <- function(Data_dirs, writeCSV=F){
   df <- data.frame()
@@ -108,28 +107,43 @@ Data_dirs_to_table <- function(Data_dirs, writeCSV=F){
 }
 
 # Data Preprocessing
-snps_to_genes <- function(snp_list){
+biomart_snps_to_geneInfo <- function(snp_list){
   # listMarts()
   snp_mart = useMart("ENSEMBL_MART_SNP", dataset="hsapiens_snp")
   # View(listFilters(snp_mart))
   # View(listAttributes(snp_mart))
   snp_results <- getBM(snp_mart, filters="snp_filter", values=snp_list,
-                       attributes=c("refsnp_id","snp","chr_name", "chrom_start",
+                       attributes=c("refsnp_id","snp","chr_name", "chrom_start","chrom_end",
                                     "associated_gene","ensembl_gene_stable_id" ) )
-  # Split ensembl IDs
+  # # Split ensembl IDs
+  gene_mart = useMart("ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl")
+  gene_results <- getBM(mart = gene_mart, filters = "ensembl_gene_id",
+                        # values = unlist(strsplit(snp_results$ensembl, ";")),
+                        values = snp_results$ensembl_gene_stable_id,
+                        attributes = c("hgnc_symbol","external_gene_name","ensembl_gene_id",
+                                       "chromosome_name", "start_position", "end_position") )
   snp_results <-snp_results %>%
     mutate(ensembl = strsplit(as.character(ensembl_gene_stable_id), ";")) %>%
     tidyr::unnest(ensembl)
+  merged_df <- data.table(gene_results, key = "ensembl_gene_id")[data.table(snp_results, key = "ensembl")]
+  return(merged_df)
+}
+# biomart_snps_to_geneInfo(c("rs114360492"))
+
+biomart_geneInfo <- function(geneList){
   # listDatasets(useMart("ENSEMBL_MART_ENSEMBL") )
   gene_mart = useMart("ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl")
   # View(listFilters(gene_mart))
   # View(listAttributes(gene_mart))
-  gene_results <- getBM(mart = gene_mart, filters = "ensembl_gene_id",
-                        values = unlist(strsplit(snp_results$ensembl, ";")),
-                        attributes = c("external_gene_name","ensembl_gene_id") )
-  merged_df <- data.table(gene_results, key = "ensembl_gene_id")[data.table(snp_results, key = "ensembl")]
-  return(merged_df)
+  gene_results <- getBM(mart = gene_mart, filters = "hgnc_symbol",
+                        # values = unlist(strsplit(snp_results$ensembl, ";")),
+                        values = geneList,
+                        attributes = c("hgnc_symbol","external_gene_name","ensembl_gene_id",
+                                      "chromosome_name", "start_position", "end_position") )
+  return(gene_results)
 }
+# biomart_geneInfo(c("PTK2B","CLU","APOE"))
+
 
 
 ## TSS Data
@@ -179,6 +193,40 @@ import_topSNPs <- function(file_path, caption="", sheet = 1,
 #   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
 #   caption= "Nalls et al. (2018) PD GWAS Summary Stats")
 
+
+# import info from FUMA instead
+
+import_FUMA <- function(topSS_path, geneList){
+  # topSS_path = Data_dirs$Kunkle_2019$topSS
+  # risk_loci <- fread(file.path(dirname(topSS_path), "FUMA/GenomicRiskLoci.txt"))
+  # mapped_genes <- fread(file.path(dirname(topSS_path), "FUMA/magma.genes.out"))
+  annovar <- fread(file.path(dirname(topSS_path), "FUMA/annov.txt")) 
+  annovar_sub <- subset(annovar, symbol %in% geneList)
+  
+  mapped_genes_sub <- subset(mapped_genes, SYMBOL %in% geneList)
+  
+  # Get gene range directly from biomart, then query for snps in that range
+  geneSNPs <- function(gene, file_path,
+                       chrom_col="CHR", position_col="POS", snp_col="SNP",
+                       pval_col="P", effect_col="Effect", stderr_col="StdErr", sep="\t"){ 
+    # bm <- biomart_geneInfo(gene)
+    gene_start <- min(annovar_sub$pos)
+    gene_end <- max(annovar_sub$pos)
+    gene_chr <- unique(annovar_sub$chr)[1]
+    
+    colDict <- column_dictionary(file_path)
+    superpop <- translate_population(superpopulation) 
+    dataset_name <- get_dataset_name(file_path)
+    file_subset <- paste(dirname(file_path),"/",gene,"_",dataset_name,"_subset.txt",sep="") 
+    awk_cmd <- paste("awk -F \"",sep,"\" 'NR==1{print $0}{ if(($",colDict[chrom_col]," == ",gene_chr,")",
+                     " && ($",colDict[position_col]," >= ",gene_start," && $",colDict[position_col]," <= ",gene_end,")) { print } }' ",file_path,
+                     " > ",file_subset,sep="")
+    system(awk_cmd)
+  } 
+}
+
+
+
 ## Get Flanking SNPs
 
 # Get all genes surrounding the index SNP (default is 500kb upstream + 500kb downstream)
@@ -195,18 +243,20 @@ column_dictionary <- function(file_path){
 
 get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
                               chrom_col="CHR", position_col="POS", snp_col="SNP",
-                              pval_col="P", effect_col="Effect", stderr_col="StdErr", superpopulation=""){
-  
+                              pval_col="P", effect_col="Effect", stderr_col="StdErr", superpopulation="",
+                              minPos=NULL, maxPos=NULL, file_sep="\t"){
   colDict <- column_dictionary(file_path)
   if(gene %in% top_SNPs$Gene==F){
     cat("----- Could not find gene '",gene,"' in topSNPs dataframe. Try a different gene name. ----- \n" )
   }else{
     topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),] #[1,]
-    minPos <- as.numeric(topSNP_sub$POS) - bp_distance
-    maxPos <- as.numeric(topSNP_sub$POS) + bp_distance
-    # Specify subset file name
-    superpop <- translate_population(superpopulation)
-    file_subset <- paste(dirname(file_path),"/",gene,"_",superpop,"_subset.txt",sep="") 
+    if(is.null(minPos)){minPos <- as.numeric(topSNP_sub$POS) - bp_distance}
+    if(is.null(maxPos)){maxPos <- as.numeric(topSNP_sub$POS) + bp_distance} 
+    cat("---Min snp position:",minPos, "---\n")
+    cat("---Max snp position:",maxPos, "---\n")
+    # Specify subset file name 
+    dataset_name <- get_dataset_name(file_path)
+    file_subset <- paste(dirname(file_path),"/",gene,"_",dataset_name,"_subset.txt",sep="") 
     if(file.exists(file_subset)){
       cat("Subset file already exists. Importing",file_subset,"...\n")
     } else {
@@ -214,21 +264,19 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
       cat("Extracting relevant variants from fullSS...")
       start <- Sys.time()
       
-      awk_cmd <- paste("awk -F \"\t\" 'NR==1{print $0}{ if(($",colDict[chrom_col]," == ",topSNP_sub$CHR,")",
+      awk_cmd <- paste("awk -F \"",file_sep,"\" 'NR==1{print $0}{ if(($",colDict[chrom_col]," == ",topSNP_sub$CHR,")",
                        " && ($",colDict[position_col]," >= ",minPos," && $",colDict[position_col]," <= ",maxPos,")) { print } }' ",file_path,
                        " > ",file_subset,sep="")
+      cat("\n",awk_cmd)
       system(awk_cmd)
       end <- Sys.time()
       cat("Extraction completed in", round(end-start, 2),"seconds \n")
     }
-    query <- fread(file_subset, header=T, stringsAsFactors = F, sep = "\t")
+    query <- fread(file_subset, header=T, stringsAsFactors = F, sep = file_sep)
     if(dim(query)[1]==0){ 
       file.remove(file_subset)
       stop("\n Could not find any rows in full data that matched query :(") 
-    }else{ 
-      # query <- sqldf::read.csv.sql(file_path, sep="\t", stringsAsFactors=F,
-      #                              sql = paste('select * from file where',chrom_col,'=',topSNP_sub$CHR,
-      #                                          'AND',position_col,'BETWEEN', minPos, 'AND', maxPos))
+    }else{  
       if(stderr_col=="calculate"){
         cat("Calculating Standard Error...\n")
         query$StdErr <- subset(query, select=effect_col) / subset(query, select="statistic")
@@ -251,14 +299,7 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
     }
    
   }
-}
-
-# flankingSNPs <- get_flanking_SNPs("LRRK2", top_SNPs,
-#                                   file_path = "Data/Parkinsons/META.PD.NALLS2014.PRS.tsv",
-#                                   snp_col = "MarkerName", pval_col = "P.value")
-# flankingSNPs <- get_flanking_SNPs("CLU/PTK2B", top_SNPs,
-#                                   file_path = "Data/Alzheimers/Posthuma/phase3.beta.se.hrc.txt",
-#                                   effect_col = "BETA", stderr_col = "SE", position_col = "BP")
+} 
 # flankingSNPs <- get_flanking_SNPs(gene="PTK2B", top_SNPs,
 #                                   file_path = Data_dirs$MESA_CAU$topSS,
 #                                   chrom_col = "chr",  pval_col = "pvalue", snp_col = "snps",
@@ -421,12 +462,16 @@ susie_on_gene <- function(gene, top_SNPs,
                           bp_distance=500000, file_path, num_causal=1,
                           chrom_col="CHR", position_col="POS", snp_col="SNP",
                           pval_col="P", effect_col="Effect", stderr_col="StdErr",
-                          LD_reference="1KG_Phase1", superpopulation="EUR", vcf_folder=F){
-  cat("\n + Extracting SNPs flanking lead SNP... \n")
-  flankingSNPs <- get_flanking_SNPs(gene, top_SNPs, bp_distance=bp_distance, file_path=file_path,
-                                    chrom_col=chrom_col, position_col=position_col, snp_col=snp_col,
-                                    pval_col=pval_col, effect_col=effect_col, stderr_col=stderr_col, 
-                                    superpopulation=superpopulation)
+                          LD_reference="1KG_Phase1", superpopulation="EUR", vcf_folder=F,
+                          minPos=NULL, maxPos=NULL, file_sep="\t"){ 
+    cat("\n + Extracting SNPs flanking lead SNP... \n")
+    flankingSNPs <- get_flanking_SNPs(gene, top_SNPs, bp_distance=bp_distance, file_path=file_path,
+                                      chrom_col=chrom_col, position_col=position_col, snp_col=snp_col,
+                                      pval_col=pval_col, effect_col=effect_col, stderr_col=stderr_col, 
+                                      superpopulation=superpopulation, 
+                                      minPos=minPos, maxPos=maxPos, file_sep=file_sep)
+  
+ 
   ### Get LD matrix
   cat("\n + Creating LD matrix... \n")
   LD_matrix <- gaston_LD(flankingSNPs = flankingSNPs, gene=gene, reference = LD_reference, superpopulation = superpopulation, vcf_folder = vcf_folder)
@@ -569,18 +614,25 @@ finemap_geneList <- function(top_SNPs, geneList, file_path,
                              chrom_col="CHR", position_col="POS", snp_col="SNP",
                              pval_col="P", effect_col="Effect", stderr_col="StdErr",
                              LD_reference="1KG_Phase1", superpopulation="EUR",
-                             topVariants=3,vcf_folder=F){
-  
+                             topVariants=3,vcf_folder=F, 
+                             minPos=NULL, maxPos=NULL, file_sep="\t", force_new_subset=T){ 
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
   for (gene in geneList){
     cat('\n')
     cat("###", gene, "\n")
+    # Force new file to be made
+    if(force_new_subset==T){
+      dataset_name <- get_dataset_name(file_path)
+      file_subset <- paste(dirname(file_path),"/",gene,"_",dataset_name,"_subset.txt",sep="") 
+      file.remove(file_subset)
+    }
     susieDF <- susie_on_gene(gene=gene, top_SNPs=top_SNPs, num_causal = 1,
                              file_path=file_path, bp_distance=bp_distance,
                              chrom_col=chrom_col, position_col=position_col, snp_col=snp_col,
                              pval_col=pval_col, effect_col=effect_col, stderr_col=stderr_col,
-                             LD_reference=LD_reference, superpopulation=superpopulation)
+                             LD_reference=LD_reference, superpopulation=superpopulation,
+                             minPos=minPos, maxPos=maxPos, file_sep=file_sep)
     
     before_after_plots(gene, susieDF)
     # before_after_consensus(gene, top_SNPs, susieDF, max_SNPs=10)
@@ -630,6 +682,7 @@ subset_eQTL_SS <- function(fullSS_path, output_path, gene, gene_col="gene_name" 
     start <- Sys.time()
     awk_cmd <- paste("awk -F \"\t\" 'NR==1{print $0} $",colDict[gene_col]," == \"",gene,"\"{print $0} ' ",fullSS_path,
                      " > ",output_path, sep="")
+    cat("\n",awk_cmd)
     system(awk_cmd)
     end <- Sys.time()
     cat("Extraction completed in", round(end-start, 2),"seconds \n")
@@ -647,7 +700,9 @@ translate_population <- function(superpopulation){
   return(pop_dict[superpopulation][[1]])
 }
 
-finemap_eQTL <- function(superpopulation, gene, fullSS_path, num_causal=1){ 
+finemap_eQTL <- function(superpopulation, gene, fullSS_path, num_causal=1,
+                         chrom_col = "chr", position_col = "pos_snps", snp_col="snps",
+                         pval_col="pvalue", effect_col="beta", gene_col="gene_name", stderr_col = "calculate"){ 
   superpop <- translate_population(superpopulation)
   subset_path <- paste("Data/eQTL/MESA/",gene,"_",superpop,"_subset.txt",sep="")
   subset_eQTL_SS(fullSS_path=fullSS_path,
@@ -656,16 +711,16 @@ finemap_eQTL <- function(superpopulation, gene, fullSS_path, num_causal=1){
   # system("wc -l Data/eQTL/MESA/CAU_eQTL_PTK2B.txt", intern = T)# Get number of rows in file
   top_SNPs <- import_topSNPs(
     file_path = subset_path,
-    chrom_col = "chr", position_col = "pos_snps", snp_col="snps",
-    pval_col="pvalue", effect_col="beta", gene_col="gene_name",
+    chrom_col = chrom_col, position_col = position_col, snp_col=snp_col,
+    pval_col=pval_col, effect_col=effect_col, gene_col=gene_col,
     caption= paste(population,": eQTL Summary Stats"))
   
  
   finemapped_eQTL <- finemap_geneList(top_SNPs, geneList=gene,
                                       file_path = subset_path,
-                                      chrom_col = "chr",  pval_col = "pvalue", snp_col = "snps",
-                                      effect_col = "beta", position_col = "pos_snps",
-                                      stderr_col = "calculate",superpopulation = superpop,
+                                      chrom_col = chrom_col,  pval_col = pval_col, snp_col = snp_col,
+                                      effect_col = effect_col, position_col = position_col,
+                                      stderr_col = stderr_col,superpopulation = superpop,
                                       vcf_folder = vcf_folder, num_causal = num_causal)
   return(finemapped_eQTL)
 }

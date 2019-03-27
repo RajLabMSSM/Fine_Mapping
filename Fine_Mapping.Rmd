@@ -71,9 +71,9 @@ Data_dirs = list(
                    reference="https://www.biorxiv.org/content/10.1101/388165v3"),  
   
   ## IGAP 
-  "IGAP" = list(type="Alzheimer's GWAS", 
-                topSS="Data/Alzheimers/IGAP/Lambert_2019_AD_GWAS.xlsx",
-                fullSS=file.path(root,"ad-omics/data/AD_GWAS/IGAP/IGAP_stage_1.1000G.phase3.20130502.tsv"),
+  "Lambert_2013" = list(type="Alzheimer's GWAS", 
+                topSS="Data/Alzheimers/Lambert_2013/Lambert_2019_AD_GWAS.xlsx",
+                fullSS=file.path(root,"ad-omics/data/AD_GWAS/Lambert_2013/IGAP_stage_1.1000G.phase3.20130502.tsv"),
                 reference="https://www.nature.com/articles/ng.2802"),
   
   ## Marioni et al. (2018) 
@@ -84,7 +84,7 @@ Data_dirs = list(
   
   ## Jansen et al. (2018) 
   "Posthuma_2018" = list(type="Alzheimer's GWAS", 
-                         topSS="Data/Alzheimers/Posthuma_2018/AD_target_SNP.xlsx", 
+                         topSS="Data/Alzheimers/Posthuma_2018/Posthuma2018_suppTables.xlsx", 
                          fullSS=file.path(root,"ad-omics/data/AD_GWAS/Posthuma_2018/phase3.beta.se.hrc.txt"),
                 reference="https://www.nature.com/articles/s41588-018-0311-9"),
   
@@ -129,17 +129,17 @@ if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
 
 ```{r PD: Nalls_23andMe, results = 'asis', fig.height=8, fig.width=7} 
 top_SNPs <- import_topSNPs(
-  file_path = Data_dirs$Nalls_23andMe$topSS, 
+  file_path = Data_dirs$Nalls_23andMe$topSS,
   chrom_col = "CHR", position_col = "BP", snp_col="SNP",
   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
   caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats")
 
-
-finemapped_PD_Nalls_23andMe <- finemap_geneList(top_SNPs, geneList=c("LRRK2"),#c("LRRK2","GBAP1","SNCA","VPS13C","GCH1"),
+finemapped_PD_Nalls_23andMe <- finemap_geneList(top_SNPs, geneList=c("LRRK2"),
                  file_path= Data_dirs$Nalls_23andMe$fullSS,#"./LRRK2_EUR_subset.txt",#
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
                  vcf_folder = vcf_folder, superpopulation = "EUR")
+#c("LRRK2","GBAP1","SNCA","VPS13C","GCH1"),
 ```
 
 
@@ -159,7 +159,8 @@ finemapped_AD_Posthuma <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                  file_path=Data_dirs$Posthuma_2018$fullSS,#"Data/Alzheimers/Posthuma_2018/phase3.beta.se.hrc.txt",#
                  effect_col = "BETA", stderr_col = "SE", position_col = "BP",
                  snp_col = "SNP", pval_col = "P",
-                 vcf_folder = vcf_folder, superpopulation = "EUR")
+                 vcf_folder = vcf_folder, superpopulation = "EUR",
+                 minPos=NULL, maxPos=27440000)
 ```
 
 ## Marioni (2018) {.tabset .tabset-fade .tabset-pills}
@@ -176,44 +177,49 @@ finemapped_AD_Marioni <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                  file_path=Data_dirs$Marioni_2018$fullSS,#"Data/Alzheimers/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv", #,
                  effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                  snp_col = "SNP",chrom_col = "CHROM", pval_col = "PVAL",
-                 vcf_folder = vcf_folder, superpopulation = "EUR")
+                 vcf_folder = vcf_folder, superpopulation = "EUR",
+                 minPos=NULL, maxPos=27440000)
 ```
 
 
-## IGAP {.tabset .tabset-fade .tabset-pills}
+## Lambert (2013) (IGAP) {.tabset .tabset-fade .tabset-pills}
 
-```{r AD: IGAP, results = 'asis', fig.height=8, fig.width=7} 
+```{r AD: Lambert (2013), results = 'asis', fig.height=8, fig.width=7} 
 top_SNPs <- import_topSNPs(
-  file_path = Data_dirs$IGAP$topSS,
+  file_path = Data_dirs$Lambert_2013$topSS,
   sheet = 1,
   chrom_col = "CHR", position_col = "Position", snp_col="SNP",
   pval_col="Overall_P", effect_col="Overall_OR", gene_col="Closest gene",
-  caption= "IGAP: AD GWAS Summary Stats")
+  caption= "Lambert (2013) (IGAP): AD GWAS Summary Stats")
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
-finemapped_AD_IGAP <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
-                   file_path=Data_dirs$IGAP$fullSS,
+finemapped_AD_Lambert <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
+                   file_path=Data_dirs$Lambert_2013$fullSS,
                    chrom_col = "CHROM",  pval_col = "PVAL", snp_col = "SNP",
                    effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
-                   vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR")
+                   vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR",
+                   minPos=NULL, maxPos=27440000)
 ```
 
-## Kunkle (2019) {.tabset .tabset-fade .tabset-pills}
+## Kunkle (2019) (IGAP) {.tabset .tabset-fade .tabset-pills}
 
+Exclude CLU-associated portion of locus by removing all SNPs over position 8:27440000.   
+The CLU-gene technically starts at 8:27456253, but its associated SNPs are further upstream.
 ```{r AD: Kunkle (2019), results = 'asis', fig.height=8, fig.width=7, eval=F} 
 top_SNPs <- import_topSNPs(
   file_path = Data_dirs$Kunkle_2019$topSS,
   sheet = "Supplementary Table 6",
   chrom_col = "Chr", position_col = "Basepair", snp_col="SNP",
   pval_col="P", effect_col="Beta", gene_col="LOCUS",
-  caption= "Kunkle (2019): AD GWAS Summary Stats")
+  caption= "Kunkle (2019) (IGAP): AD GWAS Summary Stats")
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
-finemapped_AD_Kunkle <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
-                   file_path="Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage2_results.txt",#Data_dirs$Kunkle_2019$fullSS,
+finemapped_AD_Kunkle <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),  
+                   file_path=Data_dirs$Kunkle_2019$fullSS,#"Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage1_results.txt",#
                    chrom_col = "Chromosome",  position_col = "Position", pval_col = "Pvalue",
                    snp_col = "MarkerName", effect_col = "Beta", stderr_col = "SE", 
-                   vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR")
+                   vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR",
+                   minPos=NULL, maxPos=27440000, file_sep=" ", force_new_subset = T) # Exclude CLU-associated portion of locus
 ```
 
 # eQTL
@@ -248,7 +254,6 @@ try({
   finemapped_eQTL_MESA.HIS <- finemap_eQTL(superpopulation, gene = "PTK2B", 
                                          fullSS_path = Data_dirs$MESA_HIS$fullSS)
 })
-
 ```
 
 
@@ -258,7 +263,7 @@ try({
 try({
   # finemapped_eQTL_MESA.AFA <- finemapped_eQTL_MESA.HIS<- finemapped_eQTL_MESA.CAU
 named_results_list <- list("Nalls_23andMe"=finemapped_PD_Nalls_23andMe, 
-                           "IGAP"=finemapped_AD_IGAP,
+                           "Lambert_2013"=finemapped_AD_Lambert,
                            "Posthuma_2018"=finemapped_AD_Posthuma,
                            "Marioni_2018"=finemapped_AD_Marioni,
                            "Kunkle_2019"=finemapped_AD_Kunkle,
