@@ -176,7 +176,7 @@ finemapped_AD_Marioni <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                  file_path=Data_dirs$Marioni_2018$fullSS,#"Data/Alzheimers/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv", #,
                  effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                  snp_col = "SNP",chrom_col = "CHROM", pval_col = "PVAL",
-                 vcf_folder = vcf_folder, superpopulation = "EUR", superpopulation = "EUR")
+                 vcf_folder = vcf_folder, superpopulation = "EUR")
 ```
 
 
