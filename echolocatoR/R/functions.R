@@ -626,6 +626,14 @@ before_after_consensus <- function(gene, top_SNPs, susieDF, max_SNPs=10){
 }
 # before_after_consensus(top_SNPs, susieDF, max_SNPs=10)
 
+force_subset <- function (force_new_subset, file_path, gene){
+  # Force new file to be made
+  if(force_new_subset==T){
+    dataset_name <- get_dataset_name(file_path)
+    file_subset <- paste(dirname(file_path),"/",gene,"_",dataset_name,"_subset.txt",sep="") 
+    file.remove(file_subset)
+  }
+}
 
 # Fine Map Iteratively
 
@@ -642,12 +650,7 @@ finemap_geneList <- function(top_SNPs, geneList, file_path,
   for (gene in geneList){
     cat('\n')
     cat("###", gene, "\n")
-    # Force new file to be made
-    if(force_new_subset==T){
-      dataset_name <- get_dataset_name(file_path)
-      file_subset <- paste(dirname(file_path),"/",gene,"_",dataset_name,"_subset.txt",sep="") 
-      file.remove(file_subset)
-    }
+    force_subset(force_new_subset, file_path, gene)
     susieDF <- susie_on_gene(gene=gene, top_SNPs=top_SNPs, num_causal = 1,
                              file_path=file_path, bp_distance=bp_distance,
                              chrom_col=chrom_col, position_col=position_col, snp_col=snp_col,
@@ -692,8 +695,8 @@ add_snpIDs_to_fullSS <-function(snpInfo_path, fullSS_path){
 
 ##### QTL #####
 # Subset eQTL data to just the parts you need
-subset_eQTL_SS <- function(fullSS_path, output_path, gene, gene_col="gene_name" ){
-  if(file.exists(output_path)){
+subset_eQTL_SS <- function(fullSS_path, output_path, gene, gene_col="gene_name", force_new_subset=T){
+  if(file.exists(output_path) & force_new_subset==F){
     cat("Subset file already exists. Importing",output_path,"...\n")
   } else {
     colDict <- column_dictionary(fullSS_path)
@@ -723,12 +726,13 @@ translate_population <- function(superpopulation){
 
 finemap_eQTL <- function(superpopulation, gene, fullSS_path, num_causal=1,
                          chrom_col = "chr", position_col = "pos_snps", snp_col="snps",
-                         pval_col="pvalue", effect_col="beta", gene_col="gene_name", stderr_col = "calculate"){ 
+                         pval_col="pvalue", effect_col="beta", gene_col="gene_name", stderr_col = "calculate",
+                         force_new_subset=T){ 
   superpop <- translate_population(superpopulation)
-  subset_path <- paste("Data/eQTL/MESA/",gene,"_",superpop,"_subset.txt",sep="")
+  subset_path <- paste("Data/eQTL/MESA/",gene,"_",superpop,"_subset.txt",sep="") 
   subset_eQTL_SS(fullSS_path=fullSS_path,
                  output_path=subset_path,
-                 gene=gene)
+                 gene=gene, force_new_subset=force_new_subset)
   # system("wc -l Data/eQTL/MESA/CAU_eQTL_PTK2B.txt", intern = T)# Get number of rows in file
   top_SNPs <- import_topSNPs(
     file_path = subset_path,
@@ -736,7 +740,7 @@ finemap_eQTL <- function(superpopulation, gene, fullSS_path, num_causal=1,
     pval_col=pval_col, effect_col=effect_col, gene_col=gene_col,
     caption= paste(population,": eQTL Summary Stats"))
   
- 
+  
   finemapped_eQTL <- finemap_geneList(top_SNPs, geneList=gene,
                                       file_path = subset_path,
                                       chrom_col = chrom_col,  pval_col = pval_col, snp_col = snp_col,
