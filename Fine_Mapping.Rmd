@@ -1,5 +1,5 @@
 ---
-title: "<center>Fine Mapping:<br>Parkinson's Disease<br>&<br>Alzheimer's Disease</center>" 
+title: "<center><h1>Fine Mapping:</h1>Parkinson's Disease<br>&<br>Alzheimer's Disease</center>" 
 author: 
     "<div class='container'>
      <h3>Brian M. Schilder, Bioinformatician II<br>
@@ -8,14 +8,14 @@ author:
      Icahn School of Medicine at Mount Sinai<br>
      NYC, New York<br>
      </h3> 
-     <a href='https://github.com/RajLabMSSM/Fine_Mapping'><img src='./echolocatoR/images/echo_logo_sm.png'></a> 
-     <a href='https://github.com/RajLabMSSM'><img src='./web/images/github.png'></a> 
-     <a class='item' href='https://rajlabmssm.github.io/RajLab_website/'>
+     <a href='https://github.com/RajLabMSSM/Fine_Mapping' target='_blank'><img src='./echolocatoR/images/echo_logo_sm.png'></a> 
+     <a href='https://github.com/RajLabMSSM' target='_blank'><img src='./web/images/github.png'></a> 
+     <a class='item' href='https://rajlabmssm.github.io/RajLab_website/' target='_blank'>
         <img src='./web/images/brain-icon.png'>
         <span class='caption'>RAJ LAB</span>
-     <a href='https://icahn.mssm.edu/'><img src='./web/images/sinai.png'></a>
+     <a href='https://icahn.mssm.edu/' target='_blank'><img src='./web/images/sinai.png'></a>
      </div>"
-date: "`r Sys.Date()`"
+date: "<br>Most Recent Update:<br> `r Sys.Date()`"
 output:
  html_document:
     theme: cerulean
