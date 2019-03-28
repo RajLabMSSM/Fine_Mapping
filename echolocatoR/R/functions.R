@@ -261,7 +261,7 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
       cat("Subset file already exists. Importing",file_subset,"...\n")
     } else {
       # Extract subset with awk
-      cat("Extracting relevant variants from fullSS...")
+      cat("Extracting relevant variants from fullSS...\n")
       start <- Sys.time()
       
       awk_cmd <- paste("awk -F \"",file_sep,"\" 'NR==1{print $0}{ if(($",colDict[chrom_col]," == ",topSNP_sub$CHR,")",
@@ -270,7 +270,7 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
       cat("\n",awk_cmd)
       system(awk_cmd)
       end <- Sys.time()
-      cat("Extraction completed in", round(end-start, 2),"seconds \n")
+      cat("\nExtraction completed in", round(end-start, 2),"seconds \n")
     }
     query <- fread(file_subset, header=T, stringsAsFactors = F, sep = file_sep)
     if(dim(query)[1]==0){ 
@@ -509,17 +509,30 @@ susie_on_gene <- function(gene, top_SNPs,
     base::merge(subset(geneSubset, select=c("CHR","POS","SNP","Effect","P","Coord","leadSNP")), by="SNP") %>%
     mutate(POS=as.numeric(POS))
   # Add credible set
-  cat("\n Credible Set: \n")
-  try({ 
-    credible_set <- geneSubset[ as.numeric(strsplit( as.character(summary(fitted_bhat)$cs$variable) ,",")[[1]]), ] 
+  cat("\n Credible Set: \n") 
+  ## *** IMPORTANT! ***: In case susieR cannot identify any credible set, 
+  # take the snps with the top 5 PIPs and provide a warning message. Interpret these snps with caution.
+  check_credible <- function(geneSubset, fitted_bhat){
+    credible_set <- geneSubset[ as.numeric(strsplit( as.character(summary(fitted_bhat)$cs$variable) ,",")[[1]]), ]$SNP 
     cat("\n ******",length(credible_set),"SNPs included in Credible Set ******\n") 
-  })  
-  if(!exists("credible_set")){
-    cat("\n ****** Could NOT identify credible set. Default to SNPs with the top 5 PIPs ******\n") 
-    CS <- susieDF %>% arrange(desc(PIP))
-    credible_set <- CS$SNP[1:5]
+    return(credible_set)
+  }  
+  error_handling <- function(code) {
+    tryCatch(code,
+             error = function(c) {
+               cat("\n--- ERROR ---")
+               cat("\n ****** Could NOT identify credible set. Default to SNPs with the top 5 PIPs ******\n") 
+               CS <- susieDF %>% arrange(desc(PIP))
+               credible_set <- as.character(CS[1:5,]$SNP)
+               return(credible_set)
+               },
+             warning = function(c) "Warning",
+             message = function(c) "Message"
+    )
   }
-  susieDF$credible_set <- ifelse(susieDF$SNP %in% credible_set$SNP, T, F)
+  
+  credible_set <- error_handling(check_credible(geneSubset, fitted_bhat))
+  susieDF$credible_set <- ifelse(susieDF$SNP %in% credible_set, T, F)
   # cat("\n Susie Plot: Credible Set")
   # susie_plot(fitted_bhat, y="PIP", b=b, add_bar = T, add_legend = T)
   return(susieDF)

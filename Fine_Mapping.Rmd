@@ -184,6 +184,7 @@ finemapped_AD_Marioni <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
 
 ## Lambert (2013) (IGAP) {.tabset .tabset-fade .tabset-pills}
 
+Filtering out the CLU portion of the locus prevents susieR from identifying a credible set.
 ```{r AD: Lambert (2013), results = 'asis', fig.height=8, fig.width=7} 
 top_SNPs <- import_topSNPs(
   file_path = Data_dirs$Lambert_2013$topSS,
@@ -198,7 +199,7 @@ finemapped_AD_Lambert <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                    chrom_col = "CHROM",  pval_col = "PVAL", snp_col = "SNP",
                    effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                    vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR",
-                   minPos=NULL, maxPos=27440000)
+                   minPos=NULL, maxPos=27440000)  
 ```
 
 ## Kunkle (2019) (IGAP) {.tabset .tabset-fade .tabset-pills}
