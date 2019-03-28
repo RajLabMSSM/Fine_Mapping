@@ -194,7 +194,7 @@ top_SNPs <- import_topSNPs(
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
 finemapped_AD_Lambert <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
-                   file_path="Data/Alzheimers/Lambert_2013/IGAP_stage_1.1000G.phase3.20130502.tsv",#Data_dirs$Lambert_2013$fullSS,
+                   file_path=Data_dirs$Lambert_2013$fullSS,#"Data/Alzheimers/Lambert_2013/IGAP_stage_1.1000G.phase3.20130502.tsv",#
                    chrom_col = "CHROM",  pval_col = "PVAL", snp_col = "SNP",
                    effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                    vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR",
