@@ -746,21 +746,20 @@ finemap_eQTL <- function(superpopulation, gene, fullSS_path, num_causal=1,
   return(finemapped_eQTL)
 }
 
-
-merge_finemapping_results <- function(named_results_list, credible_sets_only=T, csv_path=F){
+merge_finemapping_results <- function(allResults, credible_sets_only=T, csv_path=F){
   final_results <- data.table()
-  for(n in names(named_results_list)){
-    res <-  named_results_list[n][[1]] 
-    res <- cbind(Dataset=n, res)
-    if(credible_sets_only==T){res <- res %>% dplyr::filter(credible_set==T)}
-    final_results <- rbind(final_results, res)
+  for(n in names(allResults)){ 
+    try({ 
+      res <- cbind(Dataset=n, allResults[[n]])
+      if(credible_sets_only==T){res <- res %>% dplyr::filter(credible_set==T)}
+      final_results <- rbind(final_results, res)
+    })
   }
   if(csv_path!=F){
     fwrite(final_results, file = csv_path, quote = F, sep = ",")
   }
   return(final_results)
 }
-
 
 
 # Preprocessing
