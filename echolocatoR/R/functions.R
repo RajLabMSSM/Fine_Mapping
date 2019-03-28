@@ -514,6 +514,7 @@ susie_on_gene <- function(gene, top_SNPs,
     credible_set <- geneSubset[ as.numeric(strsplit( as.character(summary(fitted_bhat)$cs$variable) ,",")[[1]]), ] 
     cat("\n ******",length(credible_set),"SNPs included in Credible Set ******\n") 
   }) 
+  
   if(!exists("credible_set")){
     cat("\n ****** Could NOT identify credible set. Default to SNPs with the top 5 PIPs ******\n") 
     CS <- susieDF %>% arrange(desc(PIP))
