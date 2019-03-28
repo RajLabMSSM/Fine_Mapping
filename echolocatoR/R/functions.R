@@ -87,7 +87,7 @@ createDT_html <- function(DF, caption="", scrollY=400){
 
 
 get_dataset_name <- function(file_path){
-  dataset_name <- strsplit(dirname(file_path), "/")[[1]][3]
+  dataset_name <- tail(strsplit(dirname(file_path), "/")[[1]],n = 1)
   return(dataset_name)
 }
 
@@ -465,10 +465,10 @@ susie_on_gene <- function(gene, top_SNPs,
                           LD_reference="1KG_Phase1", superpopulation="EUR", vcf_folder=F,
                           minPos=NULL, maxPos=NULL, file_sep="\t"){ 
     cat("\n + Extracting SNPs flanking lead SNP... \n")
-    flankingSNPs <- get_flanking_SNPs(gene, top_SNPs, bp_distance=bp_distance, file_path=file_path,
+    flankingSNPs <- get_flanking_SNPs(gene=gene, top_SNPs=top_SNPs, bp_distance=bp_distance, file_path=file_path,
                                       chrom_col=chrom_col, position_col=position_col, snp_col=snp_col,
                                       pval_col=pval_col, effect_col=effect_col, stderr_col=stderr_col, 
-                                      superpopulation=superpopulation, 
+                                      superpopulation=superpopulation,  
                                       minPos=minPos, maxPos=maxPos, file_sep=file_sep)
   
  
@@ -513,8 +513,7 @@ susie_on_gene <- function(gene, top_SNPs,
   try({ 
     credible_set <- geneSubset[ as.numeric(strsplit( as.character(summary(fitted_bhat)$cs$variable) ,",")[[1]]), ] 
     cat("\n ******",length(credible_set),"SNPs included in Credible Set ******\n") 
-  }) 
-  
+  })  
   if(!exists("credible_set")){
     cat("\n ****** Could NOT identify credible set. Default to SNPs with the top 5 PIPs ******\n") 
     CS <- susieDF %>% arrange(desc(PIP))
@@ -691,10 +690,10 @@ subset_eQTL_SS <- function(fullSS_path, output_path, gene, gene_col="gene_name" 
     start <- Sys.time()
     awk_cmd <- paste("awk -F \"\t\" 'NR==1{print $0} $",colDict[gene_col]," == \"",gene,"\"{print $0} ' ",fullSS_path,
                      " > ",output_path, sep="")
-    cat("\n",awk_cmd)
+    cat("\n",awk_cmd,"\n")
     system(awk_cmd)
     end <- Sys.time()
-    cat("Extraction completed in", round(end-start, 2),"seconds \n")
+    cat("\nExtraction completed in", round(end-start, 2),"seconds \n")
   }
   # query <- fread(output_path, header=T, stringsAsFactors = F, sep = "\t")
   # # query <- read.csv.sql(file = fullSS_path, sep="\t", header = T,
