@@ -147,7 +147,7 @@ top_SNPs <- import_topSNPs(
   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
   caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats")
 
-gene_list <- c("LRRK2","SNCA","VPS13C","C5orf24","IP6K2","KCNIP3","GBF1","SCARB2", top_SNPs$Gene) %>% unique()
+gene_list <- c("LRRK2","SNCA","VPS13C","C5orf24","IP6K2","KCNIP3","GBF1","SCARB2")#, top_SNPs$Gene) %>% unique()
  
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs,
                                                geneList=gene_list,
