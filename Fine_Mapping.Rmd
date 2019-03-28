@@ -1,5 +1,5 @@
 ---
-title: "<center>Fine Mapping:<br>Parkinson's Disease & Alzheimer's Disease</center>" 
+title: "<center>Fine Mapping:<br>Parkinson's Disease<br>&<br>Alzheimer's Disease</center>" 
 author: 
     "<div class='container'>
      <h3>Brian M. Schilder, Bioinformatician II<br>
