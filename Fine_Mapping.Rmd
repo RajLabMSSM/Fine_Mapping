@@ -130,6 +130,14 @@ allResults <- list()
 
 ## Nalls et. al. (2019) w/ 23andMe {.tabset .tabset-fade .tabset-pills}
 
+*"**Rare coding variant burden analysis**:  
+We performed kernel-based burden tests on the 113
+genes in our PD GWAS loci that contained two or more rare coding variants (MAF< 5% or MAF < 1%). After Bonferroni correction for 113 genes, we identified 7 significant putatively causal genes: 
+  - LRRK2, GBA, CATSPER3 **(rs11950533/C5orf24 locus)**
+  - LAMB2 **(rs12497850/IP6K2 locus)**
+  - LOC442028 **(rs2042477/KCNIP3 locus)**
+  - NFKB2 **(rs10748818/GBF1 locus)**, and SCARB2 **(rs6825004 locus)**."*  
+-- from [Nalls et al. (2019)](https://www.biorxiv.org/content/10.1101/388165v3.supplementary-material) 
 ```{r PD: Nalls_23andMe, results = 'asis', fig.height=8, fig.width=7} 
 dataset_name <- "Nalls_23andMe"
 
@@ -139,12 +147,16 @@ top_SNPs <- import_topSNPs(
   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
   caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats")
 
-allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("LRRK2","SNCA","VPS13C"),
+gene_list <- c("LRRK2","SNCA","VPS13C","C5orf24","IP6K2","KCNIP3","GBF1","SCARB2", top_SNPs$Gene) %>% unique()
+ 
+allResults[[dataset_name]] <- finemap_geneList(top_SNPs,
+                                               geneList=gene_list,
                  file_path= Data_dirs[[dataset_name]]$fullSS,#"./LRRK2_EUR_subset.txt",#
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
                  vcf_folder = vcf_folder, superpopulation = "EUR", force_new_subset = force_new_subset) 
 #c("LRRK2","SNCA","VPS13C","GCH1"),
+# "GBA","CATSPER3", "LAMB2", "LOC442028", "NFKB2", "SCARB2", "GRN"
 ```
 
 
