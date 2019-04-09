@@ -31,10 +31,7 @@ editor_options:
   chunk_output_type: inline
 --- 
 
-<<<<<<< HEAD
 [Scripts to run CAVIAR, FINEMAP (version 1.1) and DAP-G](https://stephenslab.github.io/susie-paper/manuscript_results/pedagogical_example.html)
-=======
->>>>>>> refs/remotes/origin/master
 ```{r setup, message=F, warning=F, dpi = 600}
 # devtools::install_local("geneRefineR/", force = T)
 # library("echolocatoR") 
@@ -51,30 +48,12 @@ library(ggrepel)
 library(curl)
 library(biomaRt) 
 # Ensembl LD API
-<<<<<<< HEAD
 # library(httr)
 # library(jsonlite)
 # library(xml2)
 # library(gaston)
 # library(RCurl) 
-# 
-# devtools::install_github("stephenslab/dsc",subdir = "dscrutils",force = TRUE)
-# library(dscrutils) 
-# system("export PATH=./../../../bin/dsc-query:$PATH") 
-# system("export PATH=./../../../bin/dsc:$PATH")
-# system("dsc-query --version")  
-# 
-# example("dscquery")
-# system("pip install dsc")
 
- 
-=======
-library(httr)
-library(jsonlite)
-library(xml2)
-library(gaston)
-library(RCurl)
->>>>>>> refs/remotes/origin/master
 # *** susieR ****
 # library(knitrBootstrap) #install_github('jimhester/knitrBootstrap')
 library(susieR) # devtools::install_github("stephenslab/susieR")
@@ -148,7 +127,6 @@ if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
 force_new_subset = F
 allResults <- list()
 ```
-<<<<<<< HEAD
 
 
 # CAVIARBF
@@ -165,8 +143,6 @@ kunkle = subset(kunkle, select = c("MarkerName","Beta","SE"))
 system("./caviarbf -z ./example/myfile.Z -r ./example/myfile.LD -t 0 -a 0.1281429 -n 2000 -c 5 -o ./example/myfile.sigma0.1281429.bf")
 ```
 
-=======
->>>>>>> refs/remotes/origin/master
  
 # Parkinson's Disease
 
@@ -191,21 +167,12 @@ top_SNPs <- import_topSNPs(
 
 gene_list <- c("LRRK2","SNCA","VPS13C","C5orf24","IP6K2","KCNIP3","GBF1","SCARB2")#, top_SNPs$Gene) %>% unique()
  
-<<<<<<< HEAD
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=gene_list,
                  file_path= Data_dirs[[dataset_name]]$fullSS, 
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
                  vcf_folder = vcf_folder, superpopulation = "EUR", force_new_subset = force_new_subset, 
                  min_r2 = 0, LD_block = T, block_size = .15) 
-=======
-allResults[[dataset_name]] <- finemap_geneList(top_SNPs,
-                                               geneList=gene_list,
-                 file_path= Data_dirs[[dataset_name]]$fullSS,#"./LRRK2_EUR_subset.txt",#
-                 chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
-                 pval_col = "p", effect_col = "beta", stderr_col = "se", 
-                 vcf_folder = vcf_folder, superpopulation = "EUR", force_new_subset = force_new_subset) 
->>>>>>> refs/remotes/origin/master
 #c("LRRK2","SNCA","VPS13C","GCH1"),
 # "GBA","CATSPER3", "LAMB2", "LOC442028", "NFKB2", "SCARB2", "GRN"
 ```
@@ -230,12 +197,8 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                  effect_col = "BETA", stderr_col = "SE", position_col = "BP",
                  snp_col = "SNP", pval_col = "P",
                  vcf_folder = vcf_folder, superpopulation = "EUR",
-<<<<<<< HEAD
                  minPos=NULL, maxPos=27440000, force_new_subset = force_new_subset, 
                  min_r2 = 0, LD_block = T, block_size = .15)
-=======
-                 minPos=NULL, maxPos=27440000, force_new_subset = force_new_subset)
->>>>>>> refs/remotes/origin/master
 ```
 
 ## Marioni (2018) {.tabset .tabset-fade .tabset-pills}
@@ -255,12 +218,8 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                  effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                  snp_col = "SNP",chrom_col = "CHROM", pval_col = "PVAL",
                  vcf_folder = vcf_folder, superpopulation = "EUR",
-<<<<<<< HEAD
                  minPos=NULL, maxPos=NULL, force_new_subset = force_new_subset, 
                  min_r2 = 0, LD_block = T, block_size = .15)
-=======
-                 minPos=NULL, maxPos=27440000, force_new_subset = force_new_subset)
->>>>>>> refs/remotes/origin/master
 ```
 
 
@@ -279,20 +238,12 @@ top_SNPs <- import_topSNPs(
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
-<<<<<<< HEAD
                    file_path="Data/Alzheimers/Lambert_2013/IGAP_stage_1.1000G.phase3.20130502.tsv",#Data_dirs[[dataset_name]]$fullSS,#
                    chrom_col = "CHROM",  pval_col = "PVAL", snp_col = "SNP",
                    effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                    vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR",
                    minPos=NULL, maxPos=NULL, force_new_subset = force_new_subset, 
                    min_r2 = 0, LD_block = T, block_size = .15)  
-=======
-                   file_path=Data_dirs[[dataset_name]]$fullSS,#"Data/Alzheimers/Lambert_2013/IGAP_stage_1.1000G.phase3.20130502.tsv",#
-                   chrom_col = "CHROM",  pval_col = "PVAL", snp_col = "SNP",
-                   effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
-                   vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR",
-                   minPos=NULL, maxPos=27440000, force_new_subset = force_new_subset)  
->>>>>>> refs/remotes/origin/master
 ```
 
 ## Kunkle (2019) (IGAP) {.tabset .tabset-fade .tabset-pills}
@@ -311,7 +262,6 @@ top_SNPs <- import_topSNPs(
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),  
-<<<<<<< HEAD
                    file_path="Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage1_results.txt",
                    # file_path = Data_dirs[[dataset_name]]$fullSS,
                    chrom_col = "Chromosome",  position_col = "Position", pval_col = "Pvalue",
@@ -319,13 +269,6 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                    vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR",
                    minPos=NULL, maxPos=NULL, file_sep=" ", force_new_subset = force_new_subset,  
                    bp_distance = 500000, min_r2 = 0, LD_block = T, block_size = .15)   #maxPos=27440000,
-=======
-                   file_path=Data_dirs[[dataset_name]]$fullSS,#"Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage1_results.txt",#
-                   chrom_col = "Chromosome",  position_col = "Position", pval_col = "Pvalue",
-                   snp_col = "MarkerName", effect_col = "Beta", stderr_col = "SE", 
-                   vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR",
-                   minPos=NULL, maxPos=27440000, file_sep=" ", force_new_subset = force_new_subset) # Exclude CLU-associated portion of locus
->>>>>>> refs/remotes/origin/master
 ```
 
 # eQTL
@@ -344,11 +287,7 @@ dataset_name <- "MESA_AFA"
 superpopulation <- "AFA"
 allResults[[dataset_name]] <- finemap_eQTL(superpopulation, gene =  "PTK2B", 
                                          fullSS_path = Data_dirs[[dataset_name]]$fullSS, 
-<<<<<<< HEAD
                                          force_new_subset = force_new_subset, min_r2 = 0)
-=======
-                                         force_new_subset = force_new_subset)
->>>>>>> refs/remotes/origin/master
 ```
 
 ## MESA - CAU {.tabset .tabset-fade .tabset-pills}
@@ -358,11 +297,7 @@ dataset_name <- "MESA_CAU"
 superpopulation <- "CAU"
 allResults[[dataset_name]] <- finemap_eQTL(superpopulation, gene = "PTK2B", 
                                          fullSS_path = Data_dirs[[dataset_name]]$fullSS, 
-<<<<<<< HEAD
                                          force_new_subset = force_new_subset, min_r2 = 0)
-=======
-                                         force_new_subset = force_new_subset)
->>>>>>> refs/remotes/origin/master
 ```
 
 ## MESA - HIS {.tabset .tabset-fade .tabset-pills}
@@ -373,11 +308,7 @@ dataset_name <- "MESA_HIS"
 superpopulation <- "HIS"
 allResults[[dataset_name]] <- finemap_eQTL(superpopulation, gene = "PTK2B", 
                                        fullSS_path = Data_dirs[[dataset_name]]$fullSS, 
-<<<<<<< HEAD
                                        force_new_subset = force_new_subset, min_r2 = 0)
-=======
-                                       force_new_subset = force_new_subset)
->>>>>>> refs/remotes/origin/master
 ```
 
 # Merge Results
