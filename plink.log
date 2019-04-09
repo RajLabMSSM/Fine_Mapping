@@ -1,0 +1,25 @@
+PLINK v1.90b6.9 64-bit (4 Mar 2019)
+Options in effect:
+  --bfile ./plink_tmp/matrix
+  --blocks no-pheno-req no-small-max-span
+  --blocks-max-kb 100000
+
+Hostname: brians-mbp.19e98.mountsinai.org
+Working directory: /Users/schilder/Desktop/Fine_Mapping
+Start time: Tue Apr  9 18:50:04 2019
+
+Random number seed: 1554850204
+8192 MB RAM detected; reserving 4096 MB for main workspace.
+5113 variants loaded from .bim file.
+1092 people (0 males, 0 females, 1092 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to plink.nosex .
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 1092 founders and 0 nonfounders present.
+Calculating allele frequencies... done.
+5113 variants and 1092 people pass filters and QC.
+Note: No phenotypes present.
+--blocks: 136 haploblocks written to plink.blocks .
+Extra block details written to plink.blocks.det .
+Longest span: 74.801kb.
+
+End time: Tue Apr  9 18:50:05 2019

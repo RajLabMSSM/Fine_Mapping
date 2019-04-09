@@ -1,0 +1,17 @@
+Package: caviarbf
+Type: Package
+Title: An R package for CAIVARBF
+Version: 0.2.1
+Date: 2016-09-18
+Author: Wenan Chen
+Maintainer: Wenan Chen <wenan.chen@stjude.org>
+Description: It can be used for fine mapping to identify the underlying
+        causal variants. When annoations are available, they can be
+        incorporated to potentially improve the accuracy of fine
+        mapping.
+License: GPL (>= 3)
+Depends: methods, Rcpp (>= 0.11.6), RcppEigen (>= 0.3.2.4.0), glmnet
+        (>= 2.0-2)
+LinkingTo: Rcpp, RcppEigen
+RcppModules: BFModelSearchModule
+Imports: glmnet (>= 2.0-2)

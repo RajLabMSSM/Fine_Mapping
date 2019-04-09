@@ -1,0 +1,3 @@
+1.458103429531909e+01 # log(p(Data)) - log(p(Data|M0))
+9.999998306282207e-01 # Probability of at least 1 causal variant P(M_alternative)
+6.529121427701985e+00 # log10 Bayes factor of the region (M_alternative vs M0)

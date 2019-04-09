@@ -1,0 +1,5 @@
+syntax: glob
+caviarbf_ws/
+more_example/
+*.exe
+.DS_Store

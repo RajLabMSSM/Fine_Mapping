@@ -1,0 +1,3 @@
+#ifndef CAVIARBF_VERSION
+#define CAVIARBF_VERSION "0.2.1"
+#endif

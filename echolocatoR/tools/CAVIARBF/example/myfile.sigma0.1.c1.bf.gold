@@ -1,0 +1,8 @@
+## note:bf=log10(Bayes Factor), SNP IDs are from 1 ... m
+bf		se	snp1
+-0.363308	NA	1
++4.717938	NA	2
++0.085463	NA	3
++7.034175	NA	4
++1.456593	NA	5
++2.647801	NA	6
