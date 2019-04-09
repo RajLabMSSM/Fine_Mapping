@@ -16,3 +16,4 @@
 *.vcf.gz
 *.vcf
 Manuscripts/
+plink_tmp/**
