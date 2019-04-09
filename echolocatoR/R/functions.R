@@ -248,7 +248,8 @@ new_colNames <- function(file_path, chrom_col, position_col, snp_col,
   return(paste0( paste0(new_cNames, collapse="\t"), "\n",sep="") )
 }
 
-preprocess_subset <- function(file_path, chrom_col, position_col, snp_col,
+preprocess_subset <- function(file_path, file_sep,
+                              chrom_col, position_col, snp_col,
                               pval_col, effect_col, stderr_col){
   query <- fread(file_subset, header=T, stringsAsFactors = F, sep = file_sep) %>% 
     subset(select=c(chrom_col,position_col, snp_col, pval_col, effect_col, stderr_col)) %>% 
@@ -308,8 +309,9 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
       cat("\n",awk_cmd) 
       system(awk_cmd)
       # Clean file
-      query <- preprocess_subset(file_path, chrom_col, position_col, snp_col,
-                        pval_col, effect_col, stderr_col)
+      query <- preprocess_subset(file_path, file_sep, 
+                                 chrom_col, position_col, snp_col,
+                                 pval_col, effect_col, stderr_col)
       end <- Sys.time()
       cat("\nExtraction completed in", round(end-start, 2),"seconds \n")
     } 
