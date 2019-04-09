@@ -38,6 +38,7 @@ library(ggplot2)
 library(plotly)
 library(cowplot)
 library(ggrepel)
+<<<<<<< HEAD
 library(curl) 
 library(gaston)
 library(tidyr)
@@ -49,6 +50,19 @@ library(biomaRt)
 # library(xml2) 
 # library(RCurl)
 # library(bigsnpr) # BiocManager::install("bigsnpr")
+=======
+library(curl)
+library(biomaRt)
+# library(sqldf)
+# Ensembl LD API
+library(httr)
+library(jsonlite)
+library(xml2)
+library(gaston)
+library(RCurl)
+library(tidyr)
+library(biomaRt)
+>>>>>>> refs/remotes/origin/master
 
 # *** susieR ****
 # library(knitrBootstrap) #install_github('jimhester/knitrBootstrap')
@@ -234,12 +248,17 @@ import_FUMA <- function(topSS_path, geneList){
 
 column_dictionary <- function(file_path){
   # Get the index of each column name
+<<<<<<< HEAD
   f <- fread(file_path, nrows = 2)
   cNames <- colnames(f)
+=======
+  cNames <- colnames(fread(file_path, nrows = 2))
+>>>>>>> refs/remotes/origin/master
   colDict <- setNames(1:length(cNames), cNames  )
   return(colDict)
 }
 
+<<<<<<< HEAD
 new_colNames <- function(file_path, chrom_col, position_col, snp_col,
                            pval_col, effect_col, stderr_col){
   f <- fread(file_path, nrows = 1)
@@ -277,6 +296,9 @@ preprocess_subset <- function(file_path, chrom_col, position_col, snp_col,
   return(query)
   }
 }
+=======
+
+>>>>>>> refs/remotes/origin/master
 
 get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
                               chrom_col="CHR", position_col="POS", snp_col="SNP",
@@ -295,12 +317,16 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
     dataset_name <- get_dataset_name(file_path)
     file_subset <- paste(dirname(file_path),"/",gene,"_",dataset_name,"_subset.txt",sep="") 
     if(file.exists(file_subset)){
+<<<<<<< HEAD
       query <- fread(file_subset, header=T, stringsAsFactors = F, sep = "\t")
+=======
+>>>>>>> refs/remotes/origin/master
       cat("Subset file already exists. Importing",file_subset,"...\n")
     } else {
       # Extract subset with awk
       cat("Extracting relevant variants from fullSS...\n")
       start <- Sys.time()
+<<<<<<< HEAD
       # new_colNames(file_path, chrom_col, position_col, snp_col, pval_col, effect_col, stderr_col)
       awk_cmd <- paste("awk -F \"",file_sep,"\" 'NR==1{print $0}{ if(($",colDict[chrom_col]," == ",topSNP_sub$CHR,")",
                        " && ($",colDict[position_col]," >= ",minPos," && $",colDict[position_col]," <= ",maxPos,")) { print } }' ",file_path,
@@ -314,6 +340,43 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
       cat("\nExtraction completed in", round(end-start, 2),"seconds \n")
     } 
   return(query)
+=======
+      
+      awk_cmd <- paste("awk -F \"",file_sep,"\" 'NR==1{print $0}{ if(($",colDict[chrom_col]," == ",topSNP_sub$CHR,")",
+                       " && ($",colDict[position_col]," >= ",minPos," && $",colDict[position_col]," <= ",maxPos,")) { print } }' ",file_path,
+                       " > ",file_subset,sep="")
+      cat("\n",awk_cmd)
+      system(awk_cmd)
+      end <- Sys.time()
+      cat("\nExtraction completed in", round(end-start, 2),"seconds \n")
+    }
+    query <- fread(file_subset, header=T, stringsAsFactors = F, sep = file_sep)
+    if(dim(query)[1]==0){ 
+      file.remove(file_subset)
+      stop("\n Could not find any rows in full data that matched query :(") 
+    }else{  
+      if(stderr_col=="calculate"){
+        cat("Calculating Standard Error...\n")
+        query$StdErr <- subset(query, select=effect_col) / subset(query, select="statistic")
+        stderr_col="StdErr"
+      }
+      geneSubset <- subset(query, select=c(chrom_col,position_col, snp_col, pval_col, effect_col, stderr_col) )
+      geneSubset <- geneSubset %>% dplyr::rename(CHR=chrom_col,POS=position_col, SNP=snp_col,
+                                                 P=pval_col, Effect=effect_col, StdErr=stderr_col) %>%
+        mutate(Location=paste(CHR,":",POS,sep=""))
+      ## Remove SNPs with NAs in stats
+      geneSubset[(geneSubset$P<=0)|(geneSubset$P>1),"P"] <- 1
+      # Get just one SNP per location (just pick the first one)
+      geneSubset <- geneSubset %>% group_by(Location) %>% slice(1)
+      # Mark lead SNP
+      geneSubset$leadSNP <- ifelse(geneSubset$SNP==topSNP_sub$SNP, T, F)
+      # Only convert to numeric AFTER removing NAs (otherwise as.numeric will turn them into 0s)
+      geneSubset <- geneSubset  %>%
+        mutate(Effect=as.numeric(Effect), StdErr=as.numeric(StdErr), P=as.numeric(P))
+      return(geneSubset)
+    }
+   
+>>>>>>> refs/remotes/origin/master
   }
 } 
 # flankingSNPs <- get_flanking_SNPs(gene="PTK2B", top_SNPs,
@@ -375,8 +438,12 @@ download_all_vcfs <- function(vcf_folder="../1000_Genomes_VCFs"){
 
 
 
+<<<<<<< HEAD
 gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulation="EUR", 
                       vcf_folder=F, min_r2=0, LD_block=T, block_size=.7){
+=======
+gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulation="EUR", vcf_folder=F){
+>>>>>>> refs/remotes/origin/master
   # Download portion of vcf from 1KG website
   region <- paste(flankingSNPs$CHR[1],":",min(flankingSNPs$POS),"-",max(flankingSNPs$POS), sep="")
   chrom <- flankingSNPs$CHR[1]
@@ -423,6 +490,7 @@ gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulatio
     cat(tabix_cmd)
     system(tabix_cmd)
     vcf_name <- paste(basename(vcf_URL), ".tbi",sep="")
+<<<<<<< HEAD
     file.remove(vcf_name)
   }else{cat("Identified matching VCF subset file. Importing...", subset_vcf,"\n")} 
   # Import w/ gaston and further subset
@@ -433,12 +501,24 @@ gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulatio
   # Subset Individuals
   selectedInds <- subset(popDat, superpop == superpopulation)
   bed <- gaston::select.inds(bed, id %in% selectedInds$sample)
+=======
+    # file.remove(vcf_name)
+  }else{cat("Identified matching VCF subset file. Importing...", subset_vcf,"\n")} 
+  # Import w/ gaston and further subset
+  bed.file <- read.vcf(subset_vcf)
+  ## Subset rsIDs
+  bed <- select.snps(bed.file, id %in% flankingSNPs$SNP)
+  # Subset Individuals
+  selectedInds <- subset(popDat, superpop == superpopulation)
+  bed <- select.inds(bed, id %in% selectedInds$sample)
+>>>>>>> refs/remotes/origin/master
   # Cleanup extra files
   remove(bed.file)
   # file.remove("subset.vcf")
   
   # Calculate pairwise LD for all SNP combinations
   #### "Caution that the LD matrix has to be correlation matrix" -SuSiER documentation
+<<<<<<< HEAD
   ### https://stephenslab.github.io/susieR/articles/finemapping_summary_statistics.html 
   # LD_matrix <- gaston::LD(bed, lim = c(1,ncol(bed)), measure = "D")  
   
@@ -472,6 +552,19 @@ gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulatio
     start = lead_index-10
     end = lead_index+10
     gaston::LD.plot( LD_matrix[start:end, start:end], snp.positions = bed@snps$pos[start:end] )
+=======
+  ### https://stephenslab.github.io/susieR/articles/finemapping_summary_statistics.html
+  ld.x <- gaston::LD(bed, lim = c(1,ncol(bed)), measure ="r" )
+  LD_matrix <- ld.x
+  LD_matrix[!is.finite(LD_matrix)] <- 0
+  # LD plot
+  try({
+    leadSNP = subset(flankingSNPs, leadSNP==T)$SNP
+    lead_index = match(leadSNP, rownames(LD_matrix))
+    start = lead_index-10
+    end = lead_index+10
+    LD.plot( LD_matrix[start:end, start:end], snp.positions = bed@snps$pos[start:end] )
+>>>>>>> refs/remotes/origin/master
   })
   # Double check subsetting
   # LD_matrix <- ld.x[row.names(ld.x) %in% flankingSNPs$SNP, colnames(ld.x) %in% flankingSNPs$SNP]
@@ -480,6 +573,7 @@ gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulatio
 # LD_matrix <- gaston_LD(flankingSNPs)
 
 
+<<<<<<< HEAD
 
 calculate_LD <-function(plink_folder="./plink_tmp"){
   start <- Sys.time()
@@ -550,6 +644,8 @@ LD_clumping <- function(subset_vcf, subset_SS){
 
 
 
+=======
+>>>>>>> refs/remotes/origin/master
 ## susieR Function
 #
 # * Notes on L parameter
@@ -573,10 +669,16 @@ susie_on_gene <- function(gene, top_SNPs,
                           chrom_col="CHR", position_col="POS", snp_col="SNP",
                           pval_col="P", effect_col="Effect", stderr_col="StdErr",
                           LD_reference="1KG_Phase1", superpopulation="EUR", vcf_folder=F,
+<<<<<<< HEAD
                           minPos=NULL, maxPos=NULL, file_sep="\t", 
                           min_r2=0, LD_block=T, block_size=.7){ 
    cat("\n + Extracting SNPs flanking lead SNP... \n")
    flankingSNPs <- get_flanking_SNPs(gene=gene, top_SNPs=top_SNPs, bp_distance=bp_distance, file_path=file_path,
+=======
+                          minPos=NULL, maxPos=NULL, file_sep="\t"){ 
+    cat("\n + Extracting SNPs flanking lead SNP... \n")
+    flankingSNPs <- get_flanking_SNPs(gene=gene, top_SNPs=top_SNPs, bp_distance=bp_distance, file_path=file_path,
+>>>>>>> refs/remotes/origin/master
                                       chrom_col=chrom_col, position_col=position_col, snp_col=snp_col,
                                       pval_col=pval_col, effect_col=effect_col, stderr_col=stderr_col, 
                                       superpopulation=superpopulation,  
@@ -585,9 +687,13 @@ susie_on_gene <- function(gene, top_SNPs,
  
   ### Get LD matrix
   cat("\n + Creating LD matrix... \n")
+<<<<<<< HEAD
   LD_matrix <- gaston_LD(flankingSNPs = flankingSNPs, gene=gene, reference = LD_reference, 
                          superpopulation = superpopulation, vcf_folder = vcf_folder, min_r2 = min_r2, 
                          LD_block=LD_block, block_size=block_size)
+=======
+  LD_matrix <- gaston_LD(flankingSNPs = flankingSNPs, gene=gene, reference = LD_reference, superpopulation = superpopulation, vcf_folder = vcf_folder)
+>>>>>>> refs/remotes/origin/master
   ## Turn LD matrix into positive semi-definite matrix
   # LD_matrix2 <- ifelse(matrixcalc::is.positive.semi.definite(LD_matrix),
   #        LDmatrix,
@@ -670,7 +776,11 @@ before_after_plots <- function(gene, susieDF, before_var="P"){
   }else{
     # Sort by pval and then absolute Effect size
     leadSNP_before <- subset( susieDF %>% arrange(P), leadSNP==T)[1,]
+<<<<<<< HEAD
     yLimits1 <- c(0, max(-log10(leadSNP_before[before_var]))*1.1)
+=======
+    yLimits1 <- c(min(-log10(susieDF[before_var])), max(-log10(leadSNP_before[before_var]))*1.1)
+>>>>>>> refs/remotes/origin/master
     y_var = "-log10(p-value)"
   }
   leadSNP_before$type <- "before"
@@ -685,12 +795,21 @@ before_after_plots <- function(gene, susieDF, before_var="P"){
   
   # -log10(eval(parse(text=before_var)))
   before_plot <- ggplot(susieDF, aes(x=POS, y=-log10(eval(parse(text=before_var))), label=SNP, color= -log10(P) )) +
+<<<<<<< HEAD
     # ylim(yLimits1) +
     geom_hline(yintercept=0, alpha=.5, linetype=1, size=.5) +
     geom_point(alpha=.5) +
     geom_segment(aes(xend=POS, yend=yLimits1[1], color= -log10(P) ), alpha=.5) +
     geom_point(data=labelSNPs[labelSNPs$type=="before",], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="before","color"], stroke=1) +
     geom_point(data=labelSNPs[labelSNPs$type=="after",][1,], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="after","color"][1], stroke=1) +
+=======
+    ylim(yLimits1) +
+    geom_hline(yintercept=0, alpha=.5, linetype=1, size=.5) +
+    geom_point(alpha=.5) +
+    geom_point(data=labelSNPs[labelSNPs$type=="before",], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="before","color"], stroke=1) +
+    geom_point(data=labelSNPs[labelSNPs$type=="after",][1,], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="after","color"][1], stroke=1) +
+    geom_segment(aes(xend=POS, yend=yLimits1[1], color= -log10(P) ), alpha=.5) +
+>>>>>>> refs/remotes/origin/master
     geom_text_repel(data=labelSNPs, aes(label=SNP), color=labelSNPs$color, segment.alpha = .5, nudge_x = .5) +
     labs(title=paste(gene," (",length(susieDF$PIP)," variants)","\nBefore Fine Mapping",sep=""),
          y=y_var, x="Position", color="-log10(p-value)") +
@@ -704,9 +823,15 @@ before_after_plots <- function(gene, susieDF, before_var="P"){
     # ylim(yLimits) +
     geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) +
     geom_point(alpha=.5) +
+<<<<<<< HEAD
     geom_segment(aes(xend=POS, yend=yLimits2[1], color= -log10(P)), alpha=.5) +
     geom_point(data=labelSNPs[labelSNPs$type=="before",], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="before","color"], stroke=1) +
     geom_point(data=labelSNPs[labelSNPs$type=="after",][1,], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="after","color"][1], stroke=1) +
+=======
+    geom_point(data=labelSNPs[labelSNPs$type=="before",], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="before","color"], stroke=1) +
+    geom_point(data=labelSNPs[labelSNPs$type=="after",][1,], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="after","color"][1], stroke=1) +
+    geom_segment(aes(xend=POS, yend=yLimits2[1], color= -log10(P)), alpha=.5) +
+>>>>>>> refs/remotes/origin/master
     geom_text_repel(data=labelSNPs, aes(label=SNP), color=labelSNPs$color, segment.alpha = .5, nudge_x = .5) +
     labs(title=paste(gene," (",length(susieDF$PIP)," variants)","\nAfter Fine Mapping",sep=""), y="PIP", x="Position",
          color="-log10(p-value)") +
@@ -757,8 +882,12 @@ finemap_geneList <- function(top_SNPs, geneList, file_path,
                              pval_col="P", effect_col="Effect", stderr_col="StdErr",
                              LD_reference="1KG_Phase1", superpopulation="EUR",
                              topVariants=3,vcf_folder=F, 
+<<<<<<< HEAD
                              minPos=NULL, maxPos=NULL, file_sep="\t", force_new_subset=T,
                              min_r2=0, LD_block=T, block_size=.7){ 
+=======
+                             minPos=NULL, maxPos=NULL, file_sep="\t", force_new_subset=T){ 
+>>>>>>> refs/remotes/origin/master
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
   for (gene in geneList){
@@ -770,8 +899,12 @@ finemap_geneList <- function(top_SNPs, geneList, file_path,
                              chrom_col=chrom_col, position_col=position_col, snp_col=snp_col,
                              pval_col=pval_col, effect_col=effect_col, stderr_col=stderr_col,
                              LD_reference=LD_reference, superpopulation=superpopulation,
+<<<<<<< HEAD
                              minPos=minPos, maxPos=maxPos, file_sep=file_sep, min_r2=min_r2,
                              LD_block=LD_block, block_size=block_size)
+=======
+                             minPos=minPos, maxPos=maxPos, file_sep=file_sep)
+>>>>>>> refs/remotes/origin/master
     
     before_after_plots(gene, susieDF)
     # before_after_consensus(gene, top_SNPs, susieDF, max_SNPs=10)
@@ -789,6 +922,7 @@ finemap_geneList <- function(top_SNPs, geneList, file_path,
 
 
 # *********** PREPROCESSING ***********
+<<<<<<< HEAD
 # ## 23andME
 # add_snpIDs_to_fullSS <-function(snpInfo_path, fullSS_path){
 #   snp_ids <- fread(snpInfo_path,
@@ -805,6 +939,24 @@ finemap_geneList <- function(top_SNPs, geneList, file_path,
 # }
 # # add_snpIDs_to_fullSS(snpInfo_path = "Data/Parkinsons/23andMe/all_snp_info-5.2.txt",
 # #                      fullSS_path = "Data/Parkinsons/23andMe/PD_all_post30APRIL2015_5.2.dat")
+=======
+## 23andME
+add_snpIDs_to_fullSS <-function(snpInfo_path, fullSS_path){
+  snp_ids <- fread(snpInfo_path,
+                   select=c("all.data.id", "assay.name", "scaffold", "position"),
+                   key="all.data.id")
+  snp_ids$scaffold <- gsub("chr", "",snp_ids$scaffold)
+  fullSS <- fread(fullSS_path,  key="all.data.id")
+  dim(fullSS)
+  SS_merged <- snp_ids[fullSS] %>% rename(SNP="assay.name", CHR="scaffold")
+  dim(SS_merged)
+  fwrite(SS_merged, "Data/Parkinsons/23andMe/PD_all_post30APRIL2015_5.2_extended.txt",
+         sep = "\t", quote = F, row.names = F)
+  remove(snp_ids, fullSS, SS_merged)
+}
+# add_snpIDs_to_fullSS(snpInfo_path = "Data/Parkinsons/23andMe/all_snp_info-5.2.txt",
+#                      fullSS_path = "Data/Parkinsons/23andMe/PD_all_post30APRIL2015_5.2.dat")
+>>>>>>> refs/remotes/origin/master
 
 
 
@@ -842,10 +994,16 @@ translate_population <- function(superpopulation){
 finemap_eQTL <- function(superpopulation, gene, fullSS_path, num_causal=1,
                          chrom_col = "chr", position_col = "pos_snps", snp_col="snps",
                          pval_col="pvalue", effect_col="beta", gene_col="gene_name", stderr_col = "calculate",
+<<<<<<< HEAD
                          force_new_subset=T, 
                          min_r2=0, LD_block=T, block_size=.7){ 
   superpop <- translate_population(superpopulation)
   subset_path <- paste("./Data/eQTL/MESA/",gene,"_",superpop,"_subset.txt",sep="") 
+=======
+                         force_new_subset=T){ 
+  superpop <- translate_population(superpopulation)
+  subset_path <- paste("Data/eQTL/MESA/",gene,"_",superpop,"_subset.txt",sep="") 
+>>>>>>> refs/remotes/origin/master
   subset_eQTL_SS(fullSS_path=fullSS_path,
                  output_path=subset_path,
                  gene=gene, force_new_subset=force_new_subset)
@@ -862,8 +1020,12 @@ finemap_eQTL <- function(superpopulation, gene, fullSS_path, num_causal=1,
                                       chrom_col = chrom_col,  pval_col = pval_col, snp_col = snp_col,
                                       effect_col = effect_col, position_col = position_col,
                                       stderr_col = stderr_col,superpopulation = superpop,
+<<<<<<< HEAD
                                       vcf_folder = vcf_folder, num_causal = num_causal, min_r2 = min_r2,
                                       LD_block = LD_block, block_size = block_size)
+=======
+                                      vcf_folder = vcf_folder, num_causal = num_causal)
+>>>>>>> refs/remotes/origin/master
   return(finemapped_eQTL)
 }
 
@@ -916,6 +1078,7 @@ merge_finemapping_results <- function(allResults, credible_sets_only=T, csv_path
 #   cat(awk_cmd)
 #   system(awk_cmd)
 # }
+<<<<<<< HEAD
 
 
 run_finemapping_tools <- function(X, Y, Z=NULL){
@@ -944,3 +1107,5 @@ run_finemapping_tools <- function(X, Y, Z=NULL){
 }
 
 
+=======
+>>>>>>> refs/remotes/origin/master

@@ -16,4 +16,7 @@
 *.vcf.gz
 *.vcf
 Manuscripts/
+<<<<<<< HEAD
 plink_tmp/**
+=======
+>>>>>>> refs/remotes/origin/master
