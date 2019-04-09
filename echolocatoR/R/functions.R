@@ -430,7 +430,7 @@ gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulatio
   ## Subset rsIDs
   bed <- gaston::select.snps(bed.file, id %in% flankingSNPs$SNP & id !=".")
   
-  dir.create(path = "./plink_tmp",showWarnings = F)
+ 
   gaston::write.bed.matrix(bed, "./plink_tmp/matrix")
   # Subset Individuals
   selectedInds <- subset(popDat, superpop == superpopulation)
@@ -488,7 +488,7 @@ calculate_LD <-function(plink_folder="./plink_tmp"){
   # Calculate LD 
   cat("\n Calculating LD blocks...\n")
   bim <- data.table::fread(file.path(plink_folder, "matrix.bim"), col.names = c("CHR","SNP","V3","POS","A1","A2")) 
-  data.table::fwrite(subset(bim, select=SNP), file.path(plink_folder,"SNPs.txt"), col.names = F)
+  data.table::fwrite(subset(bim, select="SNP"), file.path(plink_folder,"SNPs.txt"), col.names = F)
   
   # METHOD 1
   # system( paste("./echolocatoR/tools/plink1.9 --bfile",file.path(plink_folder,"matrix"),"--ld-snps",paste(bim$SNP, collapse=" "),"--r --ld-window-r2 0 --ld-window 10000000 --ld-window-kb 10000000 --out",file.path(plink_folder,"plink")) )
@@ -497,7 +497,7 @@ calculate_LD <-function(plink_folder="./plink_tmp"){
   # METHOD 2 (faster, but less control over parameters)
   system( paste("./echolocatoR/tools/plink1.9 --bfile",file.path(plink_folder,"matrix"),
                 "--extract",file.path(plink_folder,"SNPs.txt"),
-                "--r square bin --out",file.path(plink_folder,"plink")) )
+                "--r square bin --out", file.path(plink_folder,"plink")) )
   bin.vector <- readBin(file.path(plink_folder, "plink.ld.bin"), what = "numeric", n=length(bim$SNP)^2)
   ld.matrix <- matrix(bin.vector, nrow = length(bim$SNP), dimnames = list(bim$SNP, bim$SNP))
   
