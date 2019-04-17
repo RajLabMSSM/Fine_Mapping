@@ -70,7 +70,7 @@ if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
   vcf_folder = F#"../1000_Genomes_VCFs/Phase1" # Use previously downloaded files if working on Minerva node
 }  
 
-force_new_subset = T
+force_new_subset = F
 allResults <- list()
 ```
 
