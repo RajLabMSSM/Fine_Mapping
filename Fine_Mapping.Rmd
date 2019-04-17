@@ -53,69 +53,14 @@ library(biomaRt)
 # library(xml2)
 # library(gaston)
 # library(RCurl) 
-
 # *** susieR ****
 # library(knitrBootstrap) #install_github('jimhester/knitrBootstrap')
 library(susieR) # devtools::install_github("stephenslab/susieR")
-
 sessionInfo()
 print(paste("susieR ", packageVersion("susieR")))  
-# MINERVA PATHS TO SUMMARY STATISTICS DATASETS:
-# root <- "../../.."
-root <- "~/../../../sc/orga/projects"
-Data_dirs = list(
-  # ++++++++ GWAS SUMMARY STATS ++++++++ # 
-  # Nall et al. (2019) w/ 23andMe
-  "Nalls_23andMe" = list(type="Parkinson's GWAS", 
-                         topSS="Data/Parkinsons/Nalls_23andMe/Nalls2019_TableS2.xlsx",
-                   # fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt")),
-                   fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt"),
-                   reference="https://www.biorxiv.org/content/10.1101/388165v3"),  
-  
-  ## IGAP 
-  "Lambert_2013" = list(type="Alzheimer's GWAS", 
-                topSS="Data/Alzheimers/Lambert_2013/Lambert_2019_AD_GWAS.xlsx",
-                fullSS=file.path(root,"ad-omics/data/AD_GWAS/Lambert_2013/IGAP_stage_1.1000G.phase3.20130502.tsv"),
-                reference="https://www.nature.com/articles/ng.2802"),
-  
-  ## Marioni et al. (2018) 
-  "Marioni_2018" = list(type="Alzheimer's GWAS", 
-                        topSS="Data/Alzheimers/Marioni_2018/Marioni2018_supplementary_tables.xlsm",
-                        fullSS=file.path(root,"ad-omics/data/AD_GWAS/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"),
-                        reference="https://www.nature.com/articles/s41398-018-0150-6"),
-  
-  ## Jansen et al. (2018) 
-  "Posthuma_2018" = list(type="Alzheimer's GWAS", 
-                         topSS="Data/Alzheimers/Posthuma_2018/Posthuma2018_suppTables.xlsx", 
-                         fullSS=file.path(root,"ad-omics/data/AD_GWAS/Posthuma_2018/phase3.beta.se.hrc.txt"),
-                reference="https://www.nature.com/articles/s41588-018-0311-9"),
-  
-  ## Kunkle et al. (2018) Alzheimer's GWAS 
-  "Kunkle_2019" = list(type="Alzheimer's GWAS",
-                       topSS="Data/Alzheimers/Kunkle_2019/Kunkle2019_supplementary_tables.xlsx", 
-                       fullSS=file.path(root,"ad-omics/data/AD_GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt"),
-                       # fullSS_stage2=file.path(root,"ad-omics/data/AD_GWAS/Kunkle_etal_Stage2_results.txt"),
-                       reference="https://www.nature.com/articles/s41588-019-0358-2"),
 
-  # ++++++++ eQTL SUMMARY STATS ++++++++ #
-  ## MESA eQTLs: African Americans
-  "MESA_AFA" = list(type="eQTL",
-                    topSS="Data/eQTL/MESA/AFA_eQTL_PTK2B.txt",
-                    fullSS=file.path(root,"ad-omics/data/mesa/AFA_cis_eqtl_summary_statistics.txt"), 
-                    reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
-  ## MESA eQTLs: Caucasians
-  "MESA_CAU" = list(type="eQTL",
-                    topSS="Data/eQTL/MESA/CAU_eQTL_PTK2B.txt",
-                    fullSS=file.path(root,"ad-omics/data/mesa/CAU_cis_eqtl_summary_statistics.txt"),
-                    reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
-  ## MESA eQTLs: Hispanics
-  "MESA_HIS" = list(type="eQTL",
-                    topSS="Data/eQTL/MESA/HIS_eQTL_PTK2B.txt",
-                    fullSS=file.path(root,"ad-omics/data/mesa/HIS_cis_eqtl_summary_statistics.txt"),
-                    reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa") 
-  )
-
-Data_dirs_table <- Data_dirs_to_table(Data_dirs, writeCSV = "Results/directories_table.csv")
+# MINERVA PATHS TO SUMMARY STATISTICS DATASETS: 
+Data_dirs <- read.csv("./Results/directories_table.csv")
 
 # Direct to local data files if not working on Minerva
 if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
@@ -160,19 +105,20 @@ genes in our PD GWAS loci that contained two or more rare coding variants (MAF< 
 dataset_name <- "Nalls_23andMe"
 
 top_SNPs <- import_topSNPs(
-  file_path = Data_dirs[[dataset_name]]$topSS,
+  file_path = Directory_info(dataset_name, "topSumStats"),
   chrom_col = "CHR", position_col = "BP", snp_col="SNP",
   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
   caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats")
 
-gene_list <- c("LRRK2","SNCA","VPS13C","C5orf24","IP6K2","KCNIP3","GBF1","SCARB2")#, top_SNPs$Gene) %>% unique()
+gene_list <- c("LRRK2")#,"SNCA","VPS13C","C5orf24","IP6K2","KCNIP3","GBF1","SCARB2")#, top_SNPs$Gene) %>% unique()
  
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=gene_list,
-                 file_path= Data_dirs[[dataset_name]]$fullSS, 
+                 # file_path = Directory_info(dataset_name, "fullSumStats"),
+                 file_path ="./Data/Parkinsons/Nalls_23andMe/nallsEtAl2019_allSamples_allVariants.mod.txt",
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
-                 vcf_folder = vcf_folder, superpopulation = "EUR", force_new_subset = force_new_subset, 
-                 min_r2 = 0, LD_block = T, block_size = .15) 
+                 vcf_folder = vcf_folder, superpopulation = "EUR", force_new_subset = F,
+                 LD_block = F, min_r2 = 0.2, min_Dprime = F) 
 #c("LRRK2","SNCA","VPS13C","GCH1"),
 # "GBA","CATSPER3", "LAMB2", "LOC442028", "NFKB2", "SCARB2", "GRN"
 ```
@@ -193,12 +139,12 @@ top_SNPs <- import_topSNPs(
   caption= "Posthuma et al. (2018) AD GWAS Summary Stats")
 
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
-                 file_path=Data_dirs[[dataset_name]]$fullSS,#"Data/Alzheimers/Posthuma_2018/phase3.beta.se.hrc.txt",#
+                 file_path = Directory_info(dataset_name, "fullSumStats"),
+                 #"Data/Alzheimers/Posthuma_2018/phase3.beta.se.hrc.txt",#
                  effect_col = "BETA", stderr_col = "SE", position_col = "BP",
                  snp_col = "SNP", pval_col = "P",
                  vcf_folder = vcf_folder, superpopulation = "EUR",
-                 minPos=NULL, maxPos=27440000, force_new_subset = force_new_subset, 
-                 min_r2 = 0, LD_block = T, block_size = .15)
+                 minPos=NULL, maxPos=27440000, force_new_subset = force_new_subset)
 ```
 
 ## Marioni (2018) {.tabset .tabset-fade .tabset-pills}
@@ -207,19 +153,19 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
 dataset_name <- "Marioni_2018"
 
 top_SNPs <- import_topSNPs(
-  file_path = Data_dirs[[dataset_name]]$topSS,
+  file_path = Directory_info(dataset_name, "topSumStats"),
   sheet = "Table S9",
   chrom_col = "topSNP_chr", position_col = "topSNP_bp", snp_col="topSNP",
   pval_col="p_GWAS", effect_col="b_GWAS", gene_col="Gene",
   caption= "Marioni et al. (2018) AD GWAS Summary Stats")
 
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
-                 file_path=Data_dirs[[dataset_name]]$fullSS,#"Data/Alzheimers/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv", #,
+                 file_path = Directory_info(dataset_name, "fullSumStats"),
+                 #"Data/Alzheimers/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv", #,
                  effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                  snp_col = "SNP",chrom_col = "CHROM", pval_col = "PVAL",
                  vcf_folder = vcf_folder, superpopulation = "EUR",
-                 minPos=NULL, maxPos=NULL, force_new_subset = force_new_subset, 
-                 min_r2 = 0, LD_block = T, block_size = .15)
+                 minPos=NULL, maxPos=NULL, force_new_subset = force_new_subset)
 ```
 
 
@@ -230,7 +176,7 @@ Filtering out the CLU portion of the locus prevents susieR from identifying a cr
 dataset_name <- "Lambert_2013"
 
 top_SNPs <- import_topSNPs(
-  file_path = Data_dirs[[dataset_name]]$topSS,
+  file_path = Directory_info(dataset_name, "topSumStats"),
   sheet = 1,
   chrom_col = "CHR", position_col = "Position", snp_col="SNP",
   pval_col="Overall_P", effect_col="Overall_OR", gene_col="Closest gene",
@@ -238,12 +184,13 @@ top_SNPs <- import_topSNPs(
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
-                   file_path="Data/Alzheimers/Lambert_2013/IGAP_stage_1.1000G.phase3.20130502.tsv",#Data_dirs[[dataset_name]]$fullSS,#
+                   file_path = Directory_info(dataset_name, "fullSumStats"),
+                   # file_path = "Data/Alzheimers/Lambert_2013/IGAP_stage_1.1000G.phase3.20130502.tsv",
+                   #Data_dirs[[dataset_name]]$fullSS,#
                    chrom_col = "CHROM",  pval_col = "PVAL", snp_col = "SNP",
                    effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                    vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR",
-                   minPos=NULL, maxPos=NULL, force_new_subset = force_new_subset, 
-                   min_r2 = 0, LD_block = T, block_size = .15)  
+                   minPos=NULL, maxPos=NULL, force_new_subset = force_new_subset)  
 ```
 
 ## Kunkle (2019) (IGAP) {.tabset .tabset-fade .tabset-pills}
@@ -254,7 +201,7 @@ The CLU-gene technically starts at 8:27456253, but its associated SNPs are furth
 dataset_name <- "Kunkle_2019"
 
 top_SNPs <- import_topSNPs(
-  file_path = Data_dirs[[dataset_name]]$topSS,
+  file_path = Directory_info(dataset_name, "topSumStats"),
   sheet = "Supplementary Table 6",
   chrom_col = "Chr", position_col = "Basepair", snp_col="SNP",
   pval_col="P", effect_col="Beta", gene_col="LOCUS",
@@ -263,12 +210,12 @@ top_SNPs <- import_topSNPs(
 
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),  
                    file_path="Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage1_results.txt",
-                   # file_path = Data_dirs[[dataset_name]]$fullSS,
+                   # file_path = Directory_info(dataset_name, "fullSumStats"),
                    chrom_col = "Chromosome",  position_col = "Position", pval_col = "Pvalue",
                    snp_col = "MarkerName", effect_col = "Beta", stderr_col = "SE",
                    vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR",
                    minPos=NULL, maxPos=NULL, file_sep=" ", force_new_subset = force_new_subset,  
-                   bp_distance = 500000, min_r2 = 0, LD_block = T, block_size = .15)   #maxPos=27440000,
+                   bp_distance = 500000)   #maxPos=27440000,
 ```
 
 # eQTL
@@ -285,9 +232,9 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
 ```{r eQTL: MESA - AFA, results = 'asis', fig.height=8, fig.width=7}
 dataset_name <- "MESA_AFA"
 superpopulation <- "AFA"
-allResults[[dataset_name]] <- finemap_eQTL(superpopulation, gene =  "PTK2B", 
-                                         fullSS_path = Data_dirs[[dataset_name]]$fullSS, 
-                                         force_new_subset = force_new_subset, min_r2 = 0)
+allResults[[dataset_name]] <- finemap_eQTL(superpopulation, gene =  "LRRK2", 
+                                         fullSS_path = Directory_info(dataset_name, "fullSumStats"), 
+                                         force_new_subset = force_new_subset)
 ```
 
 ## MESA - CAU {.tabset .tabset-fade .tabset-pills}
@@ -295,8 +242,8 @@ allResults[[dataset_name]] <- finemap_eQTL(superpopulation, gene =  "PTK2B",
 ```{r eQTL: MESA - CAU, results = 'asis', fig.height=8, fig.width=7}
 dataset_name <- "MESA_CAU"
 superpopulation <- "CAU"
-allResults[[dataset_name]] <- finemap_eQTL(superpopulation, gene = "PTK2B", 
-                                         fullSS_path = Data_dirs[[dataset_name]]$fullSS, 
+allResults[[dataset_name]] <- finemap_eQTL(superpopulation, gene = "LRRK2", 
+                                         fullSS_path = Directory_info(dataset_name, "fullSumStats"), 
                                          force_new_subset = force_new_subset, min_r2 = 0)
 ```
 
@@ -306,8 +253,8 @@ Used the Ad Mixed American (AMR) reference panel given the absence of a Hispanic
 ```{r eQTL: MESA - HIS, results = 'asis', fig.height=8, fig.width=7}
 dataset_name <- "MESA_HIS"
 superpopulation <- "HIS"
-allResults[[dataset_name]] <- finemap_eQTL(superpopulation, gene = "PTK2B", 
-                                       fullSS_path = Data_dirs[[dataset_name]]$fullSS, 
+allResults[[dataset_name]] <- finemap_eQTL(superpopulation, gene = "LRRK2", 
+                                       fullSS_path = Directory_info(dataset_name, "fullSumStats"), 
                                        force_new_subset = force_new_subset, min_r2 = 0)
 ```
 
