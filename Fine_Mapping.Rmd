@@ -113,8 +113,8 @@ top_SNPs <- import_topSNPs(
 gene_list <- c("LRRK2")#,"SNCA","VPS13C","C5orf24","IP6K2","KCNIP3","GBF1","SCARB2")#, top_SNPs$Gene) %>% unique()
  
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=gene_list,
-                 # file_path = Directory_info(dataset_name, "fullSumStats"),
-                 file_path ="./Data/Parkinsons/Nalls_23andMe/nallsEtAl2019_allSamples_allVariants.mod.txt",
+                 file_path = Directory_info(dataset_name, "fullSumStats"),
+                 # file_path ="./Data/Parkinsons/Nalls_23andMe/nallsEtAl2019_allSamples_allVariants.mod.txt",
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
                  vcf_folder = vcf_folder, superpopulation = "EUR", force_new_subset = F,
