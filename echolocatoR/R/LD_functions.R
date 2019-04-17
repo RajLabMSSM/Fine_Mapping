@@ -97,7 +97,7 @@ gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulatio
     tabix_cmd <- paste("tabix -fh",vcf_URL, region, ">", subset_vcf)
     cat(tabix_cmd)
     system(tabix_cmd)
-    vcf_name <- paste(basename(vcf_URL), ".tbi",sep="")
+    vcf_name <- paste(basename(vcf_URL), ".tbi", sep="")
     file.remove(vcf_name)
   }else{cat("Identified matching VCF subset file. Importing...", subset_vcf,"\n")} 
   # Import w/ gaston and further subset
