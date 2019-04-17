@@ -69,7 +69,7 @@ if(getwd()=="/Users/schilder/Desktop/Fine_Mapping"){
   vcf_folder = F#"../1000_Genomes_VCFs/Phase1" # Use previously downloaded files if working on Minerva node
 }  
 
-force_new_subset = F
+force_new_subset = T
 allResults <- list()
 ```
 
@@ -117,7 +117,7 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=gene_list,
                  # file_path ="./Data/Parkinsons/Nalls_23andMe/nallsEtAl2019_allSamples_allVariants.mod.txt",
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
-                 vcf_folder = vcf_folder, superpopulation = "EUR", force_new_subset = F,
+                 vcf_folder = vcf_folder, superpopulation = "EUR", force_new_subset = force_new_subset,
                  LD_block = F, min_r2 = 0.2, min_Dprime = F) 
 #c("LRRK2","SNCA","VPS13C","GCH1"),
 # "GBA","CATSPER3", "LAMB2", "LOC442028", "NFKB2", "SCARB2", "GRN"
