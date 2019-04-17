@@ -132,7 +132,7 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=gene_list,
 dataset_name <- "Posthuma_2018"
 
 top_SNPs <- import_topSNPs(
-  file_path = Data_dirs[[dataset_name]]$topSS,
+  file_path = Directory_info(dataset_name, "topSumStats"),
   sheet = "Table S8",
   chrom_col = "Chr", position_col = "bp", snp_col="SNP",
   pval_col="P", effect_col="Zscore", gene_col="nearestGene",
