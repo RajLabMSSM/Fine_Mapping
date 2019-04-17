@@ -226,15 +226,16 @@ calculate_LD <-function(leadSNP, plink_folder="./plink_tmp", min_r2=0, min_Dprim
     snp_list <-  unique(keep.pairs$SNP_A, keep.pairs$SNP_A)
     ld.matrix <- ld.matrix[row.names(ld.matrix) %in% snp_list, colnames(ld.matrix) %in% snp_list] 
   } 
-  # Apply filters
-  ## Manually remove rare variant
-  # ld.matrix <- ld.matrix[rownames(ld.matrix)!="rs34637584", colnames(ld.matrix)!="rs34637584"]
-  
-  # !IMPORTANT!: Fill NAs (otherwise susieR will break)
-  ld.matrix[is.na(ld.matrix)] <- 0
-  end <- Sys.time()
-  cat("\n++++++++++ LD matrix calculated in",round(as.numeric(end-start),2),"seconds. ++++++++++\n")
-  return(ld.matrix)
+    # Apply filters
+    ## Manually remove rare variant
+    # ld.matrix <- ld.matrix[rownames(ld.matrix)!="rs34637584", colnames(ld.matrix)!="rs34637584"]
+    
+    # !IMPORTANT!: Fill NAs (otherwise susieR will break)
+    ld.matrix[is.na(ld.matrix)] <- 0
+    end <- Sys.time()
+    cat("\n++++++++++ LD matrix calculated in",round(as.numeric(end-start),2),"seconds. ++++++++++\n")
+    return(ld.matrix)
+  }
 }
 
 LD_blocks <- function(plink_folder="./plink_tmp", block_size=.7){
@@ -271,14 +272,11 @@ leadSNP_block <- function(leadSNP, plink_folder="./plink_tmp", block_size=.7){
 }
 
 
-LD_clumping <- function(subset_vcf, subset_SS){ 
-  # PLINK clumping: http://zzz.bwh.harvard.edu/plink/clump.shtml
-  # Convert vcf to .map (beagle)
-  ## https://www.cog-genomics.org/plink/1.9/data
-  system(paste("./echolocatoR/tools/plink1.9 --vcf",subset_vcf,"--recode beagle --out ./plink_tmp/plink"))
-  # Clumping
-  system("./echolocatoR/tools/plink1.9 --file ./plink_tmp/plink.chr-8 --clump",subset_SS,"--out ./plink_tmp")
-}
-# LD_clumping(subset_vcf = "../1000_Genomes_VCFs/Phase1/PTK2B_subset.vcf", 
-#             subset_SS="./Data/Alzheimers/Kunkle_2019/PTK2B_Kunkle_2019_subset.txt")
-
+# LD_clumping <- function(subset_vcf, subset_SS){ 
+#   # PLINK clumping: http://zzz.bwh.harvard.edu/plink/clump.shtml
+#   # Convert vcf to .map (beagle)
+#   ## https://www.cog-genomics.org/plink/1.9/data
+#   system(paste("./echolocatoR/tools/plink1.9 --vcf",subset_vcf,"--recode beagle --out ./plink_tmp/plink"))
+#   # Clumping
+#   system("./echolocatoR/tools/plink1.9 --file ./plink_tmp/plink.chr-8 --clump",subset_SS,"--out ./plink_tmp")
+# }
