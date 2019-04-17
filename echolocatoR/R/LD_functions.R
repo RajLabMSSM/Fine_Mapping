@@ -16,6 +16,19 @@
 # __Haplotype Reference Consortium (HRC)__  on the University of Michigan imputation server under default settings
 # with Eagle v2.3 phasing based on reference panel HRC r1.1 2016"_
 
+plink_file <- function(base_url="./echolocatoR/tools"){
+  os <- get_os()
+  if (os=="osx") { 
+    plink_version <- file.path(base_url, "plink1.9_mac");
+  } else if  (os=="linux") {
+    plink_version <- file.path(base_url, "plink1.9_linux");
+  } else {
+    plink_version <- file.path(base_url, "plink1.9_windows.exe");
+  }
+  return(plink_version)
+} 
+# plink_file()
+
 download_all_vcfs <- function(vcf_folder="../1000_Genomes_VCFs"){
   # PHASE 3 DATA
   path3 <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/"
@@ -164,7 +177,7 @@ gaston_LD <- function(flankingSNPs, gene, reference="1KG_Phase1", superpopulatio
 # LD_matrix <- gaston_LD(flankingSNPs)
 
 Dprime_table <- function(SNP_list, plink_folder="./plink_tmp"){
-  system( paste("./echolocatoR/tools/plink1.9 --bfile",file.path(plink_folder,"matrix"),"--ld-snps", paste(SNP_list, collapse=" "),
+  system( paste(plink_file(), "--bfile",file.path(plink_folder,"matrix"),"--ld-snps", paste(SNP_list, collapse=" "),
                 "--r dprime-signed --ld-window 10000000 --ld-window-kb 10000000 --out",file.path(plink_folder,"plink")) ) 
   #--ld-window-r2 0
   plink.ld <- data.table::fread(file.path(plink_folder, "plink.ld"), select = c("SNP_A", "SNP_B","DP","R"))
@@ -193,7 +206,7 @@ complex_LD <- function(bim, plink_folder="./plink_tmp", min_Dprime=F){
 
 simple_LD <-function(bim, plink_folder="./plink_tmp"){
   # METHOD 2 (faster, but less control over parameters. Most importantly, can't get Dprime)
-  system( paste("./echolocatoR/tools/plink1.9 --bfile",file.path(plink_folder,"matrix"),
+  system( paste(plink_file(), "--bfile",file.path(plink_folder,"matrix"),
                 "--extract",file.path(plink_folder,"SNPs.txt"),
                 "--r square bin --out", file.path(plink_folder,"plink")) )
   bin.vector <- readBin(file.path(plink_folder, "plink.ld.bin"), what = "numeric", n=length(bim$SNP)^2)
@@ -242,21 +255,21 @@ LD_blocks <- function(plink_folder="./plink_tmp", block_size=.7){
   cat("\n++++++++++ Calculating LD blocks... ++++++++++\n")
   # PLINK 1.07 LD: http://zzz.bwh.harvard.edu/plink/ld.shtml
   # PLINK 1.9 LD: https://www.cog-genomics.org/plink/1.9/ld
-  # system("./echolocatoR/tools/plink1.9 -h")
+  # system(plink_file(), "-h")
   # Identify duplicate snps
-  # system("./echolocatoR/tools/plink1.9 --vcf subset.vcf --list-duplicate-vars")
+  # system(plink_file(), "--vcf subset.vcf --list-duplicate-vars")
   # Convert vcf to plink format
-  # system("./echolocatoR/tools/plink1.9 --vcf subset.vcf --exclude ./plink_tmp/plink.dupvar --make-bed --out PTK2B")
+  # system(plink_file(), "--vcf subset.vcf --exclude ./plink_tmp/plink.dupvar --make-bed --out PTK2B")
   
   # Estimate LD blocks
   # Defaults: --blocks-strong-lowci = 0.70, --blocks-strong-highci .90
   
   # Reucing "--blocks-inform-frac" is the only parameter that seems to make the block sizes larger
-  system( paste("./echolocatoR/tools/plink1.9 --bfile",file.path(plink_folder,"matrix"),
+  system( paste(plink_file(), "--bfile",file.path(plink_folder,"matrix"),
                 "--blocks no-pheno-req no-small-max-span --blocks-max-kb 100000",
                 # "--blocks-strong-lowci .52 --blocks-strong-highci 1",
                 "--blocks-inform-frac",block_size," --blocks-min-maf 0 --out",file.path(plink_folder,"plink")) )
-  # system( paste("./echolocatoR/tools/plink1.9 --bfile plink --ld-snp-list snp_list.txt --r") )
+  # system( paste(plink_file(), "--bfile plink --ld-snp-list snp_list.txt --r") )
   blocks <- data.table::fread("./plink_tmp/plink.blocks.det") 
   return(blocks)
 }
@@ -276,7 +289,7 @@ leadSNP_block <- function(leadSNP, plink_folder="./plink_tmp", block_size=.7){
 #   # PLINK clumping: http://zzz.bwh.harvard.edu/plink/clump.shtml
 #   # Convert vcf to .map (beagle)
 #   ## https://www.cog-genomics.org/plink/1.9/data
-#   system(paste("./echolocatoR/tools/plink1.9 --vcf",subset_vcf,"--recode beagle --out ./plink_tmp/plink"))
+#   system(paste(plink_file(), "--vcf",subset_vcf,"--recode beagle --out ./plink_tmp/plink"))
 #   # Clumping
-#   system("./echolocatoR/tools/plink1.9 --file ./plink_tmp/plink.chr-8 --clump",subset_SS,"--out ./plink_tmp")
+#   system(plink_file(), "--file ./plink_tmp/plink.chr-8 --clump",subset_SS,"--out ./plink_tmp")
 # }

@@ -65,6 +65,35 @@ source("./echolocatoR/R/query_functions.R")
 source("./echolocatoR/R/LD_functions.R")
 source("./echolocatoR/R/plot_functions.R")
 
+get_os <- function(){
+  sysinf <- Sys.info()
+  if (!is.null(sysinf)){
+    os <- sysinf['sysname']
+    if (os == 'Darwin')
+      os <- "osx"
+  } else { ## mystery machine
+    os <- .Platform$OS.type
+    if (grepl("^darwin", R.version$os))
+      os <- "osx"
+    if (grepl("linux-gnu", R.version$os))
+      os <- "linux"
+  }
+  tolower(os)
+}
+# get_os() 
+  
+
+  
+  # Create vector quantity
+  quantity <-  25
+  # Set the is-else statement
+  if (quantity > 20) {
+    print('You sold a lot!')
+  } else {
+    print('Not enough for today')  
+  }
+  
+
 # quick_start
 quickstart <- function(){ 
   # Assign global variables to test functions
