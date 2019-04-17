@@ -190,7 +190,7 @@ susie_on_gene <- function(gene, top_SNPs,
                           pval_col="P", effect_col="Effect", stderr_col="StdErr",
                           LD_reference="1KG_Phase1", superpopulation="EUR", vcf_folder=F,
                           minPos=NULL, maxPos=NULL, file_sep="\t", 
-                          min_r2=0, LD_block=F, block_size=.7, min_Dprime=NULL){ 
+                          min_r2=0, LD_block=F, block_size=.7, min_Dprime=F){ 
    cat("\n + Extracting SNPs flanking lead SNP... \n")
    flankingSNPs <- get_flanking_SNPs(gene=gene, top_SNPs=top_SNPs, bp_distance=bp_distance, file_path=file_path,
                                       chrom_col=chrom_col, position_col=position_col, snp_col=snp_col,
@@ -294,7 +294,7 @@ finemap_geneList <- function(top_SNPs, geneList, file_path,
                              LD_reference="1KG_Phase1", superpopulation="EUR",
                              topVariants=3,vcf_folder=F, 
                              minPos=NULL, maxPos=NULL, file_sep="\t", force_new_subset=T,
-                             min_r2=0, LD_block=F, block_size=.7, min_Dprime=NULL){ 
+                             min_r2=0, LD_block=F, block_size=.7, min_Dprime=F){ 
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
   for (gene in geneList){
@@ -361,7 +361,7 @@ finemap_eQTL <- function(superpopulation, gene, fullSS_path, num_causal=1,
                          chrom_col = "chr", position_col = "pos_snps", snp_col="snps",
                          pval_col="pvalue", effect_col="beta", gene_col="gene_name", stderr_col = "calculate",
                          force_new_subset=T, 
-                         min_r2=0, LD_block=F, block_size=.7, min_Dprime=NULL){ 
+                         min_r2=0, LD_block=F, block_size=.7, min_Dprime=F){ 
   superpop <- translate_population(superpopulation)
   subset_path <- paste("./Data/eQTL/MESA/",gene,"_",superpop,"_subset.txt",sep="") 
   subset_eQTL_SS(fullSS_path=fullSS_path,
