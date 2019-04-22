@@ -180,29 +180,38 @@ Dprime_table <- function(SNP_list, plink_folder="./plink_tmp"){
   system( paste(plink_file(), "--bfile",file.path(plink_folder,"matrix"),"--ld-snps", paste(SNP_list, collapse=" "),
                 "--r dprime-signed --ld-window 10000000 --ld-window-kb 10000000 --out",file.path(plink_folder,"plink")) ) 
   #--ld-window-r2 0
-  plink.ld <- data.table::fread(file.path(plink_folder, "plink.ld"), select = c("SNP_A", "SNP_B","DP","R"))
-  plink.ld$R2 <- plink.ld$R^2
-  # plink.ld <- plink.ld[complete.cases(plink.ld) ] 
+  
+  # # Awk method: theoretically faster?
+  # if(min_Dprime==F){Dprime = -1}else{Dprime=min_Dprime}
+  # if(min_r2==F){r = -1}else{r = round(sqrt(min_r2),2) } 
+  # columns <- data.table::fread(file.path(plink_folder, "plink.ld"), nrows = 0) %>% colnames()
+  # col_dict <- setNames(1:length(columns), columns) 
+  # awk_cmd <- paste("awk -F \"\t\" 'NR==1{print $0}{ if(($",col_dict["DP"]," >= ",Dprime,")",
+  #                  " && ($",col_dict["R"]," >= ",r,")) { print } }' ",file.path(plink_folder, "plink.ld"),
+  #                  " > ",file.path(plink_folder, "plink.ld_filtered.txt"),  sep="")
+  # system(awk_cmd)
+  plink.ld <- data.table::fread(file.path(plink_folder, "plink.ld"), select = c("SNP_A", "SNP_B","DP","R"), )
+  plink.ld <- plink.ld[complete.cases(plink.ld) ]
   return(plink.ld)
 }
 
-complex_LD <- function(bim, plink_folder="./plink_tmp", min_Dprime=F){
-  # METHOD 1
-  plink.ld <- Dprime_table(bim)
-  # Filter NaNs
-  plink.ld <- plink.ld[!is.nan(plink.ld$DP),]
-  plink.ld <- plink.ld[!is.nan(plink.ld$R),]
-  
-  if(min_Dprime!=F){
-    cat("\n++++++++++ Filtering by DPrime ++++++++++\n")
-    plink.ld <- subset(plink.ld, DP>=min_Dprime)
-  }
-  ld.matrix <- data.table::dcast.data.table(plink.ld, formula = SNP_B ~ SNP_A, value.var="R",
-                                            fill=0, drop=F, fun.aggregate = mean)
-  ld.matrix <-  data.frame(ld.matrix, row.names = ld.matrix$SNP_B) %>% subset(select = -SNP_B) %>% 
-    data.table() %>% as.matrix()
-  return(ld.matrix)
-}
+# complex_LD <- function(bim, plink_folder="./plink_tmp", min_Dprime=F){
+#   # METHOD 1
+#   plink.ld <- Dprime_table(bim)
+#   # Filter NaNs
+#   plink.ld <- plink.ld[!is.nan(plink.ld$DP),]
+#   plink.ld <- plink.ld[!is.nan(plink.ld$R),]
+#   
+#   if(min_Dprime!=F){
+#     cat("\n++++++++++ Filtering by DPrime ++++++++++\n")
+#     plink.ld <- subset(plink.ld, DP>=min_Dprime)
+#   }
+#   ld.matrix <- data.table::dcast.data.table(plink.ld, formula = SNP_B ~ SNP_A, value.var="R",
+#                                             fill=0, drop=F, fun.aggregate = mean)
+#   ld.matrix <-  data.frame(ld.matrix, row.names = ld.matrix$SNP_B) %>% subset(select = -SNP_B) %>% 
+#     data.table() %>% as.matrix()
+#   return(ld.matrix)
+# }
 
 simple_LD <-function(bim, plink_folder="./plink_tmp"){
   # METHOD 2 (faster, but less control over parameters. Most importantly, can't get Dprime)
@@ -226,29 +235,28 @@ calculate_LD <-function(leadSNP, plink_folder="./plink_tmp", min_r2=0, min_Dprim
   cat("\n++++++++++ Calculating LD ++++++++++\n")
   ld.matrix <- simple_LD(bim, plink_folder)
   
-  if((min_Dprime != F) | (min_r2!=0) ){ 
-    plink.ld <- Dprime_table(SNP_list = row.names(ld.matrix), plink_folder) 
-    keep.pairs <- plink.ld
+  if((min_Dprime != F) | (min_r2!=F) ){ 
+    plink.ld <- Dprime_table(SNP_list = row.names(ld.matrix), plink_folder)  
     # DPrime filter
     if(min_Dprime != F){
-      keep.pairs <- subset(removed.pairs, (SNP_A==leadSNP & DP>=min_Dprime) | (SNP_B==leadSNP & DP>=min_Dprime))
+      plink.ld <- subset(plink.ld, (SNP_A==leadSNP & DP>=min_Dprime) | (SNP_B==leadSNP & DP>=min_Dprime))
     }
     # R2 filter
-    if(min_r2!=0){
-      keep.pairs <- subset(plink.ld, (SNP_A==leadSNP & R2>=min_r2) | (SNP_B==leadSNP & R2>=min_r2))  
-    snp_list <-  unique(keep.pairs$SNP_A, keep.pairs$SNP_A)
-    ld.matrix <- ld.matrix[row.names(ld.matrix) %in% snp_list, colnames(ld.matrix) %in% snp_list] 
-  } 
+    if(min_r2!=F){
+      r = sqrt(min_r2)
+      plink.ld <- subset(plink.ld, (SNP_A==leadSNP & R>=r) | (SNP_B==leadSNP & R>=r))   
+    } 
     # Apply filters
+    snp_list <-  unique(plink.ld$SNP_A, plink.ld$SNP_A)
+    ld.matrix <- ld.matrix[row.names(ld.matrix) %in% snp_list, colnames(ld.matrix) %in% snp_list] 
     ## Manually remove rare variant
     # ld.matrix <- ld.matrix[rownames(ld.matrix)!="rs34637584", colnames(ld.matrix)!="rs34637584"]
-    
+    }
     # !IMPORTANT!: Fill NAs (otherwise susieR will break)
     ld.matrix[is.na(ld.matrix)] <- 0
     end <- Sys.time()
     cat("\n++++++++++ LD matrix calculated in",round(as.numeric(end-start),2),"seconds. ++++++++++\n")
-    return(ld.matrix)
-  }
+    return(ld.matrix) 
 }
 
 LD_blocks <- function(plink_folder="./plink_tmp", block_size=.7){

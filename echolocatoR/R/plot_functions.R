@@ -44,7 +44,7 @@ before_after_plots <- function(gene, susieDF, before_var="P"){
     scale_x_continuous(breaks = roundBreaks)
   
   ## After fine-mapping
-  yLimits2 <- c(min(susieDF$PIP), max(susieDF$PIP)*1.1)
+  yLimits2 <- c(0, max(susieDF$PIP)*1.1)
   
   after_plot <- ggplot(susieDF, aes(x=POS, y=PIP, label=SNP, color= -log10(P) )) +
     # ylim(yLimits) +

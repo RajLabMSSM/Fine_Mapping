@@ -1,47 +1,6 @@
 # %%%%%%%%%%%%%%%%% #
-####### QUERY ####### 
+####### QUERY #######
 # %%%%%%%%%%%%%%%%% #
-
-
-
-# Data Preprocessing
-biomart_snps_to_geneInfo <- function(snp_list){
-  # listMarts()
-  snp_mart = useMart("ENSEMBL_MART_SNP", dataset="hsapiens_snp")
-  # View(listFilters(snp_mart))
-  # View(listAttributes(snp_mart))
-  snp_results <- getBM(snp_mart, filters="snp_filter", values=snp_list,
-                       attributes=c("refsnp_id","snp","chr_name", "chrom_start","chrom_end",
-                                    "associated_gene","ensembl_gene_stable_id" ) )
-  # # Split ensembl IDs
-  gene_mart = useMart("ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl")
-  gene_results <- getBM(mart = gene_mart, filters = "ensembl_gene_id",
-                        # values = unlist(strsplit(snp_results$ensembl, ";")),
-                        values = snp_results$ensembl_gene_stable_id,
-                        attributes = c("hgnc_symbol","external_gene_name","ensembl_gene_id",
-                                       "chromosome_name", "start_position", "end_position") )
-  snp_results <-snp_results %>%
-    mutate(ensembl = strsplit(as.character(ensembl_gene_stable_id), ";")) %>%
-    tidyr::unnest(ensembl)
-  merged_df <- data.table(gene_results, key = "ensembl_gene_id")[data.table(snp_results, key = "ensembl")]
-  return(merged_df)
-}
-# biomart_snps_to_geneInfo(c("rs114360492"))
-
-biomart_geneInfo <- function(geneList){
-  # listDatasets(useMart("ENSEMBL_MART_ENSEMBL") )
-  gene_mart = useMart("ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl")
-  # View(listFilters(gene_mart))
-  # View(listAttributes(gene_mart))
-  gene_results <- getBM(mart = gene_mart, filters = "hgnc_symbol",
-                        # values = unlist(strsplit(snp_results$ensembl, ";")),
-                        values = geneList,
-                        attributes = c("hgnc_symbol","external_gene_name","ensembl_gene_id",
-                                       "chromosome_name", "start_position", "end_position") )
-  return(gene_results)
-}
-# biomart_geneInfo(c("PTK2B","CLU","APOE"))
-
 
 ## Import Sig GWAS/QTL Summary Statistics
 # For each gene, get the position of top SNP (the one with the greatest effect size/Beta)
@@ -57,7 +16,7 @@ import_topSNPs <- function(file_path, caption="", sheet = 1,
   else if (endsWith(file_path, ".txt")){
     top_SNPs <- fread(file=file_path, sep = "\t", header = T, stringsAsFactors = F )
   } else {print("File type must be .xlsx, .cs, or tab-delimited .txt")}
-  
+
   top_SNPs <- subset(top_SNPs, select=c(chrom_col, position_col, snp_col,
                                         pval_col, effect_col, gene_col ))
   # Standardize names
@@ -78,132 +37,194 @@ import_topSNPs <- function(file_path, caption="", sheet = 1,
 #   caption= "Nalls et al. (2018) PD GWAS Summary Stats")
 
 
-# import info from FUMA instead
-
-import_FUMA <- function(topSS_path, geneList, file_subset){
-  # topSS_path = Data_dirs$Kunkle_2019$topSS
-  # risk_loci <- fread(file.path(dirname(topSS_path), "FUMA/GenomicRiskLoci.txt"))
-  # mapped_genes <- fread(file.path(dirname(topSS_path), "FUMA/magma.genes.out"))
-  annovar <- fread(file.path(dirname(topSS_path), "FUMA/annov.txt")) 
-  annovar_sub <- subset(annovar, symbol %in% geneList)
-  
-  mapped_genes_sub <- subset(mapped_genes, SYMBOL %in% geneList)
-  
-  # Get gene range directly from biomart, then query for snps in that range
-  geneSNPs <- function(gene, file_path,
-                       chrom_col="CHR", position_col="POS", snp_col="SNP",
-                       pval_col="P", effect_col="Effect", stderr_col="StdErr", sep="\t"){ 
-    # bm <- biomart_geneInfo(gene)
-    gene_start <- min(annovar_sub$pos)
-    gene_end <- max(annovar_sub$pos)
-    gene_chr <- unique(annovar_sub$chr)[1]
-    
-    colDict <- column_dictionary(file_path)
-    superpop <- translate_population(superpopulation) 
-    dataset_name <- get_dataset_name(file_path)
-    file_subset <- paste(dirname(file_path),"/",gene,"_",dataset_name,"_subset.txt",sep="") 
-    awk_cmd <- paste("awk -F \"",sep,"\" 'NR==1{print $0}{ if(($",colDict[chrom_col]," == ",gene_chr,")",
-                     " && ($",colDict[position_col]," >= ",gene_start," && $",colDict[position_col]," <= ",gene_end,")) { print } }' ",file_path,
-                     " > ",file_subset,sep="")
-    system(awk_cmd)
-  } 
-}
-
-
-
 ## Get Flanking SNPs
-
 # Get all genes surrounding the index SNP (default is 500kb upstream + 500kb downstream)
 # 1000000 bp
-
 column_dictionary <- function(file_path){
   # Get the index of each column name
-  f <- fread(file_path, nrows = 2)
+  f <- fread(file_path, nrows = 0, header = T)
   cNames <- colnames(f)
   colDict <- setNames(1:length(cNames), cNames  )
   return(colDict)
 }
 
-new_colNames <- function(file_path, chrom_col, position_col, snp_col,
-                         pval_col, effect_col, stderr_col){
-  f <- fread(file_path, nrows = 1)
-  new_cNames <- f %>% dplyr::rename(CHR=chrom_col,POS=position_col, SNP=snp_col,
-                                    P=pval_col, Effect=effect_col, StdErr=stderr_col) %>% colnames()
-  return(paste0( paste0(new_cNames, collapse="\t"), "\n",sep="") )
+
+
+
+auto_topSNPs_sub <- function(top_SNPs, query, gene){
+  # If no top_SNPs dataframe is supplied,
+  ## this function will sort by p-value and then effect size,
+  ## and use the SNP in the first row.
+  if(toString(top_SNPs)=="auto"){
+    top_SNPs <- query %>% mutate(Gene=gene) %>%
+      arrange(P, desc(Effect)) %>% group_by(Gene) %>% slice(1)
+  }
+  topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),][1,]
+  return(topSNP_sub)
 }
 
-preprocess_subset <- function(topSNP_sub, file_subset, file_sep,
-                              chrom_col, position_col, snp_col,
-                              pval_col, effect_col, stderr_col){
-  
-  query <- fread(file_subset, header=T, stringsAsFactors = F, sep = file_sep) %>% 
-    subset(select=c(chrom_col,position_col, snp_col, pval_col, effect_col, stderr_col)) %>% 
-    dplyr::rename(CHR=chrom_col,POS=position_col, SNP=snp_col, P=pval_col, Effect=effect_col, StdErr=stderr_col) %>%
-    mutate(Location=paste(CHR,":",POS,sep=""))
-  ## Remove SNPs with NAs in stats
-  query[(query$P<=0)|(query$P>1),"P"] <- 1
-  # Get just one SNP per location (just pick the first one)
-  query <- query %>% group_by(Location) %>% slice(1)
-  # Mark lead SNP
-  query$leadSNP <- ifelse(query$SNP==topSNP_sub$SNP, T, F)
-  # Only convert to numeric AFTER removing NAs (otherwise as.numeric will turn them into 0s)
-  query <- query  %>%
-    mutate(Effect=as.numeric(Effect), StdErr=as.numeric(StdErr), P=as.numeric(P)) 
-  # Calculate StdErr 
-  if(dim(query)[1]==0){ 
-    file.remove(file_subset)
-    stop("\n Could not find any rows in full data that matched query :(") 
-  }else{  
+preprocess_subset <- function(gene, top_SNPs, subset_path, file_sep,
+                              chrom_col="CHR", position_col="POS", snp_col="SNP",
+                              pval_col="P", effect_col="Effect", stderr_col="StdErr",
+                              tstat_col="t-stat", return_dt=T){
+  cat("\n Preprocessing SNP subset... \n")
+  query_check <- data.table::fread(subset_path, sep=file_sep, nrows = 2)
+
+  if(dim(query_check)[1]==0){
+    file.remove(subset_path)
+    stop("\n Could not find any rows in full data that matched query :(")
+  } else{
+    query <- data.table::fread(subset_path, header=T, stringsAsFactors = F, sep = file_sep)
     if(stderr_col=="calculate"){
       cat("Calculating Standard Error...\n")
-      query$StdErr <- subset(query, select=effect_col) / subset(query, select="statistic")
-      stderr_col="StdErr"
-    } 
-    fwrite(query, file_subset, sep = "\t")
-    return(query)
+      query <- data.table::fread(subset_path, header=T, stringsAsFactors = F, sep = file_sep)
+      # Calculate StdErr
+      query$StdErr <- subset(query, select=effect_col) / subset(query, select=tstat_col)
+      stderr_col <- "StdErr"
+    }
+    query <- query %>% subset(select=c(chrom_col,position_col, snp_col, pval_col, effect_col, stderr_col)) %>%
+      dplyr::rename(CHR=chrom_col,POS=position_col, SNP=snp_col, P=pval_col, Effect=effect_col, StdErr=stderr_col) %>%
+      mutate(Location=paste(CHR,":",POS,sep=""))
+
+    topSNP_sub <- auto_topSNPs_sub(top_SNPs, query, gene)
+
+    ## Remove SNPs with NAs in stats
+    query[(query$P<=0)|(query$P>1),"P"] <- 1
+    # Get just one SNP per location (just pick the first one)
+    query <- query %>% group_by(Location) %>% slice(1)
+    # Mark lead SNP
+    query$leadSNP <- ifelse(query$SNP==topSNP_sub$SNP, T, F)
+    # Only convert to numeric AFTER removing NAs (otherwise as.numeric will turn them into 0s)
+    query <- query  %>%
+      mutate(Effect=as.numeric(Effect), StdErr=as.numeric(StdErr), P=as.numeric(P))
+
+    data.table::fwrite(query, subset_path, sep = "\t")
+    if(return_dt==T){return(query)}
   }
 }
 
-get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
-                              chrom_col="CHR", position_col="POS", snp_col="SNP",
-                              pval_col="P", effect_col="Effect", stderr_col="StdErr", superpopulation="",
-                              minPos=NULL, maxPos=NULL, file_sep="\t"){
-  colDict <- column_dictionary(file_path)
-  if(gene %in% top_SNPs$Gene==F){
-    cat("----- Could not find gene '",gene,"' in topSNPs dataframe. Try a different gene name. ----- \n" )
-  }else{
-    topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),] #[1,]
-    if(is.null(minPos)){minPos <- as.numeric(topSNP_sub$POS) - bp_distance}
-    if(is.null(maxPos)){maxPos <- as.numeric(topSNP_sub$POS) + bp_distance} 
-    cat("---Min snp position:",minPos, "---\n")
-    cat("---Max snp position:",maxPos, "---\n")
-    # Specify subset file name 
-    dataset_name <- get_dataset_name(file_path)
-    file_subset <- paste(dirname(file_path),"/",gene,"_",dataset_name,"_subset.txt",sep="") 
-    if(file.exists(file_subset)){
-      query <- fread(file_subset, header=T, stringsAsFactors = F, sep = "\t")
-      cat("Subset file already exists. Importing",file_subset,"...\n")
-    } else {
-      # Extract subset with awk
-      cat("Extracting relevant variants from fullSS...\n")
-      start <- Sys.time()
-      # new_colNames(file_path, chrom_col, position_col, snp_col, pval_col, effect_col, stderr_col)
-      awk_cmd <- paste("awk -F \"",file_sep,"\" 'NR==1{print $0}{ if(($",colDict[chrom_col]," == ",topSNP_sub$CHR,")",
-                       " && ($",colDict[position_col]," >= ",minPos," && $",colDict[position_col]," <= ",maxPos,")) { print } }' ",file_path,
-                       " > ",file_subset,sep="")
-      cat("\n",awk_cmd) 
-      system(awk_cmd)
-      # Clean file
-      query <- preprocess_subset(topSNP_sub ,file_subset, file_sep, 
-                                 chrom_col, position_col, snp_col,
-                                 pval_col, effect_col, stderr_col)
-      end <- Sys.time()
-      cat("\nExtraction completed in", round(end-start, 2),"seconds \n")
-    } 
-    return(query)
+
+query_by_coordinates <- function(top_SNPs, gene, subset_path, fullSS_path,
+                                 file_sep, chrom_col, position_col,
+                                 minPos, maxPos, bp_distance){
+  topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),]
+  if(is.null(minPos)){minPos <- topSNP_sub$POS - bp_distance}
+  if(is.null(maxPos)){maxPos <- topSNP_sub$POS + bp_distance}
+  cat("---Min snp position:",minPos, "---\n")
+  cat("---Max snp position:",maxPos, "---\n")
+  colDict <- column_dictionary(fullSS_path)
+  awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1 {print $0} NR>1 { if($",colDict[[chrom_col]]," == ",topSNP_sub$CHR,
+                   " && ($", colDict[[position_col]]," >= ",minPos," && $",colDict[[position_col]]," <= ",maxPos,")) {print $0} }' ",fullSS_path,
+                   " > ",subset_path,sep="")
+  cat("\n",awk_cmd,"\n")
+  system(awk_cmd)
+}
+
+query_by_coordinates_merged <- function(top_SNPs, fullSS_path, subset_path, gene,
+                                        chrom_col, file_sep=" ", location_sep=":",
+                                        minPos, maxPos, bp_distance){
+  topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),][1,]
+  if(is.null(minPos)){minPos <- topSNP_sub$POS - bp_distance}
+  if(is.null(maxPos)){maxPos <- topSNP_sub$POS + bp_distance}
+  cat("---Min snp position:",minPos, "---\n")
+  cat("---Max snp position:",maxPos, "---\n")
+  colDict <- column_dictionary(fullSS_path)
+  awk_cmd <- paste("cat ",fullSS_path," | tr -s '",location_sep,"' '",file_sep,"'",
+                   " | awk -F '",file_sep,"' 'NR==1 {print \"CHR POS \" $2\" \" $3\" \" $4\" \" $5\" \" $6 }",
+                   " NR>1 {if($",colDict[[chrom_col]]," == ",topSNP_sub$CHR," && ",
+                   "($",colDict[[chrom_col]]+1," >=",minPos,"&& $",colDict[[chrom_col]]+1," <=",maxPos,")) {print $0}}'",
+                   " | tr -s '",location_sep,"' '\t' > ",subset_path, sep="")
+  # awk_cmd <- paste("cat ",fullSS_path," | tr -s '",location_sep,"' '",file_sep,"'",
+  #                  " | awk -F '",file_sep,"' 'NR==1 {print \"CHR POS \" $2\" \" $3\" \" $4\" \" $5\" \" $6 }",
+  #                  " NR>1 {if($1 == 1 && ($2 >=",minPos,"&& $2 <=",maxPos,")) {print $0}}'",
+  #                  " | tr -s '",location_sep,"' '\t' > ",subset_path, sep="")
+  cat("\n",awk_cmd,"\n")
+  system(awk_cmd)
+}
+
+query_by_gene <- function(fullSS_path, subset_path, gene, gene_col, file_sep){
+  colDict <- column_dictionary(fullSS_path)
+  awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1{print $0} $",colDict[[gene_col]]," == \"",gene,"\" {print $0}' ",fullSS_path,
+                   "| tr -s '",file_sep,"' '\t'  > ",subset_path, sep="")
+  cat("\n",awk_cmd,"\n")
+  system(awk_cmd)
+}
+
+
+
+query_handler <- function(gene, fullSS_path, top_SNPs, subset_path="auto", #top_SNPs="auto",
+                          gene_col="Gene", minPos=NULL, maxPos=NULL, bp_distance=500000,
+                          chrom_col="CHR", position_col="POS", file_sep="\t",
+                          query_by="coordinates"){
+  cat("\n ++ Query Method: '",query_by,"'\n", sep="")
+  if(query_by=="coordinates"){
+    query_by_coordinates(top_SNPs=top_SNPs, gene=gene,
+                         subset_path=subset_path, fullSS_path=fullSS_path,
+                         chrom_col=chrom_col, position_col=position_col,
+                         minPos=minPos, maxPos=maxPos, bp_distance=bp_distance,
+                         file_sep=file_sep)
   }
-} 
-# flankingSNPs <- get_flanking_SNPs(gene="PTK2B", top_SNPs,
+  if(query_by=="coordinates_merged"){
+    query_by_coordinates_merged(top_SNPs=top_SNPs, fullSS_path=fullSS_path, subset_path=subset_path,
+                                file_sep=file_sep,  gene=gene, location_sep= ":",
+                                minPos=minPos, maxPos=maxPos, bp_distance=bp_distance,
+                                chrom_col=chrom_col)
+  }
+  if(query_by=="gene"){
+    query_by_gene(fullSS_path=fullSS_path, subset_path=subset_path,
+                  gene=gene, gene_col=gene_col, file_sep=file_sep)
+  }
+
+}
+
+
+check_if_empty <- function(file_path, file_sep="\t"){
+  rowCheck <- dim(data.table::fread(file_path, nrows = 2, sep = file_sep))[1]
+  if(rowCheck==0){
+    stop("\n No SNPs identified within the summary stats file that met your criterion. :o \n")
+  } else {cat("\n Subset file looks good! :)")}
+}
+
+
+
+
+extract_SNP_subset <- function(gene, fullSS_path, subset_path="auto", top_SNPs="auto", bp_distance=500000,
+                               chrom_col="CHR", position_col="POS", snp_col="SNP", gene_col="Gene",
+                               pval_col="P", effect_col="Effect", stderr_col="StdErr",
+                               tstat_col="t-stat", superpopulation="",
+                               minPos=NULL, maxPos=NULL, file_sep="\t",
+                               query_by="coordinates"){
+  # topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),][1,]
+  # if(is.null(minPos)){minPos <- topSNP_sub$POS - bp_distance}
+  # if(is.null(maxPos)){maxPos <- topSNP_sub$POS + bp_distance}
+  # cat("---Min snp position:",minPos, "---\n")
+  # cat("---Max snp position:",maxPos, "---\n")
+  if(file.exists(subset_path)){
+    cat("\ Subset file already exists. Importing",subset_path,"...\n")
+    check_if_empty(subset_path, file_sep=file_sep)
+    query <- data.table::fread(subset_path, header=T, stringsAsFactors=F, sep="\t")
+  } else {
+    # Extract subset with awk
+    cat("Extracting relevant variants from fullSS...\n")
+    start_query <- Sys.time()
+    # Function selects different methods of querying your SNPs
+    query_handler(gene=gene, fullSS_path=fullSS_path, subset_path=subset_path, top_SNPs=top_SNPs,
+                  gene_col=gene_col, chrom_col=chrom_col, position_col=position_col,
+                  file_sep=file_sep, minPos=minPos, maxPos=maxPos, bp_distance=bp_distance,
+                  query_by=query_by)
+    # query_by_coordinates(topSNP_sub, subset_path,fullSS_path, file_sep, chrom_col, position_col, minPos, maxPos)
+    # Clean file
+    query <- preprocess_subset(gene=gene, top_SNPs=top_SNPs, subset_path=subset_path,
+                               file_sep=file_sep, chrom_col=chrom_col,
+                               position_col=position_col, snp_col=snp_col,pval_col=pval_col,
+                               effect_col=effect_col, stderr_col=stderr_col,
+                               tstat_col=tstat_col)
+    end_query <- Sys.time()
+    cat("\nExtraction completed in", round(end_query-start_query, 2),"seconds \n")
+  }
+  return(query)
+}
+# flankingSNPs <- extract_SNP_subset(gene="PTK2B", top_SNPs,
 #                                   file_path = Data_dirs$MESA_CAU$topSS,
 #                                   chrom_col = "chr",  pval_col = "pvalue", snp_col = "snps",
 #                                   effect_col = "beta", position_col = "pos_snps",
@@ -266,3 +287,137 @@ get_flanking_SNPs <- function(gene, top_SNPs, bp_distance=500000, file_path,
 #   cat(awk_cmd)
 #   system(awk_cmd)
 # }
+
+
+
+############ QTL ############
+# Subset eQTL data to just the parts you need
+subset_eQTL_SS <- function(fullSS_path, subset_path, gene,
+                           gene_col="Gene", chrom_col="CHR", position_col="POS",
+                           snp_col="SNP", pval_col="P", effect_col="Effect",
+                           bp_distance=500000, file_sep="\t",
+                           force_new_subset=T){
+  start_eQTL_sub <- Sys.time()
+
+  if(file.exists(subset_path) & force_new_subset==F){
+    cat("Subset file already exists. Importing",subset_path,"...\n")
+    check_if_empty(subset_path)
+    # Extract lead SNPs per gene from subset data, using the subset SS as a reference file
+    top_SNPs <- data.table::fread(subset_path) %>% mutate(Gene=gene) %>%
+      arrange(P, desc(Effect)) %>% group_by(Gene) %>% slice(1)
+  } else {
+    colDict <- column_dictionary(fullSS_path)
+    # Extract subset with awk
+    cat("Extracting relevant variants from fullSS...\n")
+    if(chrom_col==position_col){
+      # Automatically detect when the chrom and position cols are merged into one and parse accordingly
+      query_by_location(fullSS_path = fullSS_path, file_sep = file_sep, location_sep = ":", chr = top_SNPs$CHR,
+                        minPos = (top_SNPs$POS - bp_distance), maxPos =  (top_SNPs$POS + bp_distance))
+    } else {
+      # Otherwise, just subset by gene
+      query_by_gene(fullSS_path = fullSS_path, subset_path = subset_path,
+                    gene = gene, gene_col = gene_col)
+    }
+    check_if_empty(subset_path)
+    # Extract lead SNPs per gene from subset data, using the subset SS as a reference file
+    top_SNPs <- import_topSNPs(
+      file_path = subset_path,
+      chrom_col = chrom_col, position_col= position_col, snp_col=snp_col,
+      pval_col=pval_col, effect_col=effect_col, gene_col=gene_col,
+      caption= paste(superpop,": eQTL Summary Stats"))
+    # Make format/col names consistent
+    preprocess_subset(topSNP_sub = top_SNPs, subset_path = subset_path,
+                      chrom_col = chrom_col, position_col = position_col, snp_col = snp_col,
+                      pval_col = pval_col, effect_col = effect_col, stderr_col = stderr_col, file_sep = "\t",
+                      return_dt=F)
+  }
+  end_eQTL_sub <- Sys.time()
+  cat("\nExtraction completed in", round(end_eQTL_sub-start_eQTL_sub, 2),"seconds \n")
+  return(top_SNPs)
+}
+
+
+
+translate_population <- function(superpopulation){
+  pop_dict <- list("AFA"="AFR", "CAU"="EUR", "HIS"="AMR",
+                   "AFR"="AFR","EUR"="EUR", "AMR"="AMR")
+  return(pop_dict[superpopulation][[1]])
+}
+
+
+
+
+
+
+# import info from FUMA instead
+
+import_FUMA <- function(topSS_path, geneList, subset_path){
+  # topSS_path = Data_dirs$Kunkle_2019$topSS
+  # risk_loci <- fread(file.path(dirname(topSS_path), "FUMA/GenomicRiskLoci.txt"))
+  # mapped_genes <- fread(file.path(dirname(topSS_path), "FUMA/magma.genes.out"))
+  annovar <- data.table::fread(file.path(dirname(topSS_path), "FUMA/annov.txt"))
+  annovar_sub <- subset(annovar, symbol %in% geneList)
+
+  mapped_genes_sub <- subset(mapped_genes, SYMBOL %in% geneList)
+
+  # Get gene range directly from biomart, then query for snps in that range
+  geneSNPs <- function(gene, file_path,
+                       chrom_col="CHR", position_col="POS", snp_col="SNP",
+                       pval_col="P", effect_col="Effect", stderr_col="StdErr", sep="\t"){
+    # bm <- biomart_geneInfo(gene)
+    gene_start <- min(annovar_sub$pos)
+    gene_end <- max(annovar_sub$pos)
+    gene_chr <- unique(annovar_sub$chr)[1]
+
+    colDict <- column_dictionary(file_path)
+    superpop <- translate_population(superpopulation)
+    dataset_name <- get_dataset_name(file_path)
+    subset_path <- paste(dirname(file_path),"/",gene,"_",dataset_name,"_subset.txt",sep="")
+    awk_cmd <- paste("awk -F \"",sep,"\" 'NR==1{print $0}{ if(($",colDict[chrom_col]," == ",gene_chr,")",
+                     " && ($",colDict[position_col]," >= ",gene_start," && $",colDict[position_col]," <= ",gene_end,")) { print } }' ",file_path,
+                     " > ",subset_path,sep="")
+    system(awk_cmd)
+  }
+}
+
+
+
+
+# BIOMART
+biomart_snps_to_geneInfo <- function(snp_list){
+  # listMarts()
+  snp_mart = useMart("ENSEMBL_MART_SNP", dataset="hsapiens_snp")
+  # View(listFilters(snp_mart))
+  # View(listAttributes(snp_mart))
+  snp_results <- biomaRt::getBM(snp_mart, filters="snp_filter", values=snp_list,
+                                attributes=c("refsnp_id","snp","chr_name", "chrom_start","chrom_end",
+                                             "associated_gene","ensembl_gene_stable_id" ) )
+  # # Split ensembl IDs
+  gene_mart = useMart("ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl")
+  gene_results <- biomaRt::getBM(mart = gene_mart, filters = "ensembl_gene_id",
+                                 # values = unlist(strsplit(snp_results$ensembl, ";")),
+                                 values = snp_results$ensembl_gene_stable_id,
+                                 attributes = c("hgnc_symbol","external_gene_name","ensembl_gene_id",
+                                                "chromosome_name", "start_position", "end_position") )
+  snp_results <-snp_results %>%
+    mutate(ensembl = strsplit(as.character(ensembl_gene_stable_id), ";")) %>%
+    tidyr::unnest(ensembl)
+  merged_df <- data.table(gene_results, key = "ensembl_gene_id")[data.table(snp_results, key = "ensembl")]
+  return(merged_df)
+}
+# biomart_snps_to_geneInfo(c("rs114360492"))
+
+biomart_geneInfo <- function(geneList){
+  # listDatasets(useMart("ENSEMBL_MART_ENSEMBL") )
+  gene_mart = biomaRt::useMart("ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl")
+  # View(listFilters(gene_mart))
+  # View(listAttributes(gene_mart))
+  gene_results <- biomaRt::getBM(mart = gene_mart, filters = "hgnc_symbol",
+                                 # values = unlist(strsplit(snp_results$ensembl, ";")),
+                                 values = geneList,
+                                 attributes = c("hgnc_symbol","external_gene_name","ensembl_gene_id",
+                                                "chromosome_name", "start_position", "end_position") )
+  return(gene_results)
+}
+# biomart_geneInfo(c("PTK2B","CLU","APOE"))
+

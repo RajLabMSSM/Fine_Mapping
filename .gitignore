@@ -12,6 +12,8 @@
 /Data/Parkinsons/**/*.dat
 /Data/HRC.RSID.txt
 /Data/eQTL/MESA/*.txt
+/Data/eQTL/Fairfax/*.txt
+/Data/eQTL/Fairfax/FUMA/
 *.vcf.gz.tbi
 *.vcf.gz
 *.vcf
