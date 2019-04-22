@@ -67,6 +67,45 @@ before_after_plots <- function(gene, susieDF, before_var="P"){
 # before_after_plots(gene = "LRRK2", susieDF, topVariants = 3)
 # before_after_plots(gene = "CLU/PTK2B", susieDF, topVariants = 3)
 
+manhattan_plot <- function(subset_path, gene="", SNP_list=c(), alt_color_SNPs=c()){
+  # Read in data subset
+  df = data.table::fread(subset_path)
+  # Color selected list (assumes first one should be colored differently)
+  if(length(SNP_list)==0){
+    df = df %>% arrange(P,desc(Effect))
+    SNP_list = df$SNP[1:5]
+  }
+  
+  labelSNPs = subset(df, SNP %in% SNP_list)
+  labelSNPs$type = "after"
+  labelSNPs$color = "red"
+  if(length(alt_color_SNPs)>0){
+    labelSNPs[labelSNPs$SNP %in% alt_color_SNPs, "color"] <- "darkred"
+  }
+  
+  # write.csv(labelSNPs, "table.csv")
+  roundBreaks <- seq(plyr::round_any(min(df$POS),10000), max(df$POS),250000)
+  yLimits1 <- c(0, max(-log10(max(df$P)))*1.1)
+  
+  mplot <- ggplot(df, aes(x=POS, y=-log10(P), label=SNP, color= -log10(P) )) +
+    # ylim(yLimits1) +
+    geom_hline(yintercept=0, alpha=.5, linetype=1, size=.5) +
+    geom_point(alpha=.5) +
+    geom_segment(aes(xend=POS, yend=yLimits1[1], color= -log10(P) ), alpha=.5) +
+    geom_point(data=labelSNPs, pch=21, fill=NA, size=4, colour=labelSNPs$color, stroke=1) +
+    # geom_point(data=labelSNPs[labelSNPs$type=="after",][1,], pch=21, fill=NA, size=4, colour=labelSNPs[labelSNPs$type=="after","color"][1], stroke=1) +
+    geom_text_repel(data=labelSNPs, aes(label=SNP), color=labelSNPs$color, segment.alpha = .5, nudge_x = .5) +
+    labs(title=paste(gene," (",length(df$P)," variants)","\nBefore Fine Mapping",sep=""),
+         y="-log10(p-value)", x="Position", color="-log10(p-value)") +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    scale_x_continuous(breaks = roundBreaks)
+  print(mplot)
+}
+
+
+
+
+
 ## Report SNP Overlap
 before_after_consensus <- function(gene, top_SNPs, susieDF, max_SNPs=10){
   # Get top SNPs from Nalls et all fine mapping

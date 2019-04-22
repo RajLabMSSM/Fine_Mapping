@@ -114,14 +114,18 @@ top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
 
 gene_list <- c("LRRK2")# "LRRK2_alt","SNCA","VPS13C","C5orf24","IP6K2","KCNIP3","GBF1","SCARB2")#, top_SNPs$Gene) %>% unique()
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=gene_list, query_by="coordinates", subset_path = "auto",
-                 # file_path = Directory_info(dataset_name, "fullSumStats"),
-                 fullSS_path = "Data/Parkinsons/Nalls_23andMe/nallsEtAl2019_allSamples_allVariants.mod.txt", 
+                 file_path = Directory_info(dataset_name, "fullSumStats"),
+                 # fullSS_path = "Data/Parkinsons/Nalls_23andMe/nallsEtAl2019_allSamples_allVariants.mod.txt", 
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
                  vcf_folder = vcf_folder, superpopulation = "EUR", force_new_subset = force_new_subset,
                  LD_block = T, block_size = .7)
-#c("LRRK2","SNCA","VPS13C","GCH1"),
-# "GBA","CATSPER3", "LAMB2", "LOC442028", "NFKB2", "SCARB2", "GRN"
+
+ 
+manhattan_plot(
+               subset_path= get_subset_path(fullSS_path=Directory_info(dataset_name, "fullSumStats"), gene="LRRK2" ),
+               # subset_path="./Data/Parkinsons/Nalls_23andMe/LRRK2_EUR_Nalls_23andMe_subset.txt", 
+               gene="LRRK2", SNP_list = c("rs76904798","rs34637584","rs117073808"), alt_color_SNPs=c("rs34637584"))
 ```
 
 
@@ -206,8 +210,8 @@ top_SNPs <- import_topSNPs(
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), subset_path = "auto",
-                   # fullSS_path = Directory_info(dataset_name, "fullSumStats"),
-                   fullSS_path="Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage1_results.txt",
+                   fullSS_path = Directory_info(dataset_name, "fullSumStats"),
+                   # fullSS_path="Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage1_results.txt",
                    chrom_col = "Chromosome",  position_col = "Position", pval_col = "Pvalue",
                    snp_col = "MarkerName", effect_col = "Beta", stderr_col = "SE",
                    vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR", 
@@ -247,8 +251,8 @@ dataset_name <- "MESA_CAU"
 
 allResults[[dataset_name]] <- finemap_geneList( geneList=c("LRRK2"),  superpopulation = "CAU",
                                                 top_SNPs = "auto", query_by = "gene",
-                   # fullSS_path = Directory_info(dataset_name, "fullSumStats"),
-                   fullSS_path = "Data/eQTL/MESA/CAU_cis_eqtl_summary_statistics.txt",
+                   fullSS_path = Directory_info(dataset_name, "fullSumStats"),
+                   # fullSS_path = "Data/eQTL/MESA/CAU_cis_eqtl_summary_statistics.txt",
                    chrom_col = "chr", position_col = "pos_snps", snp_col="snps",
                    pval_col="pvalue", effect_col="beta", gene_col="gene_name", 
                    stderr_col = "calculate",  tstat_col = "statistic",
