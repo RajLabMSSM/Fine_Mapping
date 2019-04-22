@@ -33,7 +33,7 @@ editor_options:
 
 [Scripts to run CAVIAR, FINEMAP (version 1.1) and DAP-G](https://stephenslab.github.io/susie-paper/manuscript_results/pedagogical_example.html)
 ```{r setup, message=F, warning=F, dpi = 600}
-# knitr::opts_chunk$set(error = TRUE) # Knit even with errors
+knitr::opts_chunk$set(error = TRUE) # Knit even with errors
 
 # devtools::install_local("geneRefineR/", force = T)
 # library("echolocatoR")
