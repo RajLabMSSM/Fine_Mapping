@@ -150,9 +150,28 @@ query_by_gene <- function(fullSS_path, subset_path, gene, gene_col, file_sep){
   system(awk_cmd)
 }
 
+query_by_probe <- function(fullSS_path, subset_path, gene, gene_col, file_sep, probe_path){
+  probe_path="Data/eQTL/Fairfax/gene.ILMN.map"
+  subset_path="Data/eQTL/Fairfax/LRRK2_Fairfax_CD14.txt"
+  file_sep="\t"
+  gene="LRRK2"
+  probes <- find_probes(probe_path, gene)
+  PROBES <- paste("\"",paste(probes[1], collapse="\" || \""),"\"",sep="")
+   
+  
+  colDict <- column_dictionary(fullSS_path)
+  awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1 {print $0} NR>1 $",colDict[[gene_col]]," == \"",probes[1],"\" {print $0}}' ",fullSS_path,
+                   " > ",subset_path, sep="")
+  cat("\n",awk_cmd,"\n")
+  system(awk_cmd)
+  
+  data.table::fread(fullSS_path, nrows = 5)
+  
+}
 
 
-query_handler <- function(gene, fullSS_path, top_SNPs, subset_path="auto", #top_SNPs="auto",
+
+query_handler <- function(gene, fullSS_path, top_SNPs, subset_path, #top_SNPs="auto",
                           gene_col="Gene", minPos=NULL, maxPos=NULL, bp_distance=500000,
                           chrom_col="CHR", position_col="POS", file_sep="\t",
                           query_by="coordinates"){
@@ -232,6 +251,11 @@ extract_SNP_subset <- function(gene, fullSS_path, subset_path="auto", top_SNPs="
 #
 
 
+find_probes <- function(map_file, genes){
+  df  = data.table::fread(map_file)
+  return(subset(df, GENE %in% genes)$PROBE_ID) 
+}
+ 
 
 
 # *********** PREPROCESSING ***********

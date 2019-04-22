@@ -33,7 +33,7 @@ editor_options:
 
 [Scripts to run CAVIAR, FINEMAP (version 1.1) and DAP-G](https://stephenslab.github.io/susie-paper/manuscript_results/pedagogical_example.html)
 ```{r setup, message=F, warning=F, dpi = 600}
-knitr::opts_chunk$set(error = TRUE) # Knit even with errors
+# knitr::opts_chunk$set(error = TRUE) # Knit even with errors
 
 # devtools::install_local("geneRefineR/", force = T)
 # library("echolocatoR")
@@ -114,18 +114,14 @@ top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
 
 gene_list <- c("LRRK2")# "LRRK2_alt","SNCA","VPS13C","C5orf24","IP6K2","KCNIP3","GBF1","SCARB2")#, top_SNPs$Gene) %>% unique()
 allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=gene_list, query_by="coordinates", subset_path = "auto",
-                 fullSS_path = Directory_info(dataset_name, "fullSumStats"),
-                 # fullSS_path = "Data/Parkinsons/Nalls_23andMe/nallsEtAl2019_allSamples_allVariants.mod.txt", 
+                 # file_path = Directory_info(dataset_name, "fullSumStats"),
+                 fullSS_path = "Data/Parkinsons/Nalls_23andMe/nallsEtAl2019_allSamples_allVariants.mod.txt", 
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
                  vcf_folder = vcf_folder, superpopulation = "EUR", force_new_subset = force_new_subset,
                  LD_block = T, block_size = .7)
-
- 
-manhattan_plot(
-               subset_path= get_subset_path(fullSS_path=Directory_info(dataset_name, "fullSumStats"), gene="LRRK2" ),
-               # subset_path="./Data/Parkinsons/Nalls_23andMe/LRRK2_EUR_Nalls_23andMe_subset.txt", 
-               gene="LRRK2", SNP_list = c("rs76904798","rs34637584","rs117073808"), alt_color_SNPs=c("rs34637584"))
+#c("LRRK2","SNCA","VPS13C","GCH1"),
+# "GBA","CATSPER3", "LAMB2", "LOC442028", "NFKB2", "SCARB2", "GRN"
 ```
 
 
@@ -133,7 +129,7 @@ manhattan_plot(
 
 ## Posthuma (2018) {.tabset .tabset-fade .tabset-pills}
 
-```{r AD: Posthuma (2018) , results = 'asis', fig.height=8, fig.width=7, error=TRUE} 
+```{r AD: Posthuma (2018) , results = 'asis', fig.height=8, fig.width=7} 
 dataset_name <- "Posthuma_2018"
 
 top_SNPs <- import_topSNPs(
@@ -143,8 +139,8 @@ top_SNPs <- import_topSNPs(
   pval_col="P", effect_col="Zscore", gene_col="nearestGene",
   caption= "Posthuma et al. (2018) AD GWAS Summary Stats")
 
-allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),query_by="coordinates", subset_path = "auto",
-                 fullSS_path = Directory_info(dataset_name, "fullSumStats"),
+allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
+                 file_path = Directory_info(dataset_name, "fullSumStats"),
                  #"Data/Alzheimers/Posthuma_2018/phase3.beta.se.hrc.txt",#
                  effect_col = "BETA", stderr_col = "SE", position_col = "BP",
                  snp_col = "SNP", pval_col = "P",
@@ -154,7 +150,7 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),que
 
 ## Marioni (2018) {.tabset .tabset-fade .tabset-pills}
 
-```{r AD: Marioni (2018) , results = 'asis', fig.height=8, fig.width=7, error=TRUE} 
+```{r AD: Marioni (2018) , results = 'asis', fig.height=8, fig.width=7} 
 dataset_name <- "Marioni_2018"
 
 top_SNPs <- import_topSNPs(
@@ -164,7 +160,7 @@ top_SNPs <- import_topSNPs(
   pval_col="p_GWAS", effect_col="b_GWAS", gene_col="Gene",
   caption= "Marioni et al. (2018) AD GWAS Summary Stats")
 
-allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),query_by="coordinates", subset_path = "auto",
+allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
                  fullSS_path = Directory_info(dataset_name, "fullSumStats"),
                  effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                  snp_col = "SNP",chrom_col = "CHROM", pval_col = "PVAL",
@@ -176,7 +172,7 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),que
 ## Lambert (2013) (IGAP) {.tabset .tabset-fade .tabset-pills}
 
 Filtering out the CLU portion of the locus prevents susieR from identifying a credible set.
-```{r AD: Lambert (2013), results = 'asis', fig.height=8, fig.width=7, error=TRUE} 
+```{r AD: Lambert (2013), results = 'asis', fig.height=8, fig.width=7} 
 dataset_name <- "Lambert_2013"
 
 top_SNPs <- import_topSNPs(
@@ -187,7 +183,7 @@ top_SNPs <- import_topSNPs(
   caption= "Lambert (2013) (IGAP): AD GWAS Summary Stats")
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
-allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), query_by="coordinates", subset_path = "auto",
+allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
                    fullSS_path = Directory_info(dataset_name, "fullSumStats"),
                    chrom_col = "CHROM",  pval_col = "PVAL", snp_col = "SNP",
                    effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
@@ -198,7 +194,7 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), qu
 
 ## Kunkle (2019) (IGAP) {.tabset .tabset-fade .tabset-pills}
 
-```{r AD: Kunkle (2019), results = 'asis', fig.height=8, fig.width=7, error=TRUE}
+```{r AD: Kunkle (2019), results = 'asis', fig.height=8, fig.width=7}
 dataset_name <- "Kunkle_2019"
 
 top_SNPs <- import_topSNPs(
@@ -209,9 +205,9 @@ top_SNPs <- import_topSNPs(
   caption= "Kunkle (2019) (IGAP): AD GWAS Summary Stats")
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
-allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), query_by="coordinates", subset_path = "auto",
-                   fullSS_path = Directory_info(dataset_name, "fullSumStats"),
-                   # fullSS_path="Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage1_results.txt",
+allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),   
+                   # fullSS_path = Directory_info(dataset_name, "fullSumStats"),
+                   fullSS_path="Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage1_results.txt",
                    chrom_col = "Chromosome",  position_col = "Position", pval_col = "Pvalue",
                    snp_col = "MarkerName", effect_col = "Beta", stderr_col = "SE",
                    vcf_folder = vcf_folder, num_causal = 1, superpopulation = "EUR", 
@@ -251,8 +247,8 @@ dataset_name <- "MESA_CAU"
 
 allResults[[dataset_name]] <- finemap_geneList( geneList=c("LRRK2"),  superpopulation = "CAU",
                                                 top_SNPs = "auto", query_by = "gene",
-                   fullSS_path = Directory_info(dataset_name, "fullSumStats"),
-                   # fullSS_path = "Data/eQTL/MESA/CAU_cis_eqtl_summary_statistics.txt",
+                   # fullSS_path = Directory_info(dataset_name, "fullSumStats"),
+                   fullSS_path = "Data/eQTL/MESA/CAU_cis_eqtl_summary_statistics.txt",
                    chrom_col = "chr", position_col = "pos_snps", snp_col="snps",
                    pval_col="pvalue", effect_col="beta", gene_col="gene_name", 
                    stderr_col = "calculate",  tstat_col = "statistic",
@@ -278,24 +274,26 @@ allResults[[dataset_name]] <- finemap_geneList( geneList=c("LRRK2"),  superpopul
                    LD_block = T)
 ```
 
+
+
+
 ## Fairfax (2014) {.tabset .tabset-fade .tabset-pills}
 
 Use the Nalls et al. (2019) LRRK2 locus to query for SNPs in the eQTL data.
 ```{r Fairfax, results = 'asis', fig.height=8, fig.width=7} 
+
 # +++++++++++++++ CD14 Stimulation +++++++++++++++ #
 dataset_name <- "Fairfax_2014_CD14"
 allResults[[dataset_name]] <- finemap_geneList( geneList=c("LRRK2"),  superpopulation = "CAU",
                                                 top_SNPs = Nalls_top_SNPs, query_by = "coordinates_merged",
-                   fullSS_path = Directory_info(dataset_name, "fullSumStats"),
-                   # fullSS_path=  "Data/eQTL/Fairfax/cis.eqtls.fairfax.all.chr.CD14.47231.414.b.qced.f.txt",
+                   # fullSS_path = Directory_info(dataset_name, "fullSumStats"),
+                   fullSS_path=  "Data/eQTL/Fairfax/cis.eqtls.fairfax.all.chr.CD14.47231.414.b.qced.f.txt",
                    chrom_col = "SNP", position_col = "SNP", snp_col="SNP",
                    pval_col="p-value", effect_col="beta", gene_col="gene", 
                    stderr_col = "calculate",  tstat_col = "t-stat",
                    vcf_folder = vcf_folder, num_causal = 1, 
                    force_new_subset = force_new_subset,
                    LD_block = T)
-
-
 
 # +++++++++++++++ IFN Stimulation +++++++++++++++ #
 dataset_name <- "Fairfax_2014_IFN"
@@ -308,7 +306,6 @@ allResults[[dataset_name]] <- finemap_geneList( geneList=c("LRRK2"),  superpopul
                    vcf_folder = vcf_folder, num_causal = 1, 
                    force_new_subset = force_new_subset,
                    LD_block = T)
-
 
 # +++++++++++++++ LPS Stimulation (after 2 hours) +++++++++++++++ #
 dataset_name <- "Fairfax_2014_LPS2"
