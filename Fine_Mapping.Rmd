@@ -133,7 +133,7 @@ manhattan_plot(
 
 ## Posthuma (2018) {.tabset .tabset-fade .tabset-pills}
 
-```{r AD: Posthuma (2018) , results = 'asis', fig.height=8, fig.width=7} 
+```{r AD: Posthuma (2018) , results = 'asis', fig.height=8, fig.width=7, error=TRUE} 
 dataset_name <- "Posthuma_2018"
 
 top_SNPs <- import_topSNPs(
@@ -143,7 +143,7 @@ top_SNPs <- import_topSNPs(
   pval_col="P", effect_col="Zscore", gene_col="nearestGene",
   caption= "Posthuma et al. (2018) AD GWAS Summary Stats")
 
-allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
+allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),query_by="coordinates", subset_path = "auto",
                  fullSS_path = Directory_info(dataset_name, "fullSumStats"),
                  #"Data/Alzheimers/Posthuma_2018/phase3.beta.se.hrc.txt",#
                  effect_col = "BETA", stderr_col = "SE", position_col = "BP",
@@ -154,7 +154,7 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
 
 ## Marioni (2018) {.tabset .tabset-fade .tabset-pills}
 
-```{r AD: Marioni (2018) , results = 'asis', fig.height=8, fig.width=7} 
+```{r AD: Marioni (2018) , results = 'asis', fig.height=8, fig.width=7, error=TRUE} 
 dataset_name <- "Marioni_2018"
 
 top_SNPs <- import_topSNPs(
@@ -164,7 +164,7 @@ top_SNPs <- import_topSNPs(
   pval_col="p_GWAS", effect_col="b_GWAS", gene_col="Gene",
   caption= "Marioni et al. (2018) AD GWAS Summary Stats")
 
-allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
+allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),query_by="coordinates", subset_path = "auto",
                  fullSS_path = Directory_info(dataset_name, "fullSumStats"),
                  effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
                  snp_col = "SNP",chrom_col = "CHROM", pval_col = "PVAL",
@@ -176,7 +176,7 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
 ## Lambert (2013) (IGAP) {.tabset .tabset-fade .tabset-pills}
 
 Filtering out the CLU portion of the locus prevents susieR from identifying a credible set.
-```{r AD: Lambert (2013), results = 'asis', fig.height=8, fig.width=7} 
+```{r AD: Lambert (2013), results = 'asis', fig.height=8, fig.width=7, error=TRUE} 
 dataset_name <- "Lambert_2013"
 
 top_SNPs <- import_topSNPs(
@@ -187,7 +187,7 @@ top_SNPs <- import_topSNPs(
   caption= "Lambert (2013) (IGAP): AD GWAS Summary Stats")
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
-allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), 
+allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), query_by="coordinates", subset_path = "auto",
                    fullSS_path = Directory_info(dataset_name, "fullSumStats"),
                    chrom_col = "CHROM",  pval_col = "PVAL", snp_col = "SNP",
                    effect_col = "BETA", stderr_col = "SE", position_col = "POS", 
@@ -198,7 +198,7 @@ allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"),
 
 ## Kunkle (2019) (IGAP) {.tabset .tabset-fade .tabset-pills}
 
-```{r AD: Kunkle (2019), results = 'asis', fig.height=8, fig.width=7}
+```{r AD: Kunkle (2019), results = 'asis', fig.height=8, fig.width=7, error=TRUE}
 dataset_name <- "Kunkle_2019"
 
 top_SNPs <- import_topSNPs(
@@ -209,7 +209,7 @@ top_SNPs <- import_topSNPs(
   caption= "Kunkle (2019) (IGAP): AD GWAS Summary Stats")
 # genes <- snps_to_genes(snp_list=top_SNPs$SNP )
 
-allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), subset_path = "auto",
+allResults[[dataset_name]] <- finemap_geneList(top_SNPs, geneList=c("PTK2B"), query_by="coordinates", subset_path = "auto",
                    fullSS_path = Directory_info(dataset_name, "fullSumStats"),
                    # fullSS_path="Data/Alzheimers/Kunkle_2019/Kunkle_etal_Stage1_results.txt",
                    chrom_col = "Chromosome",  position_col = "Position", pval_col = "Pvalue",
