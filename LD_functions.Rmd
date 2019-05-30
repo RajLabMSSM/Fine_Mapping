@@ -204,6 +204,8 @@ LD_link <- function(rs_list, token="df4298d58dc4", population_list=c("CEU"), R2_
   close(con)
   return(LD_matrix)
 }
+
+LD_link()
 ```
 
 ### Ensembl Linkage Disequilibrium Calculator - RestAPI
@@ -259,14 +261,13 @@ ensembl_variantInfo_chunked <- function(SNP_vector, chunk_size=200){
 
 [Ensembl LD Calculator - API for window method](https://rest.ensembl.org/documentation/info/ld_id_get)\
 ```{r}
-gene="LRRK2"
-  geneSub <- subset(top_SNPs, `Nearest Gene`==gene) 
+  geneSub <-  subset(subset_DT, leadSNP==T)
   server <- "https://grch37.rest.ensembl.org"
   ext <- paste("/ld/human/",geneSub$SNP,
              "/1000GENOMES:phase_3:CEU?window_size=500;d_prime=0", sep="")
  
-  r <- GET(paste(server, ext, sep = ""), content_type("application/json"))
-  LD_df <- fromJSON(toJSON(content(r))) 
+  r <- httr::GET(paste(server, ext, sep = ""), httr::content_type("application/json"))
+  LD_df <- jsonlite::fromJSON(jsonlite::toJSON(httr::content(r))) 
   LD_df
   # Fix column types
   LD_df <- lapply(LD_df, unlist) %>% data.frame(stringsAsFactors = F) 
@@ -286,20 +287,21 @@ head(fromJSON(toJSON(content(r))))
 #### Region Method
 
 * Cons
-  + A maximum of 1Mb (1000000 bp) queries are allowed (according to documentation).
-  + However, in practice only 100000 bp queries work (a whole order of magnitude less...)
+  + A maximum of 1Mb (1,000,000 bp) queries are allowed (according to documentation).
+  + However, in practice only 100,000 bp queries work (a whole order of magnitude less...But still large!)
+  + Also only contains 1000 Genomes Data (not HRC)
   
 [Ensembl LD Calculator - GUI](http://grch37.ensembl.org/Homo_sapiens/Tools/LD)\
 [Ensembl LD Calculator - API Region Method](https://rest.ensembl.org/#Linkage_Disequilibrium)\
 ```{r Ensembl Linkage Disequilibrium Calculator}   
-ensembl_LD <- function(gene, top_SNPs, flankingSNPs, population="CEU", bp_flank=50000){ #50000
-  geneSub <- subset(top_SNPs, `Nearest Gene`==gene) 
+ensembl_LD <- function(subset_DT, flankingSNPs, population="CEU", bp_flank=50000){ #50000 
   ## Specify span by min-max flanking SNPs
   # span <- max(flankingSNPs$POS) - min(flankingSNPs$POS)
   #  if(span>1000000){print("Over bp span limit")}
   #  if(span>100000){print("Over bp span limit (in practice)")}
-  query_coordinates <- paste(geneSub$CHR,":", min(flankingSNPs$POS) ,"..", max(flankingSNPs$POS) , sep="")
-  # query_coordinates <- paste(geneSub$CHR,":",geneSub$BP-bp_flank,"..", geneSub$BP+bp_flank, sep="")
+  # query_coordinates <- paste(max(subset_DT$CHR),":", min(subset_DT$POS) ,"..", max(subset_DT$POS) , sep="")
+  geneSub <- subset(subset_DT, leadSNP==T)
+  query_coordinates <- paste(geneSub$CHR,":",geneSub$POS-bp_flank,"..", geneSub$POS+bp_flank, sep="")
   genome_build <- "grch37"
   server <-  ifelse(genome_build=="grch37", 
                     "https://grch37.rest.ensembl.org", "https://rest.ensembl.org" )  
@@ -308,15 +310,15 @@ ensembl_LD <- function(gene, top_SNPs, flankingSNPs, population="CEU", bp_flank=
                # "?window_size=", window, # MAX window size is 500kb (either side) 
                # "?d_prime=0",
                sep="")   
-  r <- GET(paste(server, ext, sep = ""), content_type("application/json"))  
-  stop_for_status(r) 
-  LD_df <- fromJSON(toJSON(content(r))) 
+  r <- httr::GET(paste(server, ext, sep = ""), httr::content_type("application/json"))  
+  httr::stop_for_status(r) 
+  LD_df <- jsonlite::fromJSON(jsonlite::toJSON(httr::content(r))) %>% data.table::data.table()
   # Fix column types
   LD_df <- lapply(LD_df, unlist) %>% data.frame(stringsAsFactors = F) 
   LD_df$r2 <- as.numeric(LD_df$r2)
   LD_df$d_prime <- as.numeric(LD_df$d_prime)
   # Remove accidental self-correlations that don't equal 1
-  LD_df <- LD_df[LD_df$variation1 != LD_df$variation2,] 
+  # LD_df <- LD_df[LD_df$variation1 != LD_df$variation2,] 
   
   # Filter to only positions in flankingSNPs
   ## Get positions of SNPs in LD df (bc LD API doesn't return position information...)
@@ -346,4 +348,6 @@ ensembl_LD <- function(gene, top_SNPs, flankingSNPs, population="CEU", bp_flank=
   # View(head(LD_matrix)) 
   return(LD_matrix)
 }
+
+# LD <- ensembl_LD(gene = "LRRK2", top_SNPs, )
 ```

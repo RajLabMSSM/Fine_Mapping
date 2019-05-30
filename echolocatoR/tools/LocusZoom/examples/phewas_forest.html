@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.css"/>
+
+    <!-- Necessary includes for LocusZoom.js -->
+    <script src="../dist/locuszoom.vendor.min.js" type="text/javascript"></script>
+    <script src="../dist/locuszoom.app.min.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="../dist/locuszoom.css" type="text/css"/>
+
+    <title>LocusZoom.js ~ PheWAS (Forest) Example</title>
+
+    <style>
+      body {
+        background-color: #FAFAFA;
+        margin: 0px 20px;
+      }
+      img {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+    </style>
+
+  </head>
+
+  <body>
+    <div class="container">
+
+      <h1 style="margin-top: 1em;"><strong>LocusZoom.js</strong></h1>
+
+      <h3 style="float: left; color: #777">PheWAS (Forest) Example</h3>
+      <h6 style="float: right;"><a href="../index.html">&lt; return home</a></h6>
+
+      <hr style="clear: both;">
+
+      <p>This example shows a forest plot approach to visualizing Phenome-Wide Association Study (PheWAS) results. This is useful when effect sizes (odds ratios or betas) and confidence intervals are available in the data set.</p>
+      <p>Data in this example plot is randomly generated. Phenotypes are listed vertically (unsorted) along the y2-axis with betas plotted along the x-axis. P-values are used to determine both size and color for points on the plot using an interpolated sequential scale.<p>
+
+      <div id="plot"></div>
+
+      <hr>
+
+      <div class="row">
+        <footer style="text-align: center;">
+          &copy; Copyright 2018 <a href="https://github.com/statgen">The University of Michigan Center for Statistical Genetics</a><br>
+        </footer>
+      </div>
+
+      <script type="text/javascript">
+        // TODO: Write a real data source to fetch and parse data from an API in the future. For now this fetches a
+        //  JSON file with a sample payload.
+        var data_sources = new LocusZoom.DataSources()
+          .add("phewas", ["PheWASLZ", { url: "data/phewas_forest.json", params: { build: ["GRCh37"] } } ]);
+
+        // Define a reusable layout, and then retrieve it so that the namespaces get filled in
+        LocusZoom.Layouts.add("plot", "phewas_forest", {
+            width: 800,
+            height: 800,
+            responsive_resize: 'both',
+            panels: [
+                {
+                    id: "phewasforest",
+                    width: 800,
+                    height: 800,
+                    proportional_width: 1,
+                    margin: { top: 35, right: 220, bottom: 50, left: 20 },
+                    inner_border: "rgba(210, 210, 210, 0.85)",
+                    dashboard: {
+                        components: [{
+                            type: "toggle_legend",
+                            position: "left"
+                        }]
+                    },
+                    axes: {
+                        x: {
+                            label: "Beta",
+                            label_offset: 33
+                        },
+                        y2: {
+                            ticks: {  // Dynamically generated ticks, but specify custom options/styles to be used in every tick
+                                style: {
+                                    "font-weight": "bold",
+                                    "text-anchor": "start"
+                                }
+                            }
+                        }
+                    },
+                    legend: {
+                        origin: { x: 30, y: 45 },
+                        orientation: "vertical"
+                    },
+                    data_layers: [
+                        {
+                            namespace: { "phewas": "phewas" },
+                            id: "phewas_forest",
+                            type: "category_forest",
+                            z_index: 1,
+                            point_shape: "square",
+                            point_size: {
+                                scale_function: "interpolate",
+                                field: "{{namespace[phewas]}}log_pvalue",
+                                parameters: {
+                                    breaks: [0, 10],
+                                    values: [60, 160],
+                                    null_value: 50
+                                }
+                            },
+                            color: {
+                                scale_function: "interpolate",
+                                field: "{{namespace[phewas]}}log_pvalue",
+                                parameters: {
+                                    breaks: [0, 10],
+                                    values: ["#fee8c8","#b30000"],
+                                    null_value: "#B8B8B8"
+                                }
+                            },
+                            legend: [
+                                { label: "-log10 p-value" },
+                                { shape: "square", class: "lz-data_layer-forest", color: "#fdd49e", size: 60, label: "< 2" },
+                                { shape: "square", class: "lz-data_layer-forest", color: "#fdbb84", size: 80, label: "2 - 4" },
+                                { shape: "square", class: "lz-data_layer-forest", color: "#fc8d59", size: 100, label: "4 - 6" },
+                                { shape: "square", class: "lz-data_layer-forest", color: "#ef6548", size: 120, label: "6 - 8" },
+                                { shape: "square", class: "lz-data_layer-forest", color: "#d7301f", size: 140, label: "8 - 10" },
+                                { shape: "square", class: "lz-data_layer-forest", color: "#b30000", size: 160, label: "10+" }
+                            ],
+                            id_field: "{{namespace[phewas]}}phenotype",
+                            fields: ["{{namespace[phewas]}}phenotype", "{{namespace[phewas]}}log_pvalue", "{{namespace[phewas]}}log_pvalue|logtoscinotation", "{{namespace[phewas]}}beta", "{{namespace[phewas]}}ci_start", "{{namespace[phewas]}}ci_end"],
+                            x_axis: {
+                                field: "{{namespace[phewas]}}beta",
+                                lower_buffer: 0.1,
+                                upper_buffer: 0.1
+                            },
+                            y_axis: {
+                                axis: 2,
+                                category_field: "{{namespace[phewas]}}phenotype",  // Labels
+                                field: "{{namespace[phewas]}}y_offset",  // Positions (dynamically added)
+                            },
+                            confidence_intervals: {
+                                start_field: "{{namespace[phewas]}}ci_start",
+                                end_field: "{{namespace[phewas]}}ci_end"
+                            },
+                            behaviors: {
+                                onmouseover: [
+                                    { action: "set", status: "highlighted" }
+                                ],
+                                onmouseout: [
+                                    { action: "unset", status: "highlighted" }
+                                ],
+                                onclick: [
+                                    { action: "toggle", status: "selected", exclusive: true }
+                                ],
+                                onshiftclick: [
+                                    { action: "toggle", status: "selected" }
+                                ]
+                            },
+                            tooltip: {
+                                namespace: { "phewas": "phewas" },
+                                closable: true,
+                                show: { or: ["highlighted", "selected"] },
+                                hide: { and: ["unhighlighted", "unselected"] },
+                                html: "<strong>{{{{namespace[phewas]}}phenotype}}</strong><br>"
+                                    + "P Value: <strong>{{{{namespace[phewas]}}log_pvalue|logtoscinotation}}</strong><br>"
+                                    + "Odds Ratio: <strong>{{{{namespace[phewas]}}beta}}</strong><br>"
+                                    + "95% Conf. Interval: <strong>[ {{{{namespace[phewas]}}ci_start}} {{{{namespace[phewas]}}ci_end}} ]</strong>"
+                            }
+                        },
+                        {
+                            id: "zeroline",
+                            type: "orthogonal_line",
+                            z_index: 0,
+                            orientation: "vertical",
+                            offset: 0,
+                            y_axis: {
+                                axis: 2
+                            }
+                        }
+                    ]
+                }
+            ]
+        });
+        var layout = LocusZoom.Layouts.get("plot", "phewas_forest");
+
+        window.plot = LocusZoom.populate("#plot", data_sources, layout);
+
+      </script>
+
+    </div>
+
+  </body>
+</html>

@@ -1,34 +1,24 @@
 # Fine_Mapping
 
-Identification of causal variants within genes that have been previously associated with Parkinson's Disease or Alzheimer's Disease.\
+Identification of causal variants within genes that have been previously associated with Parkinson's Disease or Alzheimer's Disease.  
 All data and results can viewed and downloaded via the following interactive Rmarkdown output files below:  
 
 ### Current Results
-* [Fine mapping with Parkinson's and Alzheimer's Disease GWAS Summary Stat Data](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping.html)
-
-
-### Alternative Analyses
-* [Using LD matrix calculated from 1000 Genomes Project Phase 1 data (1/7/13); European superpopulation only](https://rajlabmssm.github.io/Fine_Mapping/Old_scripts/Fine_Mapping_1KGphase1_EUR.html)
-* [Using LD matrix calculated from 1000 Genomes Project Phase 3 data (7/14/16); European superpopulation only](https://rajlabmssm.github.io/Fine_Mapping/Old_scripts/Fine_Mapping_1KGphase3_EUR.html)
-* [Using LD matrix calculated from 1000 Genomes Project Phase 3 data (7/14/16); All populations](https://rajlabmssm.github.io/Fine_Mapping/Old_scripts/Fine_Mapping_1KGphase3_allPops.html)
+* [Fine-mapping Parkinson's Disease](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD.html)
 
 
 ## Methods
 
 ![Batty](./echolocatoR/images/echo_logo_sm.png)
 
-<<<<<<< HEAD
 #### echolocatoR is an open-source R library that wraps and extends several commonly used genetic and functional fine mapping tools:
-=======
-#### echolatoR is an open-source R library that wraps and extends several commonly used genetic and functional fine mapping tools:
->>>>>>> refs/remotes/origin/master
 * [susieR](https://github.com/stephenslab/susieR)  
 * [PAINTOR](https://github.com/gkichaev/PAINTOR_V3.0)  
 * [CAVIAR](http://genetics.cs.ucla.edu/caviar/)  
 * [DAP](https://github.com/xqwen/dap)  
 
 
-## Data
+## Summary Statistics Data Sources
 
 ### Parkinson's Disease GWAS
 
@@ -38,7 +28,7 @@ All data and results can viewed and downloaded via the following interactive Rma
 
 ### Alzheimer's Disease GWAS
 
-* [IGAP](https://www.nature.com/articles/ng.2802)
+* [Lambert et al. (2013)](https://www.nature.com/articles/ng.2802)
 * [Marioni et al. (2018)](https://www.nature.com/articles/s41398-018-0150-6)
 * [Posthuma et al. (2018)](https://www.nature.com/articles/s41588-018-0311-9)
 * [Kunkle et al. (2019)](https://www.nature.com/articles/s41588-019-0358-2)
@@ -46,14 +36,15 @@ All data and results can viewed and downloaded via the following interactive Rma
 ### eQTL
 
 * [MESA - (AFA, CAU & HIS subpopulations)](https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa)
+* [Fairfax et al. (2014)](https://science.sciencemag.org/content/343/6175/1246949)
 
 
 <hr>
 
 ## Author
 
-<a href="https://bschilder.github.io/BMSchilder/" target="_blank">Brian M. Schilder, Bioinformatician II</a>\
-<a href="https://rajlab.org" target="_blank">Raj Lab</a>\
-<a href="https://icahn.mssm.edu/about/departments/neuroscience" target="_blank">Department of Neuroscience, Icahn School of Medicine at Mount Sinai</a>\  
+<a href="https://bschilder.github.io/BMSchilder/" target="_blank">Brian M. Schilder, Bioinformatician II</a>  
+<a href="https://rajlab.org" target="_blank">Raj Lab</a>  
+<a href="https://icahn.mssm.edu/about/departments/neuroscience" target="_blank">Department of Neuroscience, Icahn School of Medicine at Mount Sinai</a>  
 ![](./web/images/sinai.png)
 

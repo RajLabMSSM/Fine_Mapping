@@ -1,0 +1,11 @@
+# Build-related assets
+dist/
+
+# Non-code items
+docs/
+node_modules/
+staticdata/
+package.json
+
+# ESLint seems to ignore env overrides on single files (for the es6 parser) in same directory
+files.js
