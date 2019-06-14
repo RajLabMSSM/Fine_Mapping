@@ -33,7 +33,7 @@ COJO_conditional <- function(GCTA_path,
                      " --cojo-cond ",conditioned_path,  
                      " --exclude ",excluded_path,
                      " --out ",file.path(cojo_path,"cojo"), sep="")
-  cat("\n + COJO conditional analysis -- Conditioning on:",paste(snp_list, collapse=", ") )
+  printer("\n + COJO conditional analysis -- Conditioning on:",paste(snp_list, collapse=", ") )
   system(cojo_cmd1)
 }
 # Conditional results
@@ -47,16 +47,17 @@ get_conditional_results <- function(cojo_path){
 }
 
 
-COJO_stepwise <- function(GCTA_path,
+COJO_stepwise <- function(subset_DT,
+                          GCTA_path,
                           results_path, 
                           min_MAF, 
                           excluded_path){
   cojo_path <- make_cojo_path(results_path)
-  cojoFile_path <- file.path(cojo_path,"cojo-file.ma")
+  cojo.ma <- file.path(cojo_path,"cojo-file.ma")
   # Stepwise selection procedure to identify independent SNPs
   cojo_cmd2 <- paste(GCTA_path,
                      " --bfile ",file.path(results_path,"plink/plink"),
-                     " --cojo-file ",cojoFile_path, 
+                     " --cojo-file ",cojo.ma, 
                      " --maf ",min_MAF,
                      " --cojo-slct",
                      # --cojo-slct: Perform a stepwise model selection procedure 
@@ -66,7 +67,7 @@ COJO_stepwise <- function(GCTA_path,
                      ## the LD correlations between the SNPs.  
                      " --exclude ",excluded_path,
                      " --out ",file.path(cojo_path,"cojo"), sep="")
-  cat("\n + COJO Stepwise Selection Procedure -- Identifying independent SNPs...")
+  printer("\n + COJO Stepwise Selection Procedure -- Identifying independent SNPs...")
   system(cojo_cmd2) 
 }
 # Stepwise results
@@ -80,8 +81,10 @@ get_stepwise_results <- function(cojo_path){
   return(independent_snps)
 }
 
-process_COJO_results <- function(subset_DT, results_path, freq_cutoff=0.1){
-  cat("+ Processing COJO results...")
+process_COJO_results <- function(subset_DT,
+                                 results_path, 
+                                 freq_cutoff=0.1){
+  printer("+ Processing COJO results...")
   cojo_path <- make_cojo_path(results_path) 
   # Stepwise results 
   ## FILTER BY FREQ
@@ -95,23 +98,35 @@ process_COJO_results <- function(subset_DT, results_path, freq_cutoff=0.1){
   
   colnames(conditional_results)[2] <- paste0(colnames(conditional_results)[2])
   # Merge with original data
-  cojo_DT <- data.table:::merge.data.table(data.table::data.table(subset_DT, key = "SNP"), 
-                                           data.table::data.table(conditional_results, key = "SNP"), 
+  cojo_DT <- data.table:::merge.data.table(data.table::data.table(subset_DT, key = "SNP"),
+                                           data.table::data.table(conditional_results, key = "SNP"),
                                               by = "SNP", all = T)
-  cojo_DT$Credible_Set <- ifelse(cojo_DT$SNP %in% independent_SNPs,1,0) 
+  cojo_DT$Credible_Set <- ifelse(cojo_DT$SNP %in% independent_SNPs,1,0)
   return(cojo_DT)
 }
 
 
-COJO <- function(results_path, 
-                 subset_DT, 
+COJO <- function(subset_DT,
+                 fullSS_path, 
+                 results_path,
                  conditioned_snps,
                  excluded_snps="",
                  min_MAF=0, 
                  GCTA_path="echolocatoR/tools/gcta_1.92.1beta5_mac/bin/gcta64",
                  bfiles="plink_tmp/plink",
                  stepwise_procedure=T,
-                 conditional_analysis=T){ 
+                 conditional_analysis=T, 
+                 snp_col="SNP",
+                 freq_col="Freq",
+                 effect_col="Effect",
+                 stderr_col="StdErr",
+                 pval_col="P",
+                 N_cases_col="N_cases",
+                 N_controls_col="N_controls",
+                 A1_col="A1",
+                 A2_col="A2",
+                 full_genome=F
+                 ){ 
   ###########################################################
   # DOCUMENTATION: http://cnsgenomics.com/software/gcta/#COJO
   ###########################################################
@@ -128,14 +143,41 @@ COJO <- function(results_path,
   
   # Make path 
   cojo_path <- make_cojo_path(results_path) 
+   
   ## Import SS subset
   # awk -F '\t' 'NR==1{print "SNP","A1","A2","freq","b","se","p","N"} NR>1{if($1==12 && $2>=40114434 && $2<=40935639){print $3, $4, $5, $6, $7, $8, $9, $10}}' nallsEtAl2019_allSamples_allVariants.mod.txt >  LRRK2_COJO.ma
   
   # Create cojo .ma file 
   ## NOTE: cojo-file.ma Must be a SPACE-separated file 
-  cojo.ma <- subset_DT %>% dplyr::select(SNP, A1, A2, freq=Freq, b=Effect, se=StdErr, p=P)
-  cojo.ma$N  <- subset_DT$N_cases + subset_DT$N_controls
-  cojoFile_path <-  file.path(cojo_path,"cojo-file.ma")
+  if(full_genome){
+    cojo.ma <- data.table::fread(fullSS_path) %>%
+      dplyr::rename(N_cases = N_cases_col, N_controls = N_controls_col) %>%
+      dplyr::mutate(N = N_cases + N_controls) %>% 
+      dplyr::select(SNP=snp_col, 
+                    A1, A2, 
+                    freq=freq_col, 
+                    b=effect_col, 
+                    se=stderr_col, 
+                    p=pval_col, 
+                    N) 
+  } else {
+    # Use subset of summary stats (not for the stepwise conditional procedure)
+    cojo.ma <- subset_DT %>% dplyr::rename(N_cases = N_cases_col, 
+                                           N_controls = N_controls_col, 
+                                           A1 = A1_col,
+                                           A2 = A2_col) %>%
+      dplyr::mutate(N = N_cases + N_controls) %>% 
+      dplyr::select(SNP, 
+                    A1,
+                    A2, 
+                    freq="Freq", 
+                    b="Effect", 
+                    se="StdErr", 
+                    p="P", 
+                    N) 
+  } 
+ 
+  cojoFile_path <- file.path(cojo_path,"cojo-file.ma")
   data.table::fwrite(cojo.ma, cojoFile_path, sep=" ") 
   
   # Create of SNPs to exclude from analysis
@@ -157,9 +199,9 @@ COJO <- function(results_path,
                      excluded_path = excluded_path)
   }
   
-  cojo_DT <- process_COJO_results(subset_DT = subset_DT, 
-                       results_path = results_path,
-                       freq_cutoff = 0.1)
+  cojo_DT <- process_COJO_results(subset_DT = subset_DT,
+                                  results_path = results_path,
+                                  freq_cutoff = 0.1)
   return(cojo_DT)
 } 
 

@@ -3,10 +3,15 @@
 # %%%%%%%%%%%%%%%%% # 
 
  
-
+# cojo_DT = data.table::fread(file.path("Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/COJO_results.txt"), sep="\t")
 
 # SNP_list = c("rs76904798","rs34637584","rs117073808")
-COJO_plot <- function(cojo_DT, results_path, conditioned_snps, show_plot=T, save_plot=T){
+COJO_plot <- function(gene, 
+                      cojo_DT, 
+                      results_path, 
+                      conditioned_snps, 
+                      show_plot=T, 
+                      save_plot=T){
   gene <- basename(results_path)
   # Label independent SNPs
   ind_SNPs <- subset(cojo_DT, COJO.Credible_Set==T)
@@ -16,11 +21,18 @@ COJO_plot <- function(cojo_DT, results_path, conditioned_snps, show_plot=T, save
   effect_SNPs <- cojo_DT %>% arrange(desc(abs(COJO.Conditioned_Effect)))
   effect_SNPs <- effect_SNPs[1:5,]
   effect_SNPs$type <- "effect_SNPs"
-  effect_SNPs$color <- "turquoise3"
-  labelSNPs <- rbind(labelSNPs, effect_SNPs)
+  effect_SNPs$color <- "blue3"
+  labelSNPs <- rbind(labelSNPs, effect_SNPs, fill=T)
+  
+  # topEffect_snps <- cojo_DT %>% arrange(desc(COJO.Conditioned_Effect))
+  # topEffect_snps <- topEffect_snps$SNP[1:5]
+  # cojo_DT <- cojo_DT %>% dplyr::mutate(color = ifelse(COJO.Credible_Set | COJO.Conditioned_Effect %in% topEffect_snps,
+  #                                                     ifelse(COJO.Credible_Set & COJO.Conditioned_Effect %in% topEffect_snps, "purple", 
+  #                                                            ifelse(COJO.Credible_Set & !(COJO.Conditioned_Effect %in% topEffect_snps), "lightpurple", "lightblue") ), NA)
+  # )
  
   spacing <- if(length(cojo_DT$SNP)>1000){250000}else{50000}
-  roundBreaks <- seq(plyr::round_any(min(cojo_DT$POS),10000), max(cojo_DT$POS),spacing) 
+  # roundBreaks <- seq(plyr::round_any(min(cojo_DT$POS),10000), max(cojo_DT$POS),spacing) 
   
   cp <- ggplot(cojo_DT, aes(x=POS, y = -log10(P), label=SNP, color= -log10(P))) +
     # ylim(yLimits1) +
@@ -31,12 +43,13 @@ COJO_plot <- function(cojo_DT, results_path, conditioned_snps, show_plot=T, save
     geom_label_repel(data=labelSNPs, aes(label=SNP), color=NA, nudge_x = .5, box.padding = .5,
                      label.size=NA, alpha=.8, seed = 1) +
     geom_label_repel(data=labelSNPs, aes(label=SNP), color=labelSNPs$color, segment.alpha = .5, 
-                     nudge_x = .5, box.padding = .5, fill = NA, alpha=1, seed = 1) +
-    labs(title=paste("Conditional & Stepwise Results: COJO"),
-         subtitle = paste("Conditioned on:",conditioned_snps,"(Independent SNPs Highlighted)"),
+                     nudge_x = .5, box.padding = .5, fill = NA, alpha=1, seed = 1, show.legend = T ) +
+    labs(title=paste(gene,": Conditional & Stepwise Results (COJO)"),
+         subtitle = paste("Purple = Independent signals from stepwise procedure\n",
+                          "Blue = Residual effects conditioned on:",conditioned_snps),
          y="-log10(p-value)", x="Position", color="-log10(p-value)") +
-    theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5) ) +
-    scale_x_continuous(breaks = roundBreaks)
+    theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5) )
+    # scale_x_continuous(breaks = roundBreaks)
   
   if(save_plot){
     png(filename=file.path(results_path,"COJO/COJO_plot.png"), width = 1000, 800)
@@ -93,7 +106,7 @@ manhattan_plot <- function(subset_DT,
 
 
 construct_SNPs_labels <- function(DT, lead=T, method=T, consensus=T){ 
-  cat("\n + Constructing SNP labels...")
+  printer("\n + Constructing SNP labels...")
   labelSNPs <- data.table::data.table()
   ## BEFORE fine-mapping  
   if(lead){
@@ -101,7 +114,7 @@ construct_SNPs_labels <- function(DT, lead=T, method=T, consensus=T){
     y_var = "-log10(p-value)" 
     before$type <- "before"
     before$color <- "red"
-    labelSNPs <- rbind(labelSNPs, before)
+    labelSNPs <- rbind(labelSNPs, before, fill=T)
   }
   if(method){
     # AFTER fine-mapping
@@ -109,7 +122,7 @@ construct_SNPs_labels <- function(DT, lead=T, method=T, consensus=T){
     if(dim(after)[1]>0){
       after$type <- "after"  
       after$color<- "green3"
-      labelSNPs <- rbind(labelSNPs, after) 
+      labelSNPs <- rbind(labelSNPs, after, fill=T) 
     } 
   } 
   if(consensus & "Consensus_SNP" %in% colnames(DT)){
@@ -118,7 +131,7 @@ construct_SNPs_labels <- function(DT, lead=T, method=T, consensus=T){
     if(dim(cons_SNPs)[1]>0){
       cons_SNPs$type <- "consensus"
       cons_SNPs$color <- "darkgoldenrod1"
-      labelSNPs <- rbind(labelSNPs, cons_SNPs)
+      labelSNPs <- rbind(labelSNPs, cons_SNPs, fill=T)
     } 
   } 
   return(labelSNPs)
@@ -159,7 +172,7 @@ snp_plot <- function(finemap_DT,
       p <- ggplot(data = DT, aes(x=POS, y=Probability, label=SNP, color= -log10(P) )) + 
         ylim(c(0,1.1)) 
       subtitle <- if(is.na(subtitle)){
-        paste0(length(subset(DT, Credible_Set>0)$SNP), " Candidate SNPs")
+        paste0(length(subset(DT, Credible_Set>0)$SNP), " Candidate SNP(s)")
         }else{subtitle}
     } else {
       title <- paste0(gene," : After fine-mapping (",method,")")
@@ -208,7 +221,7 @@ multi_finemap_plot <- function(finemap_DT,
   
   # Assemble plots in list
   plot_list <- lapply(method_list, function(method){
-    cat("\n Plotting...",method)
+    printer("\n Plotting...",method)
     if(method=="COJO"){
       p <- COJO_plot(cojo_DT = finemap_DT, 
                 results_path = results_path, 

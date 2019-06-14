@@ -12,3 +12,4 @@
 /Data/Reference/**/**/*.vcf
 Manuscripts/
 /Data/**/**/**/FINEMAP/data.ld
+/Data/**/**/**/plink/LD_matrix.RData

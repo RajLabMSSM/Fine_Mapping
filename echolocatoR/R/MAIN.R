@@ -30,6 +30,8 @@
 # Load libraries
 .libPaths()
 
+library(R.utils)
+library(devtools)
 library(readxl)
 library(DT)
 library(data.table)
@@ -41,8 +43,16 @@ library(ggrepel)
 library(curl) 
 library(gaston)
 library(tidyr)
-library(biomaRt)
+library(BiocManager)
+library(biomaRt) # BiocManager::install("biomaRt")
+library(snpStats)  #BiocManager::install("snpStats") 
+library(coloc)
+
 # library(bigsnpr) # BiocManager::install("bigsnpr")
+# install.packages("haploR", dependencies = TRUE)
+library(haploR)
+library(GeneOverlap) #BiocManager::install("GeneOverlap")
+
 
 # *** SUSIE ****
 # library(knitrBootstrap) #install_github('jimhester/knitrBootstrap')
@@ -67,6 +77,8 @@ source("./echolocatoR/R/LD.R")
 source("./echolocatoR/R/plot.R")
 source("./echolocatoR/R/conditional.R")
 source("./echolocatoR/R/colocalization.R")
+source("./echolocatoR/R/annotate.R")
+
 
 reload <- function(){
   source("echolocatoR/R/MAIN.R") 
@@ -76,10 +88,10 @@ reload <- function(){
 
 # quick_start
 quickstart <- function(){ 
+  reload()
+  
   Data_dirs <<- read.csv("./Data/directories_table.csv")
   allResults <<- list()
-  # DO NOT include "./" in front of file paths. Confuses command line functions.
-  # Assign global variables to test functions
   gene <<- "LRRK2"
   leadSNP <<- "rs76904798" 
   chrom_col <<- "CHR"
@@ -90,6 +102,8 @@ quickstart <- function(){
   stderr_col <<- "se"
   freq_col <<- "freq"
   MAF_col<<-"calculate"
+  A1_col <<- "A1"
+  A2_col <<- "A2"
   finemap_method_list <<- c("SUSIE","ABF","FINEMAP","COJO")
   method <<- finemap_method <<- "SUSIE"
   method_list <<- finemap_method
@@ -116,6 +130,7 @@ quickstart <- function(){
   popDat_URL <<- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel"
   chr <<- 8
   vcf_name <<- "ALL.chr8.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
+  vcf_folder <<- "./Data/Reference/1000_Genomes"
   query_by <<- "coordinates"
   remove_variants <<- "rs34637584"
   remove_correlates <<- "rs34637584"
@@ -129,21 +144,26 @@ quickstart <- function(){
   proportion_cases <<- "calculate"
   
   
-  top_SNPs <<- import_topSNPs(
-    file_path = Directory_info(Data_dirs, dataset_name, "topSumStats"),
+  top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
+    topSS_path = Directory_info(Data_dirs, dataset_name, "topSumStats"),
     chrom_col = "CHR", position_col = "BP", snp_col="SNP",
     pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
-    caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats")
+    caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats",
+    group_by_locus = T, 
+    locus_col = "Locus Number",
+    remove_variants = "rs34637584")
   topSNP_sub <<- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),]
   
   
   results_path <<- make_results_path(dataset_name, dataset_type, gene)
   subset_path <<- get_subset_path(results_path, gene)
+  subset_DT <<- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt", sep="\t")
   # subset_path <<- 'Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_combined_meta_subset.txt'
-  subset_DT <<- data.table::fread(subset_path)
+  # subset_DT <<- data.table::fread(subset_path, sep="\t")
   LD_path <<- file.path(results_path, "plink/LD_matrix.RData")
   
   fullSS_path <<- file.path("Data",dataset_type,dataset_name,"nallsEtAl2019_allSamples_allVariants.mod.txt")
+  
   
 
   colDict <<- column_dictionary(fullSS_path)
@@ -169,9 +189,9 @@ quickstart <- function(){
   finemap_method_list <<- c("SUSIE", "ABF", "FINEMAP", "COJO")
   consensus <<- T
   
-  dataset1_path <<- "./Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_Nalls23andMe_2019_subset.txt"
+  dataset1_path <<- "./Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_Nalls23andMe_2019_subset_500kb.txt"
   dataset2_path <<- "./Data/eQTL/MESA_CAU/LRRK2/LRRK2_MESA_CAU_subset.txt"
-  shared_MAF <<- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_Nalls23andMe_2019_subset.txt")$MAF
+  shared_MAF <<- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_Nalls23andMe_2019_subset_500kb.txt", sep="\t")$MAF
   plot_subtitle <<- "Fairfax (2014) + CD14 eQTL"
   dataset2_proportion_cases <<- 5e-324
   PP_threshold <<- 0.8
@@ -189,7 +209,7 @@ quickstart <- function(){
 #   # Assign global variables to test functions
 #   gene <<- "LRRK2"
 #   leadSNP <<- "rs76904798"
-#   geneList <<- c("LRRK2")
+#   gene_list <<- c("LRRK2")
 #   chrom_col <<- "chr"
 #   position_col <<- "pos_snps"
 #   snp_col <<- "snps"
@@ -253,6 +273,9 @@ gene_trimmer <- function(subset_DT, trim_gene_limits, gene, min_POS, max_POS){
   } else{return(subset_DT)} 
 }
 
+printer <- function(..., v=T){if(v){print(paste(...))}}
+
+
 ## ---------------- Fine-mapping Functions ----------------  ##
 
 
@@ -294,7 +317,11 @@ finemap_pipeline <- function(gene,
                              tstat_col="t-stat", 
                              gene_col="Gene",
                              freq_col="Freq",
-                             MAF_col="MAF", 
+                             MAF_col="MAF",
+                             N_cases_col="N_cases",
+                             N_controls_col="N_controls",
+                             A1_col = "A1",
+                             A2_col = "A2",
                              LD_reference="1KG_Phase1", 
                              superpopulation="EUR", 
                              download_reference=T,
@@ -311,18 +338,22 @@ finemap_pipeline <- function(gene,
                              remove_variants=F,
                              remove_correlates=F,
                              probe_path = "./Data/eQTL/gene.ILMN.map",
-                             conditioned_snps
+                             conditioned_snps,
+                             plot_LD = F, 
+                             verbose=T,
+                             remove_tmps=T
                           ){
    # Create paths 
    results_path <- make_results_path(dataset_name, dataset_type, gene)
    subset_path <- get_subset_path(results_path=results_path, gene=gene, subset_path="auto")
-   delete_subset(force_new_subset, subset_path) 
+   # delete_subset(force_new_subset, subset_path) 
    
    # Extract subset 
    subset_DT <- extract_SNP_subset(gene = gene, 
                       top_SNPs = top_SNPs, 
                       fullSS_path = fullSS_path,
                       subset_path  =  subset_path,
+                      force_new_subset = force_new_subset,
                       
                       chrom_col = chrom_col, 
                       position_col = position_col, 
@@ -334,6 +365,8 @@ finemap_pipeline <- function(gene,
                       tstat_col = tstat_col,
                       MAF_col = MAF_col,
                       freq_col = freq_col,
+                      A1_col = A1_col,
+                      A2_col = A2_col,
                       
                       bp_distance = bp_distance,
                       superpopulation = superpopulation,  
@@ -341,11 +374,12 @@ finemap_pipeline <- function(gene,
                       max_POS = max_POS, 
                       file_sep = file_sep, 
                       query_by = query_by,
-                      probe_path = probe_path
+                      probe_path = probe_path,
+                      remove_tmps = remove_tmps
                       ) 
    # Remove pre-specified SNPs
    if(remove_variants!=F){
-     cat("\n Removing specified variants:",paste(remove_variants, collapse=','))
+     printer("Removing specified variants:",paste(remove_variants, collapse=','), v=verbose)
      subset_DT <- subset(subset_DT, !SNP %in% remove_variants )
    }
    # Filter by MAF
@@ -355,13 +389,13 @@ finemap_pipeline <- function(gene,
    # Trim subset according to annotations of where the gene's limit are 
    subset_DT <- gene_trimmer(subset_DT, trim_gene_limits, gene, min_POS, max_POS) 
    
-  ### Compute LD matrix 
-  cat("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
-  cat("  --- Step 2: Calculate Linkage Disequilibrium ---  ") 
-  cat("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
+  ### Compute LD matrix  
+  printer("",v=verbose)
+  printer("--- Step 2: Calculate Linkage Disequilibrium ---", v=verbose)
+  
   LD_path <- file.path(results_path,"plink/LD_matrix.RData")
   if(!file.exists(LD_path) | force_new_LD==T){
-    cat("\n + Computing LD matrix... \n") 
+    printer("+ Computing LD matrix... \n", verbose) 
     LD_matrix <- compute_LD_matrix(results_path = results_path, 
                                    subset_DT = subset_DT, 
                                    gene = gene,
@@ -375,24 +409,26 @@ finemap_pipeline <- function(gene,
                                    min_Dprime = min_Dprime,
                                    remove_correlates = remove_correlates) 
     # Save LD matrix 
-    # data.table::fwrite(LD_matrix, LD_path, sep="\t")
-    cat("+ Saving LD matrix to:",LD_path,"\n")
+    # data.table::fwrite(LD_matrix, LD_path, sep="\t") 
+    printer("+ Saving LD matrix to:",LD_path, v=verbose) 
     save(LD_matrix, file = LD_path) 
     # write.table(LD_matrix, LD_path, sep="\t", quote = F) 
-  } else {
-    cat("\n+ Previously computed LD matrix detected. Importing...",LD_path,"\n") 
+  } else { 
+    printer("+ Previously computed LD matrix detected. Importing...",LD_path, v=verbose) 
     # LD_matrix <- data.table::fread(LD_path, sep="\t", stringsAsFactors = F)  
     load(LD_path)
   }
-  # Plot LD
-  try({ 
-    LD_plot(LD_matrix=LD_matrix, subset_DT=subset_DT, span=10)
-  })
+  # Plot LD 
+  if(plot_LD){
+    try({ 
+      LD_plot(LD_matrix=LD_matrix, subset_DT=subset_DT, span=10)
+    })
+  }
   
-  # Final filtering 
-  cat("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
-  cat("  -------------- Step 3: Filter SNPs -------------  ") 
-  cat("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
+  
+  # Final filtering  
+  printer("",v=verbose)
+  printer("-------------- Step 3: Filter SNPs -------------",v=verbose) 
   ## Subset summary stats to only include SNPs found in query
   subset_DT <- subset(subset_DT, SNP %in% unique(row.names(LD_matrix), colnames(LD_matrix) ) )
   subset_DT <- subset_DT[complete.cases(subset_DT),] # Remove any NAs
@@ -400,6 +436,7 @@ finemap_pipeline <- function(gene,
   
   # finemap 
   finemap_DT <- finemap_handler(results_path = results_path, 
+                                fullSS_path = fullSS_path,
                                 finemap_method = finemap_method, 
                                 force_new_finemap = force_new_finemap,
                                 dataset_type = dataset_type,
@@ -407,30 +444,64 @@ finemap_pipeline <- function(gene,
                                 LD_matrix = LD_matrix, 
                                 n_causal = n_causal, 
                                 sample_size = sample_size,
-                                conditioned_snps = conditioned_snps)  
+                                conditioned_snps = conditioned_snps,
+                                
+                                snp_col = snp_col,
+                                freq_col = freq_col,
+                                effect_col = effect_col,
+                                stderr_col = stderr_col,
+                                pval_col = pval_col,
+                                N_cases_col = N_cases_col,
+                                N_controls_col = N_controls_col,
+                                A1_col = A1_col,
+                                A2_col = A2_col)  
   # Step 6: COLOCALIZE
   # Step 7: Functionally Fine-map
   
-  # Plot  
-  cat("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
-  cat("  --------------- Step 7: Visualize --------------  ") 
-  cat("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
-  mf_plot <- multi_finemap_plot(finemap_DT,
+  # Plot   
+  printer("",v=verbose)
+  printer("--------------- Step 7: Visualize --------------", v=verbose) 
+  mf_plot <- multi_finemap_plot(finemap_DT = finemap_DT,
                      results_path = results_path,
                      finemap_method_list = finemap_method, 
                      conditioned_snps = conditioned_snps,
                      gene = gene, 
                      original = T, 
                      save = T)
-  print(mf_plot) 
-  multi_finemap_results_table(results_path = results_path, 
-                              finemap_method_list = finemap_method)
+  print(mf_plot)  
+  
+  
+  # Cleanup:
+  if(remove_tmps){
+    tmp_files <- file.path(results_path,"plink",
+                           c("plink.bed",
+                             "plink.bim",
+                             "plink.fam",
+                             "plink.ld",
+                             "plink.ld.bin",
+                             "plink.log",
+                             "plink.nosex",
+                             "SNPs.txt") )
+    suppressWarnings(file.remove(tmp_files))
+  } 
   return(finemap_DT)
 }
   
+arg_list_handler <- function(arg, i){
+  output <- if(length(arg)>1){arg[i]}else{arg}
+  return(output)
+}
+snps_to_condition <- function(conditioned_snps, top_SNPs, gene_list){ 
+  if(conditioned_snps=="auto"){
+    lead_SNPs_DT <- subset(top_SNPs, Gene %in% gene_list)
+    # Reorder
+    lead_SNPs_DT[order(factor(lead_SNPs_DT$Gene,levels= gene_list)),] 
+    return(lead_SNPs_DT$SNP)
+  } else {return(conditioned_snps)}
+}
 
 # Fine-ap iteratively over genes/loci
-finemap_geneList <- function(geneList, fullSS_path, 
+finemap_gene_list <- function(gene_list, fullSS_path, 
                              dataset_name,
                              dataset_type="general",
                              force_new_subset=F, 
@@ -452,6 +523,8 @@ finemap_geneList <- function(geneList, fullSS_path,
                              MAF_col="MAF", 
                              gene_col="Gene",
                              freq_col="Freq",
+                             A1_col = "A1",
+                             A2_col = "A2",
                              LD_reference="1KG_Phase1", 
                              superpopulation="EUR",
                              topVariants=3, 
@@ -466,83 +539,82 @@ finemap_geneList <- function(geneList, fullSS_path,
                              remove_variants=F,
                              remove_correlates=F,
                              probe_path = "./Data/eQTL/gene.ILMN.map",
-                             conditioned_snps
+                             conditioned_snps="auto",
+                             plot_LD=F,
+                             verbose=T,
+                             remove_tmps=T
                              ){ 
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
-  for (i in 1:length(geneList)){
-    gene <- geneList[i]
-    gene_limits <- if(length(trim_gene_limits)>1){trim_gene_limits[i]}else{trim_gene_limits}
-    start_gene <- Sys.time() 
+  lead_SNPs <- snps_to_condition(conditioned_snps, top_SNPs, gene_list)
+  
+  for (i in 1:length(gene_list)){
+    try({ 
+      gene <- gene_list[i]
+      lead_SNP <- arg_list_handler(lead_SNPs, i) 
+      gene_limits <- arg_list_handler(trim_gene_limits, i) 
+      conditioned_snp <- arg_list_handler(conditioned_snps, i) 
+      start_gene <- Sys.time() 
+      cat('\n')
+      cat('###', gene, '\n') 
+      # Delete the old subset if force_new_subset == T  
+      finemap_DT <- finemap_pipeline(gene=gene, 
+                                     top_SNPs=top_SNPs, 
+                                     fullSS_path=fullSS_path,
+                                     finemap_method=finemap_method,
+                                     force_new_subset=force_new_subset,
+                                     force_new_LD=force_new_LD,
+                                     force_new_finemap=force_new_finemap,
+                                     dataset_name=dataset_name,
+                                     dataset_type=dataset_type,
+                                     n_causal=n_causal, 
+                                     bp_distance=bp_distance,
+                                     
+                                     chrom_col=chrom_col, 
+                                     position_col=position_col, 
+                                     snp_col=snp_col,
+                                     pval_col=pval_col, 
+                                     effect_col=effect_col, 
+                                     stderr_col=stderr_col,
+                                     tstat_col=tstat_col, 
+                                     gene_col=gene_col,
+                                     MAF_col=MAF_col,
+                                     freq_col=freq_col,
+                                     A1_col = A1_col,
+                                     A2_col = A2_col,
+                                     
+                                     LD_reference=LD_reference, 
+                                     superpopulation=superpopulation,
+                                     min_POS=min_POS, 
+                                     max_POS=max_POS,
+                                     min_MAF=min_MAF,
+                                     
+                                     trim_gene_limits=gene_limits,
+                                     file_sep=file_sep, 
+                                     min_r2=min_r2,
+                                     LD_block=LD_block, 
+                                     block_size=block_size, 
+                                     min_Dprime=min_Dprime, 
+                                     query_by=query_by, 
+                                     remove_variants=remove_variants,
+                                     remove_correlates=remove_correlates,
+                                     probe_path=probe_path,
+                                     conditioned_snps=lead_SNP,
+                                     plot_LD=plot_LD,
+                                     remove_tmps=remove_tmps)  
+      
+      # Create summary table for all genes
+      printer("Generating summary table...", v=verbose)
+      newEntry <- cbind(data.table(Gene=gene), finemap_DT) %>% as.data.table() 
+      fineMapped_allResults <- rbind(fineMapped_allResults, newEntry) 
+      end_gene <- Sys.time()
+      printer(gene,"fine-mapped in", round(end_gene-start_gene, 2),"seconds", v=verbose)
+    })
     cat('\n')
-    cat("###", gene, "\n") 
-    # Delete the old subset if force_new_subset == T  
-    finemap_DT <- finemap_pipeline(gene=gene, 
-                                   top_SNPs=top_SNPs, 
-                                   fullSS_path=fullSS_path,
-                                   finemap_method=finemap_method,
-                                   force_new_subset=force_new_subset,
-                                   force_new_LD=force_new_LD,
-                                   force_new_finemap=force_new_finemap,
-                                   dataset_name=dataset_name,
-                                   dataset_type=dataset_type,
-                                   n_causal=n_causal, 
-                                   bp_distance=bp_distance,
-                                   
-                                   chrom_col=chrom_col, 
-                                   position_col=position_col, 
-                                   snp_col=snp_col,
-                                   pval_col=pval_col, 
-                                   effect_col=effect_col, 
-                                   stderr_col=stderr_col,
-                                   tstat_col=tstat_col, 
-                                   gene_col=gene_col,
-                                   MAF_col=MAF_col,
-                                   freq_col=freq_col,
-                                   
-                                   LD_reference=LD_reference, 
-                                   superpopulation=superpopulation,
-                                   min_POS=min_POS, 
-                                   max_POS=max_POS,
-                                   min_MAF=min_MAF,
-                                   
-                                   trim_gene_limits=gene_limits,
-                                   file_sep=file_sep, 
-                                   min_r2=min_r2,
-                                   LD_block=LD_block, 
-                                   block_size=block_size, 
-                                   min_Dprime=min_Dprime, 
-                                   query_by=query_by, 
-                                   remove_variants=remove_variants,
-                                   remove_correlates=remove_correlates,
-                                   probe_path=probe_path,
-                                   conditioned_snps=conditioned_snps)  
-    
-    # Create summary table for all genes
-    cat("\n Generating summary table...")
-    newEntry <- cbind(data.table(Gene=gene), finemap_DT) %>% as.data.table 
-    fineMapped_allResults <- rbind(fineMapped_allResults, newEntry) 
-    end_gene <- Sys.time()
-    cat("\n",gene,"fine-mapped in", round(end_gene-start_gene, 2),"seconds \n")
-  }
-  createDT_html(fineMapped_topSNPs, "Potential Causal SNPs Identified by SUSIER", scrollY = 200)
+  }  
   return(fineMapped_allResults)
 }
  
 
-merge_finemapping_results <- function(allResults, credible_sets_only=T, csv_path=F){
-  final_results <- data.table()
-  for(n in names(allResults)){ 
-    try({ 
-      res <- cbind(Dataset=n, allResults[[n]])
-      if(credible_sets_only==T){res <- res %>% dplyr::filter(credible_set==T)}
-      final_results <- rbind(final_results, res, fill=T)
-    })
-  }
-  if(csv_path!=F){
-    data.table::fwrite(final_results, file = csv_path, quote = F, sep = ",")
-  }
-  return(final_results)
-}
 
 

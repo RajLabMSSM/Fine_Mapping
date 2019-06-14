@@ -2,6 +2,9 @@
 ####### Colocalization ####### 
 #     %%%%%%%%%%%%%%%%%     #
 
+
+# Jansen et al. 2017: https://eqtl.onderzoek.io/index.php?page=gene_cis_details&gene=BST1
+
 getmode <- function(v) {
   uniqv <- unique(v)
   uniqv[which.max(tabulate(match(v, uniqv)))]
@@ -14,11 +17,11 @@ construct_coloc_dataset <- function(subset_DT,
                                     type="cc"){ 
   sample_size <- get_sample_size(subset_DT, sample_size)
   if("proportion_cases" %in% colnames(subset_DT)){
-    cat("++ Extracting Proportion of Cases...")
+    printer("++ Extracting Proportion of Cases...")
     proportion_cases <- getmode(subset_DT$proportion_cases)
   }
   if(length(MAF)==1){
-    cat("++ Extracting MAF...")
+    printer("++ Extracting MAF...")
     if(is.na(MAF) & "MAF" %in% colnames(subset_DT)){
       MAF <- subset_DT$MAF
     }  
@@ -39,7 +42,8 @@ construct_coloc_dataset <- function(subset_DT,
  
 
 
-COLOC <- function(dataset1_path, 
+COLOC <- function(gene,
+                  dataset1_path, 
                   dataset2_path,
                   dataset1_type,
                   dataset2_type,
@@ -48,14 +52,14 @@ COLOC <- function(dataset1_path,
                   PP_threshold=0.8,
                   save_results=T,
                   show_plot=T){
-  cat("\n******** Step 5: COLOCALIZE ********\n")  
+  printer("\n******** Step 5: COLOCALIZE ********\n")  
   # The Approximate Bayes Factor colocalisation analysis described in the next section 
   ## essentially works by fine mapping each trait under a single causal variant assumption 
   ##and then integrating over those two posterior distributions to calculate probabilities that 
   ## those variants are shared.
   # https://cran.r-project.org/web/packages/coloc/vignettes/vignette.html
-  subset_DT1 <- data.table::fread(dataset1_path, stringsAsFactors = F) %>% data.frame()
-  subset_DT2 <- data.table::fread(dataset2_path, stringsAsFactors = F) %>% data.frame()
+  subset_DT1 <- data.table::fread(dataset1_path, stringsAsFactors = F, sep="\t") %>% data.frame()
+  subset_DT2 <- data.table::fread(dataset2_path, stringsAsFactors = F, sep="\t") %>% data.frame()
   common_SNPs <- intersect(subset_DT1$SNP, subset_DT2$SNP)
   subset_DT1 <- subset(subset_DT1, SNP %in% common_SNPs) %>% group_by(SNP) %>% slice(1) %>% data.frame()
   subset_DT2 <- subset(subset_DT2, SNP %in% common_SNPs) %>% group_by(SNP) %>% slice(1) %>% data.frame()
@@ -71,7 +75,7 @@ COLOC <- function(dataset1_path,
     dataset1$MAF <- dataset2$MAF
   }
   ## NOTES: MESA and Fairfax: No sample size (SNP-level), proportion of cases, or freq/MAF info available?   
-  cat("\n\n")
+  printer("\n\n")
   coloc.res <- coloc::coloc.abf(dataset1 = dataset1,
                                     dataset2 = dataset2)
                                     # MAF = dataset1$MAF) 
@@ -83,21 +87,21 @@ COLOC <- function(dataset1_path,
      "Both traits are associated and share a single causal variant.") ,
    c("PP.H0.abf","PP.H1.abf","PP.H2.abf","PP.H3.abf","PP.H4.abf")) 
  # Report hypothess results
-  cat("\n Hypothesis Results @ PP_threshold =",PP_threshold,":")
+  printer("\n Hypothesis Results @ PP_threshold =",PP_threshold,":")
   true_hyp <-""
   for(h in names(hypothesis_key)){
     if(coloc.res$summary[h]>=PP_threshold){
       hyp <- hypothesis_key[h]
-      cat("\n    ",h,"== TRUE: **",hyp )
+      printer("\n    ",h,"== TRUE: **",hyp )
       true_hyp <- paste0(names(hyp),": ", hyp)
     } else{
-      cat("\n    ",h,"== FALSE: ")
+      printer("\n    ",h,"== FALSE: ")
     } 
   } 
   
   # Save raw results   
   coloc_DT <- coloc.res$results
-  results_path <- dirname(dataset1_path)
+  results_path <- dirname(dirname(dataset1_path))
   data.table::fwrite(coloc_DT, file.path(results_path, "COLOC/COLOC_raw.txt"), sep="\t")
   
   # Find the causal SNP that coloc.abf identified in each dataset via finemap.abf
@@ -108,32 +112,32 @@ COLOC <- function(dataset1_path,
   causal_DT2 <- coloc_DT %>% arrange(desc(lABF.df2))
   causal_DT2 <- causal_DT2$snp[1]
   
-  # Process results 
-  # min/max limits to align with other x-axes
- 
+  # Process results  
+  coloc_DT$Colocalized <- ifelse(coloc_DT$SNP.PP.H4 >= PP_threshold, T, F)
+  colocalized_snps <- subset(coloc_DT, Colocalized==T)$snp# subset(coloc_DT, Colocalized==1)$SNP
+  coloc_datasets <- coloc_plot_data(coloc.res, subset_DT1, subset_DT2)
+  subtitle2 <- paste0("Colocalized SNPs: ", paste(colocalized_snps,sep=", "))
   if((coloc.res$summary["PP.H3.abf"] + coloc.res$summary["PP.H4.abf"] >= PP_threshold) & 
      (coloc.res$summary["PP.H4.abf"]/coloc.res$summary["PP.H3.abf"] >= 2)){
     # "We called the signals colocalized when (coloc H3+H4 ≥ 0.8 and H4∕H3 ≥ 2)" -Yi et al. (2019)
-    report <- paste("Datasets were colocalized")  
+    report <- paste("Datasets colocalized")  
   } else {
-    report <- paste("Datasets were NOT colocalized") 
+    report <- paste("Datasets NOT colocalized") 
   }   
-  cat("\n++",report,"at PP.H3 + PP.H4 >=",PP_threshold," and PP.H3 / PP.H4 >= 2.","\n") 
-  coloc_DT$Colocalized <- ifelse(coloc_DT$SNP.PP.H4 >= PP_threshold, 1, 0)
-  colocalized_snps <- subset(coloc_DT, Colocalized==T)$snp# subset(coloc_DT, Colocalized==1)$SNP
-  coloc_datasets <- coloc_plot_data(coloc.res, subset_DT1, subset_DT2)
+  printer("\n++",report,"at PP.H3 + PP.H4 >=",PP_threshold," and PP.H3 / PP.H4 >= 2.","\n") 
+ 
   
   # Plot 
   if(show_plot){
-    title1 <- paste(strsplit(dataset1_path,"/")[[1]][3],":",strsplit(dataset1_path,"/")[[1]][4])
-    title2 <- paste(strsplit(dataset2_path,"/")[[1]][3],":",strsplit(dataset2_path,"/")[[1]][4]) 
+    title1 <- paste(gene,":",strsplit(dataset1_path,"/")[[1]][4],strsplit(dataset1_path,"/")[[1]][3])
+    title2 <- paste(gene,":",strsplit(dataset2_path,"/")[[1]][4],strsplit(dataset2_path,"/")[[1]][3]) 
     
     COLOC_plot(coloc_DT1 = coloc_datasets$coloc_DT1,
                coloc_DT2 = coloc_datasets$coloc_DT2, 
                title1 = title1,
                subtitle1 = report,
                title2 = title2, 
-               subtitle2 = paste0("Colocalized SNPs: ", paste(colocalized_snps,sep=", ")),
+               subtitle2 = subtitle2,
                SNP_list = c("rs34637584","rs76904798","rs117073808"),
                alt_color_SNPs = colocalized_snps, 
                show_plot = T)
@@ -196,4 +200,14 @@ COLOC_plot <- function(gene,
                        show_plot = F)
   cp <- cowplot::plot_grid(mp1, mp2, ncol = 1)
   if(show_plot){print(cp)}else{return(cp)}
+}
+
+
+
+MASHR <- function(){ 
+  devtools::install_github("stephenslab/mashr@v0.2-11")
+  library(ashr)
+  library(mashr)
+  set.seed(1)
+  simdata = simple_sims(500,5,1)
 }

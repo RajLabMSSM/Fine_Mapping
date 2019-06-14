@@ -1,0 +1,45 @@
+*******************************************************************
+* Genome-wide Complex Trait Analysis (GCTA)
+* version 1.92.1 beta5 Mac
+* (C) 2010-2019, The University of Queensland
+* Please report bugs to: Jian Yang <jian.yang@uq.edu.au>
+*******************************************************************
+Analysis started at 13:49:06 EDT on Fri May 31 2019.
+Hostname: brians-mbp.19e98.mountsinai.org
+
+Accepted options:
+--bfile Data/GWAS/Nalls23andMe_2019/BST1/plink/plink
+--cojo-file Data/GWAS/Nalls23andMe_2019/BST1/COJO/cojo-file.ma
+--maf 0
+--diff-freq 0.1
+--cojo-cond Data/GWAS/Nalls23andMe_2019/BST1/COJO/cojo-cond.txt
+--exclude Data/GWAS/Nalls23andMe_2019/BST1/COJO/excluded_snps.txt
+--out Data/GWAS/Nalls23andMe_2019/BST1/COJO/cojo
+
+
+Reading PLINK FAM file from [Data/GWAS/Nalls23andMe_2019/BST1/plink/plink.fam].
+1092 individuals to be included from [Data/GWAS/Nalls23andMe_2019/BST1/plink/plink.fam].
+Reading PLINK BIM file from [Data/GWAS/Nalls23andMe_2019/BST1/plink/plink.bim].
+6227 SNPs to be included from [Data/GWAS/Nalls23andMe_2019/BST1/plink/plink.bim].
+Reading a list of SNPs from [Data/GWAS/Nalls23andMe_2019/BST1/COJO/excluded_snps.txt].
+0 SNPs are excluded from [Data/GWAS/Nalls23andMe_2019/BST1/COJO/excluded_snps.txt] and there are 6227 SNPs remaining.
+Reading PLINK BED file from [Data/GWAS/Nalls23andMe_2019/BST1/plink/plink.bed] in SNP-major format ...
+Genotype data for 1092 individuals and 6227 SNPs to be included from [Data/GWAS/Nalls23andMe_2019/BST1/plink/plink.bed].
+
+Reading GWAS summary-level statistics from [Data/GWAS/Nalls23andMe_2019/BST1/COJO/cojo-file.ma] ...
+GWAS summary statistics of 6227 SNPs read from [Data/GWAS/Nalls23andMe_2019/BST1/COJO/cojo-file.ma].
+Phenotypic variance estimated from summary statistics of all 6227 SNPs: 74.4127 (variance of logit for case-control studies).
+Matching the GWAS meta-analysis results to the genotype data ...
+Calculating allele frequencies ...
+118 SNP(s) have large difference of allele frequency among the GWAS summary data and the reference sample. These SNPs have been saved in [Data/GWAS/Nalls23andMe_2019/BST1/COJO/cojo.freq.badsnps].
+6109 SNPs are matched to the genotype data.
+Calculating the variance of SNP genotypes ...
+Reading a list of given SNPs from [Data/GWAS/Nalls23andMe_2019/BST1/COJO/cojo-cond.txt].
+1 of them are matched to the genotype and summary data.
+Performing single-SNP association analysis conditional on the 1 given SNPs ... (collinearity cutoff = 0.9)
+(Assuming complete linkage equilibrium between SNPs which are more than 10Mb away from each other)
+Saving the summary statistics of the given SNPs in the file [Data/GWAS/Nalls23andMe_2019/BST1/COJO/cojo.given.cojo] ...
+Saving the conditional analysis results of 6108 remaining SNPs to [Data/GWAS/Nalls23andMe_2019/BST1/COJO/cojo.cma.cojo] ...
+
+Analysis finished at 13:49:06 EDT on Fri May 31 2019
+Computational time: 0.377780 second(s).

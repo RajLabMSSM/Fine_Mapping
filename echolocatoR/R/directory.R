@@ -89,9 +89,10 @@ get_dataset_name <- function(file_path){
 delete_subset <- function (force_new_subset, subset_path){
   # Force new file to be made
   if(force_new_subset==T){
+    printer("\n + Removing existing summary stats subset...\n")
     # dataset_name <- get_dataset_name(subset_path)
     # subset_path <- paste(dirname(subset_path),"/",gene,"_",superpopulation,"_",dataset_name,"_subset.txt",sep="") 
-    file.remove(subset_path)
+    suppressWarnings(file.remove(subset_path))
   }
 }
 

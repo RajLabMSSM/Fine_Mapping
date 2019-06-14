@@ -4,8 +4,8 @@
 * (C) 2010-2019, The University of Queensland
 * Please report bugs to: Jian Yang <jian.yang@uq.edu.au>
 *******************************************************************
-Analysis started at 03:33:04 EDT on Wed May 22 2019.
-Hostname: Brians-MacBook-Pro.local
+Analysis started at 14:06:42 EDT on Mon Jun 10 2019.
+Hostname: brians-mbp.19e98.mountsinai.org
 
 Accepted options:
 --bfile Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink
@@ -20,26 +20,25 @@ Accepted options:
 Reading PLINK FAM file from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.fam].
 1092 individuals to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.fam].
 Reading PLINK BIM file from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bim].
-3345 SNPs to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bim].
+560 SNPs to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bim].
 Reading a list of SNPs from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/excluded_snps.txt].
-0 SNPs are excluded from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/excluded_snps.txt] and there are 3345 SNPs remaining.
+0 SNPs are excluded from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/excluded_snps.txt] and there are 560 SNPs remaining.
 Reading PLINK BED file from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bed] in SNP-major format ...
-Genotype data for 1092 individuals and 3345 SNPs to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bed].
+Genotype data for 1092 individuals and 560 SNPs to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bed].
 
 Reading GWAS summary-level statistics from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo-file.ma] ...
-GWAS summary statistics of 3344 SNPs read from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo-file.ma].
-Phenotypic variance estimated from summary statistics of all 3344 SNPs: 67.1819 (variance of logit for case-control studies).
+GWAS summary statistics of 560 SNPs read from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo-file.ma].
+Phenotypic variance estimated from summary statistics of all 560 SNPs: 64.9195 (variance of logit for case-control studies).
 Matching the GWAS meta-analysis results to the genotype data ...
 Calculating allele frequencies ...
-2 SNP(s) have large difference of allele frequency among the GWAS summary data and the reference sample. These SNPs have been saved in [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo.freq.badsnps].
-3342 SNPs are matched to the genotype data.
+560 SNPs are matched to the genotype data.
 Calculating the variance of SNP genotypes ...
 Reading a list of given SNPs from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo-cond.txt].
 1 of them are matched to the genotype and summary data.
 Performing single-SNP association analysis conditional on the 1 given SNPs ... (collinearity cutoff = 0.9)
 (Assuming complete linkage equilibrium between SNPs which are more than 10Mb away from each other)
 Saving the summary statistics of the given SNPs in the file [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo.given.cojo] ...
-Saving the conditional analysis results of 3341 remaining SNPs to [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo.cma.cojo] ...
+Saving the conditional analysis results of 559 remaining SNPs to [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo.cma.cojo] ...
 
-Analysis finished at 03:33:04 EDT on Wed May 22 2019
-Computational time: 0.265542 second(s).
+Analysis finished at 14:06:42 EDT on Mon Jun 10 2019
+Computational time: 0.040376 second(s).

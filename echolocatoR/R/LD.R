@@ -33,7 +33,7 @@ plink_file <- function(base_url="./echolocatoR/tools"){
 #   # PHASE 3 DATA
 #   path3 <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/"
 #   for(chrom in c(1:22)){
-#     cat("\nDownloading Chromosome",chrom,"\n")
+#     printer("\nDownloading Chromosome",chrom,"\n")
 #     URL <- paste("ALL.chr",chrom,".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep = "")
 #     system(paste("wget -P",file.path(vcf_folder,"Phase3"), file.path(path3, URL) ))
 #   }
@@ -49,7 +49,7 @@ plink_file <- function(base_url="./echolocatoR/tools"){
 #   # PHASE 1 DATA
 #   path1 <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521"
 #   for(chrom in c(1:22)){
-#     cat("\nDownloading Chromosome",chrom,"\n")
+#     printer("\nDownloading Chromosome",chrom,"\n")
 #     URL <- paste("ALL.chr",chrom, ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
 #     system(paste( "wget -P",file.path(vcf_folder,"Phase1"), file.path(path1, URL) ))
 #   }
@@ -82,7 +82,9 @@ LD_plot <- function(LD_matrix, subset_DT, span=10){
 } 
 
 
-compute_LD_matrix <- function(results_path, subset_DT, gene,
+compute_LD_matrix <- function(results_path, 
+                              subset_DT, 
+                              gene,
                               reference="1KG_Phase1", 
                               superpopulation="EUR",
                               vcf_folder="./Data/Reference/1000_Genomes",
@@ -91,7 +93,8 @@ compute_LD_matrix <- function(results_path, subset_DT, gene,
                               LD_block=F, 
                               block_size=.7, 
                               min_Dprime=F,
-                              remove_correlates=F){  
+                              remove_correlates=F,
+                              remove_tmps=T){  
   # 1000 Genomes FTP Browser URL
   ## http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
   
@@ -100,7 +103,7 @@ compute_LD_matrix <- function(results_path, subset_DT, gene,
   chrom <- subset_DT$CHR[1]
   # PHASE 3 DATA
   if(reference=="1KG_Phase3"){
-    cat("LD Reference Panel = 1KG_Phase3 \n")
+    printer("LD Reference Panel = 1KG_Phase3 \n")
     if(download_reference){## With internet
       vcf_URL <- paste("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr",chrom,
                        ".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep="")
@@ -113,7 +116,7 @@ compute_LD_matrix <- function(results_path, subset_DT, gene,
     
     # PHASE 1 DATA
   } else if (reference=="1KG_Phase1") {
-    cat("LD Reference Panel = 1KG_Phase1 \n")
+    printer("LD Reference Panel = 1KG_Phase1 \n")
     if(download_reference){## With internet
       vcf_URL <- paste("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/ALL.chr",chrom,
                        ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
@@ -126,7 +129,7 @@ compute_LD_matrix <- function(results_path, subset_DT, gene,
   # gnoMAD
   } 
   # else if(reference=="gnomad"){
-  #   cat("LD Reference Panel = 1KG_Phase1 \n") 
+  #   printer("LD Reference Panel = 1KG_Phase1 \n") 
   #   gnomad_version <- "2.1.1"
   #   if(download_reference){## With internet 
   #     vcf_URL <- paste("https://storage.cloud.google.com/gnomad-public/release/",gnomad_version,"/",
@@ -140,7 +143,7 @@ compute_LD_matrix <- function(results_path, subset_DT, gene,
   # }
   
   phase <- gsub("1KG_","",reference) 
-  popDat <- read.delim(popDat_URL, header = F, row.names = NULL)
+  popDat <- suppressWarnings(data.table::fread(popDat_URL, header = F, sep="\t"))
   colnames(popDat) <- c("sample","population","superpop","gender")
   
   
@@ -150,21 +153,21 @@ compute_LD_matrix <- function(results_path, subset_DT, gene,
   # Create directory if it doesn't exist
   if(!dir.exists(dirname(dirname(subset_vcf))) ) {
     dir.create(path = dirname(subset_vcf),recursive =  T, showWarnings = F)
-  }else{cat("Creating ",vcf_folder," directory.\n")}
+  }else{printer("+ Creating ",vcf_folder," directory.")}
   
   # Download and subset vcf if the subset doesn't exist already
   if(!file.exists(subset_vcf)){
     tabix_cmd <- paste("tabix -fh",vcf_URL, region, ">", subset_vcf)
-    cat(tabix_cmd)
+    printer(tabix_cmd)
     system(tabix_cmd)
     vcf_name <- paste(basename(vcf_URL), ".tbi", sep="")
     file.remove(vcf_name)
-  }else{cat("Identified matching VCF subset file. Importing...", subset_vcf,"\n")} 
+  }else{printer("+ Identified matching VCF subset file. Importing...", subset_vcf)} 
   
   
   filter_vcf <- function(subset_vcf, subset_DT, results_path, superpopulation){
     # Import w/ gaston and further subset
-    cat("\n------ Importing VCF as bed file... ------\n")
+    printer("+ Importing VCF as bed file...")
     bed.file <- gaston::read.vcf(subset_vcf, verbose = F) 
     ## Subset rsIDs
     bed <- gaston::select.snps(bed.file, id %in% subset_DT$SNP & id !=".")
@@ -207,22 +210,26 @@ compute_LD_matrix <- function(results_path, subset_DT, gene,
   #     ld_filt <- l[lapply(l, function(x){x^2}) >= min_r2] %>% names()
   #     # LD_matrix[LD_matrix^2>=.2,]
   #     return(LD_matrix[ld_filt, ld_filt])
-  #   } else{return(LD_matrix)}
+  #   } else{return(LD_matrix)} 
   # }
   # LD_matrix <- filter_by_LD(LD_matrix, leadSNP, min_r2)
   
   # Filter out SNPs not in the same LD block as the lead SNP
-  if(LD_block==T){
+  if(LD_block){
     block_snps <- leadSNP_block(leadSNP, "./plink_tmp", block_size)
     LD_matrix <- LD_matrix[row.names(LD_matrix) %in% block_snps, colnames(LD_matrix) %in% block_snps]
   } 
+  # IMPORTANT! Remove large data.ld file after you're done with it
+  if(remove_tmps){ 
+    suppressWarnings(file.remove(subset_vcf))
+  }
   return(LD_matrix)
-  cat("\n Saving LD matrix of size:", dim(LD_matrix)[1],"rows x",dim(LD_matrix)[2],"columns")
+  printer("Saving LD matrix of size:", dim(LD_matrix)[1],"rows x",dim(LD_matrix)[2],"columns.")
 }
 
 
 Dprime_table <- function(SNP_list, plink_folder){
-  cat("+ Creating DPrime table")
+  printer("+ Creating DPrime table")
   system( paste(plink_file(), "--bfile",file.path(plink_folder,"plink"),
                 "--ld-snps", paste(SNP_list, collapse=" "),
                 "--r dprime-signed",
@@ -253,7 +260,7 @@ Dprime_table <- function(SNP_list, plink_folder){
 #   plink.ld <- plink.ld[!is.nan(plink.ld$R),]
 #   
 #   if(min_Dprime!=F){
-#     cat("\n++++++++++ Filtering by DPrime ++++++++++\n")
+#     printer("\n++++++++++ Filtering by DPrime ++++++++++\n")
 #     plink.ld <- subset(plink.ld, DP>=min_Dprime)
 #   }
 #   ld.matrix <- data.table::dcast.data.table(plink.ld, formula = SNP_B ~ SNP_A, value.var="R",
@@ -283,11 +290,11 @@ plink_LD <-function(leadSNP,
   start <- Sys.time()
 
   # Calculate LD 
-  cat("\n++++++++++ Reading in BIM file... ++++++++++\n")
+  printer("\n++++++++++ Reading in BIM file... ++++++++++\n")
   bim <- data.table::fread(file.path(plink_folder, "plink.bim"), col.names = c("CHR","SNP","V3","POS","A1","A2")) 
   data.table::fwrite(subset(bim, select="SNP"), file.path(plink_folder,"SNPs.txt"), col.names = F)
   
-  cat("\n++++++++++ Calculating LD ++++++++++\n")
+  printer("\n++++++++++ Calculating LD ++++++++++\n")
   ld.matrix <- run_plink_LD(bim, plink_folder) 
   
   if((min_Dprime != F) | (min_r2 != F) | (remove_correlates != F)){ 
@@ -295,24 +302,24 @@ plink_LD <-function(leadSNP,
     
     # DPrime filter
     if(min_Dprime != F){
-      cat("\n +++ Filtering LD Matrix (min_Dprime): Removing SNPs with D' <=",min_Dprime,"for",leadSNP,"(lead SNP).\n")
+      printer("\n +++ Filtering LD Matrix (min_Dprime): Removing SNPs with D' <=",min_Dprime,"for",leadSNP,"(lead SNP).\n")
       plink.ld <- subset(plink.ld, (SNP_A==leadSNP & DP>=min_Dprime) | (SNP_B==leadSNP & DP>=min_Dprime))
-    } else{print("\n min_Dprime == FALSE")}
+    } else{printer("\n min_Dprime == FALSE")}
     
     # R2 filter
     if(min_r2 != F ){
-      cat("\n +++ Filtering LD Matrix (min_r2): Removing SNPs with r <=",min_r2,"for",leadSNP,"(lead SNP).\n")
+      printer("\n +++ Filtering LD Matrix (min_r2): Removing SNPs with r <=",min_r2,"for",leadSNP,"(lead SNP).\n")
       r = sqrt(min_r2)
       plink.ld <- subset(plink.ld, (SNP_A==leadSNP & R>=r) | (SNP_B==leadSNP & R>=r))   
-    } else{print("\n min_r2 == FALSE")}
+    } else{printer("\n min_r2 == FALSE")}
     
     # Correlates filter
     if(remove_correlates != F){
       r2_threshold <- 0.2
       r <- sqrt(r2_threshold)
-      cat("\n +++ Filtering LD Matrix (remove_correlates): Removing SNPs with R2 >=",r2_threshold,"for",paste(remove_correlates,collapse=", "),".\n")
+      printer("\n +++ Filtering LD Matrix (remove_correlates): Removing SNPs with R2 >=",r2_threshold,"for",paste(remove_correlates,collapse=", "),".\n")
       plink.ld <- subset(plink.ld, !(SNP_A %in% remove_correlates & R>=r) | (SNP_B %in% remove_correlates & R>=r))  
-    } else{print("\n remove_correlates == FALSE")}
+    } else{printer("\n remove_correlates == FALSE")}
     
     # Apply filters
     A_list <- unique(plink.ld$SNP_A)
@@ -325,12 +332,12 @@ plink_LD <-function(leadSNP,
     # !IMPORTANT!: Fill NAs (otherwise susieR will break)
     ld.matrix[is.na(ld.matrix)] <- 0
     end <- Sys.time()
-    cat("\n++++++++++ LD matrix calculated in",round(as.numeric(end-start),2),"seconds. ++++++++++\n")
+    printer("\n++++++++++ LD matrix calculated in",round(as.numeric(end-start),2),"seconds. ++++++++++\n")
     return(ld.matrix) 
 }
 
 LD_blocks <- function(plink_folder, block_size=.7){
-  cat("\n++++++++++ Calculating LD blocks... ++++++++++\n")
+  printer("\n++++++++++ Calculating LD blocks... ++++++++++\n")
   # PLINK 1.07 LD: http://zzz.bwh.harvard.edu/plink/ld.shtml
   # PLINK 1.9 LD: https://www.cog-genomics.org/plink/1.9/ld
   # system(plink_file(), "-h")
@@ -354,11 +361,11 @@ LD_blocks <- function(plink_folder, block_size=.7){
 
 
 leadSNP_block <- function(leadSNP, plink_folder, block_size=.7){
-  cat("\n Returning lead SNP's block...\n")
+  printer("\n Returning lead SNP's block...\n")
   blocks <- LD_blocks(plink_folder, block_size)
   splitLists <- strsplit(blocks$SNPS,split = "[|]")
   block_snps <- lapply(splitLists, function(l, leadSNP){if(leadSNP %in% l){return(l)} }, leadSNP=leadSNP) %>% unlist()
-  cat("\n Number of SNPs in LD block =", length(block_snps), "\n")
+  printer("\n Number of SNPs in LD block =", length(block_snps), "\n")
   return(block_snps)
 }
 
