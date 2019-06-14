@@ -139,9 +139,10 @@ candidate_counts <- counts_summary(top_SNPs, merged_results)
 ## eQTL Boxplots: Fairfax
 
 ```{r eQTL Boxplots: Fairfax}
-snp_list <- subset(merged_results, Gene=="LRRK2")$SNP %>% unique()
+# snp_list <- subset(merged_results, Gene=="LRRK2")$SNP %>% unique()
+snp_list <- c("rs7294519", "rs11175620", "rs76904798")
 
-merged_eQTL_data <- eQTL_boxplot(snp_list,
+merged_eQTL_data <- eQTL_boxplots(snp_list,
              eQTL_SS_paths = file.path("Data/eQTL/Fairfax_2014",
                                        c("CD14/LRRK2/LRRK2_Fairfax_CD14.txt",
                                          "IFN/LRRK2/LRRK2_Fairfax_IFN.txt",
@@ -156,8 +157,8 @@ merged_eQTL_data <- eQTL_boxplot(snp_list,
              probe_path = "Data/eQTL/Fairfax_2014/gene.ILMN.map",
              .fam_path = "Data/eQTL/Fairfax_2014/volunteers_421.fam",
              gene = "LRRK2",
-             show_plot = T)
-
+             show_plot = T,
+             SS_annotations = F) 
 
 ```
 

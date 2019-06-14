@@ -1,8 +1,27 @@
 
+createDT <- function(DF, caption="", scrollY=400){
+  data <- DT::datatable(DF, caption=caption,
+                        extensions = 'Buttons',
+                        options = list( dom = 'Bfrtip',
+                                        buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                                        scrollY = scrollY, scrollX=T, scrollCollapse = T, paging = F,
+                                        columnDefs = list(list(className = 'dt-center', targets = "_all"))
+                        )
+  )
+  return(data)
+}
+
+subset_genotype_data <- function(snp_list, 
+                                 genotype_path = "volunteer_421.impute2.dosage"){  
+  # NOTE: "volunteer_421.impute2.dosage" is the file you want to subset from! 
+   cmd <- paste0("grep -E '",paste0(snp_list %>% unique(), collapse="|"),"' ", genotype_path)
+   geno <- data.table::fread(text = system(cmd, intern = T),
+                               sep = " ", header = F) 
+  return(geno)
+}
 
 
-
-eQTL_boxplot <- function(snp_list,
+eQTL_boxplots <- function(snp_list,
                          eQTL_SS_paths = file.path("Data/eQTL/Fairfax_2014",
                                                    c("CD14/LRRK2/LRRK2_Fairfax_CD14.txt",
                                                      "IFN/LRRK2/LRRK2_Fairfax_IFN.txt",
@@ -13,11 +32,17 @@ eQTL_boxplot <- function(snp_list,
                                                         "IFN/IFN.47231.367.b.txt",
                                                         "LPS2/LPS2.47231.261.b.txt",
                                                         "LPS24/LPS24.47231.322.b.txt")),
-                         genotype_path = "Data/eQTL/Fairfax_2014/geno.subset.txt",
+                         genotype_path = "Data/eQTL/Fairfax_2014/geno.subset.txt", 
+                         subset_genotype_file = F,
                          probe_path = "Data/eQTL/Fairfax_2014/gene.ILMN.map",
                          .fam_path = "Data/eQTL/Fairfax_2014/volunteers_421.fam",
                          gene = "LRRK2",
-                         show_plot = T){  
+                         show_plot = T,
+                         SS_annotations = T,
+                         interact = T){
+  # Helper function
+  printer <- function(..., v=T){if(v){print(paste(...))}}
+  
   # Expression
   ## Get probe IDs for gene 
   probes_mapping <- function(probe_path., gene_list){
@@ -26,6 +51,9 @@ eQTL_boxplot <- function(snp_list,
     col_names <- data.table::fread(probe_path., sep="\t", nrows = 0) %>% colnames()
     probe_map <- data.table::fread(text = system(cmd, intern = T), 
                                    sep = "\t", header = F, col.names = col_names)
+    if(dim(probe_map)[1]==0){
+      stop("Could not identify gene in the probe mapping file: ",paste(gene_list, collapse=", "))
+    }
     # Subset just to make sure you didn't accidentally grep other genes
     probe_map <- subset(probe_map, GENE %in% gene_list)
     return(probe_map)
@@ -89,23 +117,19 @@ eQTL_boxplot <- function(snp_list,
   SS_data <- subset(SS_data, PROBE_ID == exp_data$PROBE_ID %>% unique() )
   
   # GENOTYPE 
-  get_genotype_data <- function(genotype_path, .fam_path){
+  get_genotype_data <- function(genotype_path, .fam_path, subset_genotype_file = F, probe_ID. = NA){
     printer("")
-    printer("+ Processing Genotype data")
-    # subset_genotypes <- function(snp_list, genotype_path){
-    #    # Query with zgrep since it's .gz
-    #    cmd <- paste0("zgrep −−gz -E '",paste0(snp_list %>% unique(), collapse="|"),"' ", genotype_path)
-    #    geno <- data.table::fread(text = system(cmd, intern = T), 
-    #                              sep = " ", header = F)
-    # } 
-    
-    # NOTE: "volunteer_421.impute2.dosage" is the file you want to subset from!
-    
-    ## Melt subject IDs into single column
-    geno_subset <- data.table::fread(genotype_path, sep=" ", header=F, stringsAsFactors = F)
+    printer("+ Processing Genotype data") 
+    if(subset_genotype_file){
+      geno_subset <- subset_genotype_data(probe_ID. = probe_ID)
+    } else { 
+      geno_subset <- data.table::fread(genotype_path, sep=" ", header=F, stringsAsFactors = F)
+    }
+    # Add column names
     first_cols <- c("CHR","SNP","POS","A1","A2") 
     subject_IDs <- data.table::fread(.fam_path, stringsAsFactors = F)$V1
     colnames(geno_subset) <- c(first_cols,  subject_IDs) 
+    ## Melt subject IDs into single column
     geno_melt <- geno_subset %>% reshape2::melt(geno_subset, id.vars = c("CHR","SNP","POS","A1","A2"),
                                                 measure.vars = as.character(subject_IDs),
                                                 variable.name = "Subject_ID", 
@@ -118,7 +142,7 @@ eQTL_boxplot <- function(snp_list,
     #                                          ifelse(Genotype_int == 2, paste0(A2,"/",A2), NA))) )
     return(geno_melt)
   }
-  geno_data <- get_genotype_data(genotype_path, .fam_path)
+  geno_data <- get_genotype_data(genotype_path, .fam_path, probe_ID. = unique(SS_data$PROBE_ID))
   
   
   
@@ -158,14 +182,22 @@ eQTL_boxplot <- function(snp_list,
       arrange(SNP, Condition) %>% 
       unique()  
     
-    p <- ggplot(data = SS_geno_exp, aes(x = Genotype, y = Expression, fill=SNP)) + 
+    bp <- ggplot(data = SS_geno_exp, aes(x = Genotype, y = Expression, fill=SNP)) + 
       geom_boxplot(show.legend = F) + 
       geom_jitter(aes(alpha=.5), width =.2,  show.legend = F) +  
-      facet_grid(facets = SNP~Condition) +
-      annotate("text", label = paste("Beta =",labels$Beta,";", labels$P,";",labels$FDR_scient), 
-               size = 4, x = 2, y = 7.5) +
+      facet_grid(facets = SNP~Condition) + 
       theme_bw()
-    print(p) 
+    if(SS_annotations){
+      bp <- bp + annotate("text", label = paste("Beta =",labels$Beta,";", labels$P,";",labels$FDR_scient), 
+               size = 4, x = 2, y = 7.5)
+    }
+    
+    if(interact){
+     print(plotly::ggplotly(bp)) 
+    } else {
+      print(bp) 
+    }
+   
   } 
   return(SS_geno_exp)
 }

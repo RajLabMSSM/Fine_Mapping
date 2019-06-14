@@ -78,6 +78,9 @@ source("./echolocatoR/R/plot.R")
 source("./echolocatoR/R/conditional.R")
 source("./echolocatoR/R/colocalization.R")
 source("./echolocatoR/R/annotate.R")
+source("./echolocatoR/R/eQTL_boxplots.R")
+
+
 
 
 reload <- function(){
