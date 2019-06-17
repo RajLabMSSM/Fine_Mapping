@@ -1,5 +1,5 @@
 ---
-title: "<center><h1>Fine Mapping:</h1>Parkinson's Disease</center>" 
+title: "<center><h1>Fine Mapping:</h1>Parkinson's Disease</h1></center>" 
 author: 
     "<div class='container'>
      <h3>Brian M. Schilder, Bioinformatician II<br>
