@@ -301,8 +301,7 @@ multi_finemap <- function(results_path,
                           A2_col="A2"){
   printer("\n Fine-mapping using multiple tools:\n  ", paste(finemap_method_list, collapse=", "),"\n")
   # finemap_method_list <- finemap_method_list[finemap_method_list!="COJO"] 
-<<<<<<< HEAD
-  
+ 
   merged_DT <- subset_DT 
   DT <- data.table::data.table(SNP = merged_DT$SNP, Credible_Set = NA, Probability = NA); 
   for(i in 1:length(finemap_method_list)){  
@@ -345,40 +344,7 @@ multi_finemap <- function(results_path,
     # Arrange by newest probability measure
     # merged_DT <- merged_DT %>% arrange(desc(eval(parse(text=paste0(m,".Probability") ))))
     
-    
-=======
-  merged_DT <- subset_DT 
-  for(i in 1:length(finemap_method_list)){  
-    m <- finemap_method_list[i] 
-    DT <- finemap_method_handler(fullSS_path = fullSS_path,
-                                 results_path = results_path,
-                          finemap_method = m, 
-                          subset_DT = subset_DT, 
-                          dataset_type = dataset_type,
-                          LD_matrix = LD_matrix, 
-                          n_causal = n_causal, 
-                          sample_size = sample_size,
-                          snp_col = snp_col,
-                          freq_col = freq_col,
-                          effect_col = effect_col,
-                          stderr_col = stderr_col,
-                          pval_col = pval_col,
-                          N_cases_col = N_cases_col,
-                          N_controls_col = N_controls_col,
-                          A1_col = A1_col,
-                          A2_col = A2_col) 
-    # Add results to method-specific columns
-    printer("\n --- Merging",m,"results with multi-finemap data.")
-    value_var <- if(m=="COJO"){"Conditioned_Effect"}else{"Probability"}
-    DT_sub <- subset(DT, select = c("SNP","Credible_Set",value_var) )
-    cols <- colnames(DT_sub)
-    colnames(DT_sub) <- c("SNP", paste(m, cols[2:length(cols)], sep="." )) 
-    merged_DT <- data.table:::merge.data.table(data.table::data.table(merged_DT),
-                                               data.table::data.table(DT_sub),
-                                               by="SNP") 
-    # Arrange by newest probability measure
-    # merged_DT <- merged_DT %>% arrange(desc(eval(parse(text=paste0(m,".Probability") ))))
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
+     
   } 
   
   finemap_DT <- find_consensus_SNPs(merged_DT)  

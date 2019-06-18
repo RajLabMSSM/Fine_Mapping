@@ -15,12 +15,8 @@
 # All additional sample series except for the post-Chang et al . 2017 samples from 23andMe were imputed using the
 # __Haplotype Reference Consortium (HRC)__  on the University of Michigan imputation server under default settings
 # with Eagle v2.3 phasing based on reference panel HRC r1.1 2016"_
-
-<<<<<<< HEAD
+ 
 plink_file <- function(base_url="./echolocatoR/tools/plink"){
-=======
-plink_file <- function(base_url="./echolocatoR/tools"){
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
   os <- get_os()
   if (os=="osx") { 
     plink_version <- file.path(base_url, "plink1.9_mac");

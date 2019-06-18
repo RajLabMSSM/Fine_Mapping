@@ -337,7 +337,7 @@ epigenetics_enrichment <- function(snp_list1,
     } 
   }
 }
-<<<<<<< HEAD
+
 
 
 GoShifter <- function(GoShifter_path="echolocatoR/tools/goshifter/goshifter.py",
@@ -363,7 +363,7 @@ GoShifter <- function(GoShifter_path="echolocatoR/tools/goshifter/goshifter.py",
   load(file.path(results_path,"plink/LD_Matrix.RData"))
   # (chrA\tposA\trsIdA\tposB\trsIdB\tRsquared\tDPrime)
   
-  LD_matrix
+  # LD_matrix
   
   
   cat("./goshifter.p",
@@ -380,6 +380,4 @@ GoShifter <- function(GoShifter_path="echolocatoR/tools/goshifter/goshifter.py",
       # "--nold" # Optional
       )
 }
-
-=======
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
+ 

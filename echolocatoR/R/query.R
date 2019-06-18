@@ -87,8 +87,7 @@ auto_topSNPs_sub <- function(top_SNPs, query, gene){
 }
 
 
-
-<<<<<<< HEAD
+ 
 query_by_coordinates <- function(top_SNPs, 
                                  gene, 
                                  subset_path, 
@@ -99,11 +98,6 @@ query_by_coordinates <- function(top_SNPs,
                                  min_POS, 
                                  max_POS, 
                                  bp_distance){
-=======
-query_by_coordinates <- function(top_SNPs, gene, subset_path, fullSS_path,
-                                 file_sep, chrom_col, position_col,
-                                 min_POS, max_POS, bp_distance){
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
   topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),]
   if(is.na(min_POS)){min_POS <- topSNP_sub$POS - bp_distance}
   if(is.na(max_POS)){max_POS <- topSNP_sub$POS + bp_distance}

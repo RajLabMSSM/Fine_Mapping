@@ -62,8 +62,7 @@ top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
   remove_variants = "rs34637584")
 # Manually add new SNP of interest
 top_SNPs <-data.table::rbindlist(list(top_SNPs, 
-                                      data.table::data.table(CHR=14,POS=55360203, SNP="rs3783642",
-<<<<<<< HEAD
+                                      data.table::data.table(CHR=14,POS=55360203, SNP="rs3783642", 
                                                    P=0, Effect=1, Gene="ATG14", Locus=NA),
                                       data.table::data.table(CHR=12,POS=53797236, SNP="rs34656641",
                                                    P=0, Effect=1, Gene="SP1", Locus=NA),
@@ -75,25 +74,14 @@ gene_list <- unique(top_SNPs$Gene)
 
 finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
                                                gene_list = "LRRK2",#unique(c("LRRK2", gene_list)),
-=======
-                                                   P=0, Effect=1, Gene="ATG14", Locus=NA)))
-gene_list <- unique(top_SNPs$Gene)
-
-finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
-                                               gene_list = unique(c("LRRK2", gene_list)),
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
                                                trim_gene_limits = c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
                                                query_by ="coordinates",
                                                subset_path = "auto",
                                                finemap_method = c("SUSIE","FINEMAP"),
-                                               #,"ABF","FINEMAP","COJO"),
-<<<<<<< HEAD
-                                               force_new_LD = T, 
-=======
-                                               force_new_LD = F, 
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
+                                               #,"ABF","FINEMAP","COJO"), 
+                                               force_new_LD = T,  
                                                force_new_subset = F,
                                                force_new_finemap = F,
                  # file_path = Directory_info(dataset_name, "fullSumStats"),
@@ -111,20 +99,13 @@ finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
                  min_MAF = 0,
                  remove_variants = c("rs34637584"),
                  remove_correlates = c("rs34637584"),
-                 conditioned_snps = "auto", # Use the lead SNP for each gene
-<<<<<<< HEAD
+                 conditioned_snps = "auto", # Use the lead SNP for each gene 
                  n_causal = 5, 
                  remove_tmps = F)
  
 ```
 
-# Summarize Fine-mapping Resultsa
-=======
-                 n_causal = 5) 
-```
-
 # Summarize Fine-mapping Results
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
 
 ```{r Merge Results, results = 'asis'}
 merged_results <- merge_finemapping_results(finemap_results, 
@@ -134,12 +115,6 @@ merged_results <- merge_finemapping_results(finemap_results,
                                             haploreg_annotation = T,
                                             biomart_annotation = T,
                                             verbose = F)
-
-<<<<<<< HEAD
-=======
-
-
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
 # Summarize epigenetics 
 ## Across all datasets and loci
 epi_table <- epigenetics_summary(merged_results,

@@ -473,12 +473,9 @@ finemap_pipeline <- function(gene,
                      save = T)
   print(mf_plot)  
   
-<<<<<<< HEAD
   # Show results table 
   printer("+",gene,"Credible Set SNPs", v=verbose)
-  createDT( subset(finemap_DT, Support >0) ) %>% print()
-=======
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
+  createDT( subset(finemap_DT, Support >0) ) %>% print() 
   
   # Cleanup:
   if(remove_tmps){
@@ -562,15 +559,9 @@ finemap_gene_list <- function(gene_list, fullSS_path,
       gene <- gene_list[i]
       lead_SNP <- arg_list_handler(lead_SNPs, i) 
       gene_limits <- arg_list_handler(trim_gene_limits, i) 
-      conditioned_snp <- arg_list_handler(conditioned_snps, i) 
-<<<<<<< HEAD
+      conditioned_snp <- arg_list_handler(conditioned_snps, i)  
       start_gene <- Sys.time()  
-      cat('  \n###', gene, '  \n') 
-=======
-      start_gene <- Sys.time() 
-      cat('\n')
-      cat('###', gene, '\n') 
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
+      cat('  \n###', gene, '  \n')  
       # Delete the old subset if force_new_subset == T  
       finemap_DT <- finemap_pipeline(gene=gene, 
                                      top_SNPs=top_SNPs, 
@@ -623,12 +614,8 @@ finemap_gene_list <- function(gene_list, fullSS_path,
       fineMapped_allResults <- rbind(fineMapped_allResults, newEntry) 
       end_gene <- Sys.time()
       printer(gene,"fine-mapped in", round(end_gene-start_gene, 2),"seconds", v=verbose)
-    })
-<<<<<<< HEAD
-    cat('  \n')
-=======
-    cat('\n')
->>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
+    }) 
+    cat('  \n') 
   }  
   return(fineMapped_allResults)
 }
