@@ -7,8 +7,12 @@
 /**/**/*.DS_Store
 /Data/GWAS/**/**/*.tsv
 /Data/eQTL/**/**/*.txt
+<<<<<<< HEAD
 #/Data/**/**/**/*.txt
 /Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt
+=======
+/Data/**/**/**/*.txt
+>>>>>>> d1caf750673e7025a45ed0ddebf92e93497f22c4
 /Data/**/**/plink
 /Data/Reference/**/**/*.vcf
 Manuscripts/
