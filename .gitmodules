@@ -1,0 +1,3 @@
+[submodule "echolocatoR/tools/goshifter"]
+	path = echolocatoR/tools/goshifter
+	url = https://github.com/immunogenomics/goshifter.git

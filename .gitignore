@@ -7,7 +7,7 @@
 /**/**/*.DS_Store
 /Data/GWAS/**/**/*.tsv
 /Data/eQTL/**/**/*.txt
-/Data/**/**/**/*.txt
+#/Data/**/**/**/*.txt
 /Data/**/**/plink
 /Data/Reference/**/**/*.vcf
 Manuscripts/

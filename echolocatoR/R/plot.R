@@ -154,6 +154,7 @@ snp_plot <- function(finemap_DT,
   
   if(method=="original"){
     DT <- finemap_DT
+    is.na(DT$Probability) <- 0
     p <- ggplot(data = DT, aes(x=POS, y= -log10(P), label=SNP, color= -log10(P) ))
     title <- paste0(gene," : Before fine-mapping")
     labelSNPs <- construct_SNPs_labels(DT, lead=T, method = F, consensus = T)
@@ -168,7 +169,8 @@ snp_plot <- function(finemap_DT,
     } else if (multi){
       title <- paste0(gene," : After fine-mapping (",method,")")
       DT <- finemap_DT %>% dplyr::rename(Probability = paste0(method,".Probability"),
-                                         Credible_Set = paste0(method,".Credible_Set"))
+                                         Credible_Set = paste0(method,".Credible_Set")) 
+      is.na(DT$Probability) <- 0
       p <- ggplot(data = DT, aes(x=POS, y=Probability, label=SNP, color= -log10(P) )) + 
         ylim(c(0,1.1)) 
       subtitle <- if(is.na(subtitle)){
@@ -182,6 +184,8 @@ snp_plot <- function(finemap_DT,
     } 
     labelSNPs <- construct_SNPs_labels(DT, lead=T, method = T, consensus = F)
   } 
+  
+  
   
  
 
@@ -220,7 +224,7 @@ multi_finemap_plot <- function(finemap_DT,
   method_list <- if(original){c("original", finemap_method_list)}else{finemap_method_list} 
   
   # Assemble plots in list
-  plot_list <- lapply(method_list, function(method){
+  plot_list <- lapply(method_list, function(method){ 
     printer("\n Plotting...",method)
     if(method=="COJO"){
       p <- COJO_plot(cojo_DT = finemap_DT, 

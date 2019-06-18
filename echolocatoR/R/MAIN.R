@@ -473,6 +473,9 @@ finemap_pipeline <- function(gene,
                      save = T)
   print(mf_plot)  
   
+  # Show results table 
+  printer("+",gene,"Credible Set SNPs", v=verbose)
+  createDT( subset(finemap_DT, Support >0) ) %>% print()
   
   # Cleanup:
   if(remove_tmps){
@@ -557,9 +560,8 @@ finemap_gene_list <- function(gene_list, fullSS_path,
       lead_SNP <- arg_list_handler(lead_SNPs, i) 
       gene_limits <- arg_list_handler(trim_gene_limits, i) 
       conditioned_snp <- arg_list_handler(conditioned_snps, i) 
-      start_gene <- Sys.time() 
-      cat('\n')
-      cat('###', gene, '\n') 
+      start_gene <- Sys.time()  
+      cat('  \n###', gene, '  \n') 
       # Delete the old subset if force_new_subset == T  
       finemap_DT <- finemap_pipeline(gene=gene, 
                                      top_SNPs=top_SNPs, 
@@ -613,7 +615,7 @@ finemap_gene_list <- function(gene_list, fullSS_path,
       end_gene <- Sys.time()
       printer(gene,"fine-mapped in", round(end_gene-start_gene, 2),"seconds", v=verbose)
     })
-    cat('\n')
+    cat('  \n')
   }  
   return(fineMapped_allResults)
 }

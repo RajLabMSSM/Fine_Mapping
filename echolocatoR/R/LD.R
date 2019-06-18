@@ -16,7 +16,7 @@
 # __Haplotype Reference Consortium (HRC)__  on the University of Michigan imputation server under default settings
 # with Eagle v2.3 phasing based on reference panel HRC r1.1 2016"_
 
-plink_file <- function(base_url="./echolocatoR/tools"){
+plink_file <- function(base_url="./echolocatoR/tools/plink"){
   os <- get_os()
   if (os=="osx") { 
     plink_version <- file.path(base_url, "plink1.9_mac");
