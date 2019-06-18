@@ -8,6 +8,7 @@
 /Data/GWAS/**/**/*.tsv
 /Data/eQTL/**/**/*.txt
 #/Data/**/**/**/*.txt
+/Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt
 /Data/**/**/plink
 /Data/Reference/**/**/*.vcf
 Manuscripts/
