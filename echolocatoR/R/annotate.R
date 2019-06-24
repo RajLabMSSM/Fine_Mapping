@@ -338,46 +338,5 @@ epigenetics_enrichment <- function(snp_list1,
   }
 }
 
-
-
-GoShifter <- function(GoShifter_path="echolocatoR/tools/goshifter/goshifter.py",
-                      results_path,
-                      permute=1000){
-  # Create GoShifter folder
-  GS_path <- file.path(results_path,"GoShifter")
-  dir.create(GS_path, showWarnings = F, recursive = T) 
-  
-  # snpmap file
-  snpmap <- file.path(GS_path,"snpmap.txt")
-  multi_finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"))
-  subset(multi_finemap_DT, Support>0) %>%  
-    dplyr::rename(Chrom = CHR, BP = POS) %>% 
-    dplyr::mutate(Chrom = paste0("chr",Chrom)) %>%
-    dplyr::select(SNP, Chrom, BP) %>%
-    data.table::fwrite(snpmap,sep="\t")
-  
-  # Annotation file
-  annotation <- file.path(GS_path,"UCSF-UBC.Breast_vHMEC.bed.gz")
-  
-  # LD file
-  load(file.path(results_path,"plink/LD_Matrix.RData"))
-  # (chrA\tposA\trsIdA\tposB\trsIdB\tRsquared\tDPrime)
-  
-  # LD_matrix
-  
-  
-  cat("./goshifter.p",
-      "--snpmap",snpmap,
-      "--annotation",annotation,
-      "--permute",permute,
-      "--ld",ld_file,
-      "--out",out
-      # "--rsquared",rsquared, # Optional
-      # "--window",window, # Optional
-      # "--min-shift",min_shift, # Optional
-      # "--max-shift",max_shift, # Optional
-      # "--ld-extend",ld_extend, # Optional
-      # "--nold" # Optional
-      )
-}
+ 
  

@@ -95,75 +95,80 @@ compute_LD_matrix <- function(results_path,
                               min_Dprime=F,
                               remove_correlates=F,
                               remove_tmps=T){  
-  # 1000 Genomes FTP Browser URL
-  ## http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
   
-  # Download portion of vcf from 1KG website
-  region <- paste(subset_DT$CHR[1],":",min(subset_DT$POS),"-",max(subset_DT$POS), sep="")
-  chrom <- subset_DT$CHR[1]
-  # PHASE 3 DATA
-  if(reference=="1KG_Phase3"){
-    printer("LD Reference Panel = 1KG_Phase3 \n")
-    if(download_reference){## With internet
-      vcf_URL <- paste("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr",chrom,
-                       ".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep="")
-      popDat_URL = "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel"
-    }else{## WithOUT internet
-      vcf_URL <- paste(vcf_folder, "/ALL.chr",chrom,
-                       ".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep="")
-      popDat_URL = file.path(vcf_folder,"integrated_call_samples_v3.20130502.ALL.panel")
-    }
+  download_vcf <- function(subset_DT, reference , ){
+    # 1000 Genomes FTP Browser URL
+    ## http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
     
-    # PHASE 1 DATA
-  } else if (reference=="1KG_Phase1") {
-    printer("LD Reference Panel = 1KG_Phase1 \n")
-    if(download_reference){## With internet
-      vcf_URL <- paste("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/ALL.chr",chrom,
-                       ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
-      popDat_URL = "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/phase1_integrated_calls.20101123.ALL.panel"
-    }else{## WithOUT internet
-      vcf_URL <- paste(vcf_folder,"/ALL.chr",chrom,
-                       ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
-      popDat_URL = file.path(vcf_folder, "phase1_integrated_calls.20101123.ALL.panel")
-    }
-  # gnoMAD
-  } 
-  # else if(reference=="gnomad"){
-  #   printer("LD Reference Panel = 1KG_Phase1 \n") 
-  #   gnomad_version <- "2.1.1"
-  #   if(download_reference){## With internet 
-  #     vcf_URL <- paste("https://storage.cloud.google.com/gnomad-public/release/",gnomad_version,"/",
-  #                      "vcf/genomes/gnomad.genomes.r2.1.1.sites.",chrom,".vcf.bgz",
-  #                      "?_ga=2.11884342.-387233863.1558467787",chrom, sep="")
-  #     popDat_URL = ""
-  #   }else{## WithOUT internet
-  #     vcf_URL <- paste(vcf_folder,"/vcf/genomes/gnomad.genomes.r2.1.1.sites.",chrom,".vcf.bgz", sep="")
-  #     popDat_URL = file.path(vcf_folder, "")
-  #   }
-  # }
-  
-  phase <- gsub("1KG_","",reference) 
-  popDat <- suppressWarnings(data.table::fread(popDat_URL, header = F, sep="\t"))
-  colnames(popDat) <- c("sample","population","superpop","gender")
-  
-  
-  # library(Rsamtools); #BiocManager::install("Rsamtools")
-  subset_vcf <- file.path(vcf_folder, phase, paste(gene,"subset.vcf",sep="_"))
-  
-  # Create directory if it doesn't exist
-  if(!dir.exists(dirname(dirname(subset_vcf))) ) {
-    dir.create(path = dirname(subset_vcf),recursive =  T, showWarnings = F)
-  }else{printer("+ Creating ",vcf_folder," directory.")}
-  
-  # Download and subset vcf if the subset doesn't exist already
-  if(!file.exists(subset_vcf)){
-    tabix_cmd <- paste("tabix -fh",vcf_URL, region, ">", subset_vcf)
-    printer(tabix_cmd)
-    system(tabix_cmd)
-    vcf_name <- paste(basename(vcf_URL), ".tbi", sep="")
-    file.remove(vcf_name)
-  }else{printer("+ Identified matching VCF subset file. Importing...", subset_vcf)} 
-  
+    # Download portion of vcf from 1KG website
+    region <- paste(unique(subset_DT$CHR),":",min(subset_DT$POS),"-",max(subset_DT$POS), sep="")
+    chrom <- unique(subset_DT$CHR)
+    # PHASE 3 DATA
+    if(reference=="1KG_Phase3"){
+      printer("LD Reference Panel = 1KG_Phase3")
+      if(download_reference){## With internet
+        vcf_URL <- paste("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr",chrom,
+                         ".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep="")
+        popDat_URL = "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel"
+      }else{## WithOUT internet
+        vcf_URL <- paste(vcf_folder, "/ALL.chr",chrom,
+                         ".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep="")
+        popDat_URL = file.path(vcf_folder,"integrated_call_samples_v3.20130502.ALL.panel")
+      }
+      
+      # PHASE 1 DATA
+    } else if (reference=="1KG_Phase1") {
+      printer("LD Reference Panel = 1KG_Phase1")
+      if(download_reference){## With internet
+        vcf_URL <- paste("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/ALL.chr",chrom,
+                         ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
+        popDat_URL = "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/phase1_integrated_calls.20101123.ALL.panel"
+      }else{## WithOUT internet
+        vcf_URL <- paste(vcf_folder,"/ALL.chr",chrom,
+                         ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
+        popDat_URL = file.path(vcf_folder, "phase1_integrated_calls.20101123.ALL.panel")
+      }
+      # gnoMAD
+    } 
+    # else if(reference=="gnomad"){
+    #   printer("LD Reference Panel = 1KG_Phase1") 
+    #   gnomad_version <- "2.1.1"
+    #   if(download_reference){## With internet 
+    #     vcf_URL <- paste("https://storage.cloud.google.com/gnomad-public/release/",gnomad_version,"/",
+    #                      "vcf/genomes/gnomad.genomes.r2.1.1.sites.",chrom,".vcf.bgz",
+    #                      "?_ga=2.11884342.-387233863.1558467787",chrom, sep="")
+    #     popDat_URL = ""
+    #   }else{## WithOUT internet
+    #     vcf_URL <- paste(vcf_folder,"/vcf/genomes/gnomad.genomes.r2.1.1.sites.",chrom,".vcf.bgz", sep="")
+    #     popDat_URL = file.path(vcf_folder, "")
+    #   }
+    # }
+    
+    phase <- gsub("1KG_","",reference) 
+    popDat <-  data.table::fread(text=gsub(",\t",",",readLines(popDat_URL)), 
+                                 header = F, sep="\t",  fill=T, stringsAsFactors = F, 
+                                 col.names = c("sample","population","superpop","platform")) 
+    
+    
+    # library(Rsamtools); #BiocManager::install("Rsamtools")
+    subset_vcf <- file.path(vcf_folder, phase, paste(gene,"subset.vcf",sep="_"))
+    
+    # Create directory if it doesn't exist
+    if(!dir.exists(dirname(dirname(subset_vcf))) ) {
+      dir.create(path = dirname(subset_vcf),recursive =  T, showWarnings = F)
+    }else{printer("+ Creating ",vcf_folder," directory.")}
+    
+    # Download and subset vcf if the subset doesn't exist already
+    if(!file.exists(subset_vcf)){
+      tabix_cmd <- paste("tabix -fh",vcf_URL, region, ">", subset_vcf)
+      printer(tabix_cmd)
+      system(tabix_cmd)
+      vcf_name <- paste(basename(vcf_URL), ".tbi", sep="")
+      file.remove(vcf_name)
+    }else{printer("+ Identified matching VCF subset file. Importing...", subset_vcf)} 
+    
+    
+  }
   
   filter_vcf <- function(subset_vcf, subset_DT, results_path, superpopulation){
     # Import w/ gaston and further subset
@@ -290,11 +295,11 @@ plink_LD <-function(leadSNP,
   start <- Sys.time()
 
   # Calculate LD 
-  printer("\n++++++++++ Reading in BIM file... ++++++++++\n")
+  printer("++ Reading in BIM file...")
   bim <- data.table::fread(file.path(plink_folder, "plink.bim"), col.names = c("CHR","SNP","V3","POS","A1","A2")) 
   data.table::fwrite(subset(bim, select="SNP"), file.path(plink_folder,"SNPs.txt"), col.names = F)
   
-  printer("\n++++++++++ Calculating LD ++++++++++\n")
+  printer("++ Calculating LD")
   ld.matrix <- run_plink_LD(bim, plink_folder) 
   
   if((min_Dprime != F) | (min_r2 != F) | (remove_correlates != F)){ 
@@ -302,13 +307,13 @@ plink_LD <-function(leadSNP,
     
     # DPrime filter
     if(min_Dprime != F){
-      printer("\n +++ Filtering LD Matrix (min_Dprime): Removing SNPs with D' <=",min_Dprime,"for",leadSNP,"(lead SNP).\n")
+      printer("+++ Filtering LD Matrix (min_Dprime): Removing SNPs with D' <=",min_Dprime,"for",leadSNP,"(lead SNP).")
       plink.ld <- subset(plink.ld, (SNP_A==leadSNP & DP>=min_Dprime) | (SNP_B==leadSNP & DP>=min_Dprime))
     } else{printer("\n min_Dprime == FALSE")}
     
     # R2 filter
     if(min_r2 != F ){
-      printer("\n +++ Filtering LD Matrix (min_r2): Removing SNPs with r <=",min_r2,"for",leadSNP,"(lead SNP).\n")
+      printer("+++ Filtering LD Matrix (min_r2): Removing SNPs with r <=",min_r2,"for",leadSNP,"(lead SNP).")
       r = sqrt(min_r2)
       plink.ld <- subset(plink.ld, (SNP_A==leadSNP & R>=r) | (SNP_B==leadSNP & R>=r))   
     } else{printer("\n min_r2 == FALSE")}
@@ -317,7 +322,7 @@ plink_LD <-function(leadSNP,
     if(remove_correlates != F){
       r2_threshold <- 0.2
       r <- sqrt(r2_threshold)
-      printer("\n +++ Filtering LD Matrix (remove_correlates): Removing SNPs with R2 >=",r2_threshold,"for",paste(remove_correlates,collapse=", "),".\n")
+      printer("+++ Filtering LD Matrix (remove_correlates): Removing SNPs with R2 >=",r2_threshold,"for",paste(remove_correlates,collapse=", "),".")
       plink.ld <- subset(plink.ld, !(SNP_A %in% remove_correlates & R>=r) | (SNP_B %in% remove_correlates & R>=r))  
     } else{printer("\n remove_correlates == FALSE")}
     
@@ -332,12 +337,12 @@ plink_LD <-function(leadSNP,
     # !IMPORTANT!: Fill NAs (otherwise susieR will break)
     ld.matrix[is.na(ld.matrix)] <- 0
     end <- Sys.time()
-    printer("\n++++++++++ LD matrix calculated in",round(as.numeric(end-start),2),"seconds. ++++++++++\n")
+    printer("+ LD matrix calculated in",round(as.numeric(end-start),2),"seconds.")
     return(ld.matrix) 
 }
 
 LD_blocks <- function(plink_folder, block_size=.7){
-  printer("\n++++++++++ Calculating LD blocks... ++++++++++\n")
+  printer("++ Calculating LD blocks...")
   # PLINK 1.07 LD: http://zzz.bwh.harvard.edu/plink/ld.shtml
   # PLINK 1.9 LD: https://www.cog-genomics.org/plink/1.9/ld
   # system(plink_file(), "-h")
@@ -361,11 +366,11 @@ LD_blocks <- function(plink_folder, block_size=.7){
 
 
 leadSNP_block <- function(leadSNP, plink_folder, block_size=.7){
-  printer("\n Returning lead SNP's block...\n")
+  printer("Returning lead SNP's block...")
   blocks <- LD_blocks(plink_folder, block_size)
   splitLists <- strsplit(blocks$SNPS,split = "[|]")
   block_snps <- lapply(splitLists, function(l, leadSNP){if(leadSNP %in% l){return(l)} }, leadSNP=leadSNP) %>% unlist()
-  printer("\n Number of SNPs in LD block =", length(block_snps), "\n")
+  printer("Number of SNPs in LD block =", length(block_snps))
   return(block_snps)
 }
 

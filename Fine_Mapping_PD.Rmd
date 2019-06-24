@@ -141,6 +141,14 @@ createDT(subset(potential_missense, consequence_type_tv=="missense_variant"))
 candidate_counts <- counts_summary(top_SNPs, merged_results)
 ```
 
+## LocusZoom Plots
+
+```{r}  
+
+```
+
+
+
 ## eQTL Boxplots: Fairfax
 
 ```{r eQTL Boxplots: Fairfax}

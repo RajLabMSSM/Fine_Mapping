@@ -160,6 +160,15 @@ COJO <- function(subset_DT,
                     se=stderr_col, 
                     p=pval_col, 
                     N) 
+    # Create genome-wide dir
+    genome_dir <- file.path(dirname(results_path),"_genome_wide","COJO")
+    dir.create(genome_dir, showWarnings = F, recursive = T)
+    cojo_path <- genome_dir
+    
+    # Convert full vcf to plink
+    paste(plink_file(), " --vcf",vcf,
+    "myvcf.vcf --maf 0.05 --recode --out myplink
+")
   } else {
     # Use subset of summary stats (not for the stepwise conditional procedure)
     cojo.ma <- subset_DT %>% dplyr::rename(N_cases = N_cases_col, 
@@ -185,7 +194,7 @@ COJO <- function(subset_DT,
   data.table::fwrite(list(excluded_snps),excluded_path , quote = F)
   
   ## Run COJO  
-  if(stepwise_procedure){
+  if(stepwise_procedure){ 
     COJO_stepwise(GCTA_path = GCTA_path, 
                   results_path = results_path,  
                   min_MAF = min_MAF, 

@@ -5,17 +5,12 @@ date: "2/5/2019"
 output: html_document
 ---
  
-## R Libraries for LD
- 
-***** [proxysnps](https://github.com/slowkow/proxysnps) ***** \
-[LDheatmap](https://cran.r-project.org/web/packages/LDheatmap/LDheatmap.pdf)
-[snpEnrichR](https://academic.oup.com/bioinformatics/article/34/23/4112/5034433)
+# R Libraries for LD Calculation
 
-* Other R libraries:
-  + [gaston](https://cran.r-project.org/web/packages/gaston/vignettes/gaston.pdf)
-  + [ldblock](https://bioconductor.org/packages/devel/bioc/vignettes/ldblock/inst/doc/ldblock.pdf)
-  + [MRCIEU/TwoSampleMR]()
-```{r}
+```{r example snplist}
+snplist <- c("rs614367", "rs11780156","rs4808801","rs12493607","rs204247","rs2943559")
+dat <- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt",sep="\t")
+snp_df  <- subset(dat, Support >0)
 # ## use the Ensembl variation mart
 # snp_mart <- useMart(biomart="ENSEMBL_MART_SNP", 
 #                     dataset="hsapiens_snp")
@@ -29,19 +24,31 @@ output: html_document
 #            attributes = c('refsnp_id','synonym_name','synonym_source'), 
 #            values = snp_list, 
 #            mart = snp_mart) 
+```
+
+ 
+* Other R libraries:
+  +[gaston](https://cran.r-project.org/web/packages/gaston/vignettes/gaston.pdf)
+  +[ldblock](https://bioconductor.org/packages/devel/bioc/vignettes/ldblock/inst/doc/ldblock.pdf)
+  +[MRCIEU/TwoSampleMR]()
   
+## snpStats + [LDheatmap](https://cran.r-project.org/web/packages/LDheatmap/LDheatmap.pdf)
+
+```{r snpStats} 
 # library(myvariant); #BiocManager::install("myvariant")
 library(proxysnps); #devtools::install_github("slowkow/proxysnps")
 library(genetics) 
 library(snpStats);#devtools::install_github("NikNakk/snpStats")
 library(gaston)
 
-proxySNPs_LD <- function(){  
-  # LD_proxy <- get_proxies(query = flankingSNPs$SNP[1:10], window_size = 10000, pop="CEU") 
+
+proxySNPs_LD <- function(snp_df){    
+  vcf <- proxysnps::get_vcf(chrom = unique(snp_df$CHR), 
+                            start = min(snp_df$POS), 
+                            end = max(snp_df$POS), 
+                            pop = "CEU")
   
-  vcf <- proxysnps::get_vcf(chrom = flankingSNPs$CHR[1], 
-                            start = min(flankingSNPs$POS), end = max(flankingSNPs$POS), 
-                            pop = "CEU") 
+  
   x <- as.bed.matrix(t(vcf$geno)) 
   ld.x <- gaston::LD(x, c(1,ncol(x)),measure = "r2")
 
@@ -63,8 +70,31 @@ LDheatmap(LD_matrix2, LDmeasure="r",
           name="myLDgrob", add.key=TRUE)
  
 ```
+
+## [proxysnps](https://github.com/slowkow/proxysnps)
+
+```{r proxysnps}
+# devtools::install_github("https://github.com/slowkow/proxysnps.git")
+
+library(proxysnps)
+d <- get_proxies(query = "rs10472076", pop = "EUR")
+print(d)
+```
+
+
+## [snpEnrichR](https://academic.oup.com/bioinformatics/article/34/23/4112/5034433)
+
+```{r snpEnrichR}
+# devtools::install_github("https://github.com/kartiek/snpEnrichR.git")
+library(snpEnrichR) 
+
+qt <- 'psoriasis'
+GWAS_SNPS <- getSNPs(qt)
+str(GWAS_SNPS,vec.len=1)
+```
+
  
-### PAINTOR
+## PAINTOR
 
 [Tutorial](https://github.com/gkichaev/PAINTOR_V3.0/wiki/2a.-Computing-1000-genomes-LD)
 ```{r}
@@ -115,8 +145,6 @@ python ../PAINTOR_V3.0/PAINTOR_Utilities/CalcLD_1KG_VCF.py \
  
 
 ```
-
- 
 
 **** http://www.internationalgenome.org/category/variants/ ****\
 grep CEU integrated_call_samples.20101123.ALL.panel | cut -f1 > CEU.samples.list
@@ -188,24 +216,28 @@ vcfTools_LD <- function(flankingSNPs){
   + A [maximum of 300 SNPs](https://ldlink.nci.nih.gov/?tab=help#LDassoc) are permitted by LDmatrix 
   + All input variants must be on the same chromosome and match a bi-allelic variant
 ```{r}
-LD_link <- function(rs_list, token="df4298d58dc4", population_list=c("CEU"), R2_or_D="r2"){
+LD_link <- function(rs_list,
+                    token="df4298d58dc4",
+                    population_list=c("CEU"),
+                    R2_or_D="r2"){
+  print(paste("Querying LDlink:", length(rs_list), "SNPs"))
   populations <- ifelse(length(population_list)==1, population_list, 
                         paste(population_list, collapse="%2B"))
   rs_IDs <- paste(rs_list, collapse="%0A")
-  con <-curl(paste("https://ldlink.nci.nih.gov/LDlinkRest/ldmatrix?snps=", rs_IDs, 
+  con <- curl::curl(paste("https://ldlink.nci.nih.gov/LDlinkRest/ldmatrix?snps=", rs_IDs, 
                    "&pop=",populations,
                    "&r2_d=",R2_or_D,
                    "&token=",token, 
                    sep=""))
   open(con) 
   LD_matrix <- read.delim(con, header = T, row.names = "RS_number" )  
-  LD_matrix <- LD_matrix %>% data.matrix(rownames.force = T)
+  LD_matrix <- data.matrix(LD_matrix, rownames.force = T)
   LD_matrix[is.na(LD_matrix)] <- 0 # | LD_matrix<0 
   close(con)
+  print(paste("Resulting LD matrix dimensions:", dim(LD_matrix)[1], "x",  dim(LD_matrix)[2]))
   return(LD_matrix)
 }
-
-LD_link()
+# ld.mat <- LD_link(snp_list)
 ```
 
 ### Ensembl Linkage Disequilibrium Calculator - RestAPI

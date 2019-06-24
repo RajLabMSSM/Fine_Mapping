@@ -12,9 +12,7 @@ get_sample_size <- function(subset_DT, sample_size=NA){
     }
   }
   return(sample_size)
-}
-
-
+} 
 
 get_var_y <- function(subset_DT, dataset_type){ 
   if(dataset_type=="GWAS" & "N_cases" %in% colnames(subset_DT) & "N_controls" %in% colnames(subset_DT)){
@@ -83,6 +81,8 @@ SUSIE <- function(subset_DT,
                             
                             verbose = FALSE
   ) 
+  try({susieR::susie_plot_iteration(fitted_bhat, n_causal, 'test_track_fit')})
+  
   printer("\n ++ Extracting Credible Sets...") 
   susie_snps <- names(fitted_bhat$X_column_scale_factors)
   CS_indices <- susieR::susie_get_cs(fitted_bhat)$cs

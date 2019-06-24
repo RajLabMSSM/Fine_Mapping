@@ -78,6 +78,7 @@ source("./echolocatoR/R/plot.R")
 source("./echolocatoR/R/conditional.R")
 source("./echolocatoR/R/colocalization.R")
 source("./echolocatoR/R/annotate.R")
+source("./echolocatoR/R/GoShifter.R")
 source("./echolocatoR/R/eQTL_boxplots.R")
 
 
@@ -204,6 +205,12 @@ quickstart <- function(){
   shared_MAF <<- 1
   which_merge <<-1
   show_plot <<- T
+  
+  goshifter_path <<- "./echolocatoR/tools/goshifter"
+  permute <<- 1000
+  remove_tmps <<- T
+  chromatin_states <<- c("TssA","EnhA1","EnhA2")
+  diff_freq <<- 0.1
 }
 # quickstart()
 
