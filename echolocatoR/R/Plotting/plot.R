@@ -133,6 +133,7 @@ snp_plot <- function(finemap_DT,
   roundBreaks <- seq(plyr::round_any(min(finemap_DT$POS),10000), max(finemap_DT$POS), spacing) 
   # yLimits2 <- c(0,1.1)
   
+<<<<<<< HEAD:echolocatoR/R/Plotting/plot.R
   # Merge with LD info
   # If not specified, identify a lead SNP by summing the PPs from each fine-mapping method
   # if(is.na(LD_SNP)){
@@ -144,6 +145,14 @@ snp_plot <- function(finemap_DT,
   if(method=="original"){   
     is.na(DT$Probability) <- 0
     p <- ggplot(data = DT, aes(x=POS, y= -log10(P), label=SNP, color= r2))
+=======
+  if(method=="original"){
+    DT <- finemap_DT 
+    
+    is.na(DT$Probability) <- 0 
+    
+    p <- ggplot(data = DT, aes(x=POS, y= -log10(P), label=SNP, color= -log10(P) ))
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4:echolocatoR/R/plot.R
     title <- paste0(gene," : Before fine-mapping")
     tag_SNPs <- labelSNPs <- construct_SNPs_labels(DT, lead=T, method = F, consensus = T)
     subtitle <- if(is.na(subtitle)){paste0(length(DT$SNP)," SNPs")}else{subtitle}
@@ -157,10 +166,17 @@ snp_plot <- function(finemap_DT,
     # Fine-mapping methods
     } else if (multi){
       title <- paste0(gene," : After fine-mapping (",method,")")
+<<<<<<< HEAD:echolocatoR/R/Plotting/plot.R
       DT <- DT %>% dplyr::rename(Probability = paste0(method,".Probability"), 
                                          Credible_Set = paste0(method,".Credible_Set")) 
       is.na(DT$Probability) <- 0 
       p <- ggplot(data = DT, aes(x=POS, y=Probability, color= r2 )) + 
+=======
+      DT <- finemap_DT %>% dplyr::rename(Probability = paste0(method,".Probability"), 
+                                         Credible_Set = paste0(method,".Credible_Set")) 
+      is.na(DT$Probability) <- 0 
+      p <- ggplot(data = DT, aes(x=POS, y=Probability, label=SNP, color= -log10(P) )) + 
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4:echolocatoR/R/plot.R
         ylim(c(0,1.1)) 
       subtitle <- if(is.na(subtitle)){
         paste0(length(subset(DT, Credible_Set>0)$SNP), " Candidate SNP(s)")
@@ -174,9 +190,13 @@ snp_plot <- function(finemap_DT,
     tag_SNPs <- subset(labelSNPs, Credible_Set>0)
   }
   
+<<<<<<< HEAD:echolocatoR/R/Plotting/plot.R
   
   
   # discrete_colors <- RColorBrewer::brewer.pal(n = 5, name = "Spectral")
+=======
+ 
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4:echolocatoR/R/plot.R
   p <- p + geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) +
     stat_smooth(data=DT, aes(x=POS, y=r2, fill=r2),color="darkgray", 
                 se = F, formula = y ~ x, 
@@ -232,9 +252,13 @@ multi_finemap_plot <- function(finemap_DT,
   method_list <- if(original){c("original", finemap_method_list)}else{finemap_method_list} 
   
   # Assemble plots in list 
+<<<<<<< HEAD:echolocatoR/R/Plotting/plot.R
   plot_list <- lapply(method_list, function(method, 
                                             finemap_DT.=finemap_DT,
                                             LD_matrix.=LD_matrix){  
+=======
+  plot_list <- lapply(method_list, function(method){  
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4:echolocatoR/R/plot.R
     printer("\n Plotting...",method)
     if(method=="COJO"){
       p <- COJO_plot(cojo_DT = finemap_DT., 

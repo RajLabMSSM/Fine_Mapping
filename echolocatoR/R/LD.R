@@ -15,7 +15,55 @@
 # All additional sample series except for the post-Chang et al . 2017 samples from 23andMe were imputed using the
 # __Haplotype Reference Consortium (HRC)__  on the University of Michigan imputation server under default settings
 # with Eagle v2.3 phasing based on reference panel HRC r1.1 2016"_
+<<<<<<< HEAD
   
+=======
+ 
+plink_file <- function(base_url="./echolocatoR/tools/plink"){
+  os <- get_os()
+  if (os=="osx") { 
+    plink_version <- file.path(base_url, "plink1.9_mac");
+  } else if  (os=="linux") {
+    plink_version <- file.path(base_url, "plink1.9_linux");
+  } else {
+    plink_version <- file.path(base_url, "plink1.9_windows.exe");
+  }
+  return(plink_version)
+} 
+# plink_file()
+
+# download_all_vcfs <- function(vcf_folder="../1000_Genomes_VCFs"){
+#   # PHASE 3 DATA
+#   path3 <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/"
+#   for(chrom in c(1:22)){
+#     printer("\nDownloading Chromosome",chrom,"\n")
+#     URL <- paste("ALL.chr",chrom,".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep = "")
+#     system(paste("wget -P",file.path(vcf_folder,"Phase3"), file.path(path3, URL) ))
+#   }
+#   X_chrom <-"ALL.chrX.phase3_shapeit2_mvncall_integrated_v1b.20130502.genotypes.vcf.gz"
+#   system(paste("wget -P",file.path(vcf_folder,"Phase3"), file.path(path3, X_chrom)))
+#   Y_chrom <- "ALL.chrY.phase3_integrated_v2a.20130502.genotypes.vcf.gz"
+#   system(paste("wget -P",file.path(vcf_folder,"Phase3"), file.path(path3, Y_chrom) ))
+#   
+#   popDat_URL = file.path(path3, "integrated_call_samples_v3.20130502.ALL.panel")
+#   popDat <- read.delim(popDat_URL, header = F, row.names = NULL)
+#   write.table(popDat,file=file.path(vcf_folder,"Phase3","integrated_call_samples_v3.20130502.ALL.panel"), row.names = F, sep="\t", quote = F, col.names = F)
+#   
+#   # PHASE 1 DATA
+#   path1 <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521"
+#   for(chrom in c(1:22)){
+#     printer("\nDownloading Chromosome",chrom,"\n")
+#     URL <- paste("ALL.chr",chrom, ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
+#     system(paste( "wget -P",file.path(vcf_folder,"Phase1"), file.path(path1, URL) ))
+#   }
+#   X_chrom <- "ALL.chrX.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz"
+#   system( paste("wget -P",file.path(vcf_folder,"Phase1"), file.path(path1, X_chrom)) )
+#   
+#   popDat_URL = file.path(path1, "phase1_integrated_calls.20101123.ALL.panel")
+#   popDat <- read.delim(popDat_URL, header = F, row.names = NULL)
+#   write.table(popDat,file=file.path(vcf_folder,"Phase1","phase1_integrated_calls.20101123.ALL.panel"),  row.names = F, sep="\t", quote = F, col.names = F)
+# }
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
 
 list_all_vcfs <-function(){
   all_vcfs <- paste0("http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr",c(1:22),
@@ -38,6 +86,7 @@ LD_plot <- function(LD_matrix, subset_DT, span=10){
 } 
 
 
+<<<<<<< HEAD
 download_vcf <- function(subset_DT, reference, vcf_folder, gene, download_reference=T){ 
   ## http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
   # Download portion of vcf from 1KG website
@@ -128,6 +177,114 @@ compute_LD_matrix <- function(results_path,
                               min_Dprime=F,
                               remove_correlates=F,
                               remove_tmps=T){  
+=======
+compute_LD_matrix <- function(results_path, 
+                              subset_DT, 
+                              gene,
+                              reference="1KG_Phase1", 
+                              superpopulation="EUR",
+                              vcf_folder="./Data/Reference/1000_Genomes",
+                              download_reference=T,
+                              min_r2=F, 
+                              LD_block=F, 
+                              block_size=.7, 
+                              min_Dprime=F,
+                              remove_correlates=F,
+                              remove_tmps=T){  
+  
+  download_vcf <- function(subset_DT, reference , ){
+    # 1000 Genomes FTP Browser URL
+    ## http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
+    
+    # Download portion of vcf from 1KG website
+    region <- paste(unique(subset_DT$CHR),":",min(subset_DT$POS),"-",max(subset_DT$POS), sep="")
+    chrom <- unique(subset_DT$CHR)
+    # PHASE 3 DATA
+    if(reference=="1KG_Phase3"){
+      printer("LD Reference Panel = 1KG_Phase3")
+      if(download_reference){## With internet
+        vcf_URL <- paste("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr",chrom,
+                         ".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep="")
+        popDat_URL = "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel"
+      }else{## WithOUT internet
+        vcf_URL <- paste(vcf_folder, "/ALL.chr",chrom,
+                         ".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep="")
+        popDat_URL = file.path(vcf_folder,"integrated_call_samples_v3.20130502.ALL.panel")
+      }
+      
+      # PHASE 1 DATA
+    } else if (reference=="1KG_Phase1") {
+      printer("LD Reference Panel = 1KG_Phase1")
+      if(download_reference){## With internet
+        vcf_URL <- paste("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/ALL.chr",chrom,
+                         ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
+        popDat_URL = "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/phase1_integrated_calls.20101123.ALL.panel"
+      }else{## WithOUT internet
+        vcf_URL <- paste(vcf_folder,"/ALL.chr",chrom,
+                         ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
+        popDat_URL = file.path(vcf_folder, "phase1_integrated_calls.20101123.ALL.panel")
+      }
+      # gnoMAD
+    } 
+    # else if(reference=="gnomad"){
+    #   printer("LD Reference Panel = 1KG_Phase1") 
+    #   gnomad_version <- "2.1.1"
+    #   if(download_reference){## With internet 
+    #     vcf_URL <- paste("https://storage.cloud.google.com/gnomad-public/release/",gnomad_version,"/",
+    #                      "vcf/genomes/gnomad.genomes.r2.1.1.sites.",chrom,".vcf.bgz",
+    #                      "?_ga=2.11884342.-387233863.1558467787",chrom, sep="")
+    #     popDat_URL = ""
+    #   }else{## WithOUT internet
+    #     vcf_URL <- paste(vcf_folder,"/vcf/genomes/gnomad.genomes.r2.1.1.sites.",chrom,".vcf.bgz", sep="")
+    #     popDat_URL = file.path(vcf_folder, "")
+    #   }
+    # }
+    
+    phase <- gsub("1KG_","",reference) 
+    popDat <-  data.table::fread(text=gsub(",\t",",",readLines(popDat_URL)), 
+                                 header = F, sep="\t",  fill=T, stringsAsFactors = F, 
+                                 col.names = c("sample","population","superpop","platform")) 
+    
+    
+    # library(Rsamtools); #BiocManager::install("Rsamtools")
+    subset_vcf <- file.path(vcf_folder, phase, paste(gene,"subset.vcf",sep="_"))
+    
+    # Create directory if it doesn't exist
+    if(!dir.exists(dirname(dirname(subset_vcf))) ) {
+      dir.create(path = dirname(subset_vcf),recursive =  T, showWarnings = F)
+    }else{printer("+ Creating ",vcf_folder," directory.")}
+    
+    # Download and subset vcf if the subset doesn't exist already
+    if(!file.exists(subset_vcf)){
+      tabix_cmd <- paste("tabix -fh",vcf_URL, region, ">", subset_vcf)
+      printer(tabix_cmd)
+      system(tabix_cmd)
+      vcf_name <- paste(basename(vcf_URL), ".tbi", sep="")
+      file.remove(vcf_name)
+    }else{printer("+ Identified matching VCF subset file. Importing...", subset_vcf)} 
+    
+    
+  }
+  
+  filter_vcf <- function(subset_vcf, subset_DT, results_path, superpopulation){
+    # Import w/ gaston and further subset
+    printer("+ Importing VCF as bed file...")
+    bed.file <- gaston::read.vcf(subset_vcf, verbose = F) 
+    ## Subset rsIDs
+    bed <- gaston::select.snps(bed.file, id %in% subset_DT$SNP & id !=".")
+    # Create plink sub-dir
+    dir.create(file.path(results_path, "./plink"), recursive = T, showWarnings = F) 
+    gaston::write.bed.matrix(bed, file.path(results_path, "./plink/plink"), rds = NULL) 
+    # Subset Individuals
+    selectedInds <- subset(popDat, superpop == superpopulation)
+    bed <- gaston::select.inds(bed, id %in% selectedInds$sample)
+    # Cleanup extra files
+    remove(bed.file) 
+    # file.remove("subset_vcf")
+    return(bed)
+  }
+  bed <- filter_vcf(subset_vcf, subset_DT, results_path, superpopulation)
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
   
   vcf_info <- download_vcf(subset_DT=subset_DT, 
                              reference=reference, 

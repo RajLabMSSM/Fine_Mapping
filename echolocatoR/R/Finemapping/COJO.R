@@ -165,6 +165,7 @@ COJO <- function(subset_DT,
     dir.create(genome_dir, showWarnings = F, recursive = T)
     cojo_path <- genome_dir
     
+<<<<<<< HEAD:echolocatoR/R/Finemapping/COJO.R
     # Convert all full vcfs to merged plink
     base_dir <- "./Data/Reference/1000_Genomes/Phase1"
     vcf_list <- list.files(base_dir, pattern = "*.vcf")
@@ -193,6 +194,12 @@ COJO <- function(subset_DT,
           "--make-bed",
           "--out MERGED")
     
+=======
+    # Convert full vcf to plink
+    paste(plink_file(), " --vcf",vcf,
+    "myvcf.vcf --maf 0.05 --recode --out myplink
+")
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4:echolocatoR/R/conditional.R
   } else {
     # Use subset of summary stats (not for the stepwise conditional procedure)
     cojo.ma <- subset_DT %>% dplyr::rename(N_cases = N_cases_col, 

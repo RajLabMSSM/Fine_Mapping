@@ -1,4 +1,5 @@
 locus	overlap	score
+<<<<<<< HEAD
 rs12422278	N/A	N/A
 rs117891010	N/A	N/A
 rs76904798	N/A	N/A
@@ -10,3 +11,11 @@ rs11175620	N/A	N/A
 rs17443656	1	0.353
 rs7294619	N/A	N/A
 rs1388597	1	0.297
+=======
+rs76904798	N/A	N/A
+rs7294619	N/A	N/A
+rs17443656	N/A	N/A
+rs11175620	N/A	N/A
+rs11564266	N/A	N/A
+rs1388597	N/A	N/A
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4

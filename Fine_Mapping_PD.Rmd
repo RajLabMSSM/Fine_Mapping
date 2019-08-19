@@ -61,9 +61,15 @@ top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
   locus_col = "Locus Number",
   remove_variants = "rs34637584")
 # Manually add new SNP of interest
+<<<<<<< HEAD
 top_SNPs <- data.table::rbindlist(list(top_SNPs, 
                                       data.table::data.table(CHR=14,POS=55360203, SNP="rs3783642", 
                                                    P=0, Effect=1, Gene="ATG14", Locus=NA ),
+=======
+top_SNPs <-data.table::rbindlist(list(top_SNPs, 
+                                      data.table::data.table(CHR=14,POS=55360203, SNP="rs3783642", 
+                                                   P=0, Effect=1, Gene="ATG14", Locus=NA),
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
                                       data.table::data.table(CHR=12,POS=53797236, SNP="rs34656641",
                                                    P=0, Effect=1, Gene="SP1", Locus=NA ),
                                       data.table::data.table(CHR=5,POS=126181862, SNP="rs959573",
@@ -80,9 +86,15 @@ finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
                                                dataset_type = "GWAS",
                                                query_by ="coordinates",
                                                subset_path = "auto",
+<<<<<<< HEAD
                                                finemap_methods = c("SUSIE","FINEMAP"),
                                                #,"ABF","COJO"), 
                                                force_new_LD = F,  
+=======
+                                               finemap_method = c("SUSIE","FINEMAP"),
+                                               #,"ABF","FINEMAP","COJO"), 
+                                               force_new_LD = T,  
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
                                                force_new_subset = F,
                                                force_new_finemap = F,
                  # file_path = Directory_info(dataset_name, "fullSumStats"),
@@ -101,8 +113,12 @@ finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
                  remove_variants = c("rs34637584"),
                  remove_correlates = c("rs34637584"),
                  conditioned_snps = "auto", # Use the lead SNP for each gene 
+<<<<<<< HEAD
                  n_causal = 10, 
                  plot_types = c("simple"),
+=======
+                 n_causal = 5, 
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
                  remove_tmps = F)
 ```
 
@@ -118,6 +134,7 @@ merged_results <- merge_finemapping_results(minimum_support=1,
                                             haploreg_annotation=T,
                                             biomart_annotation=T, 
                                             verbose = F)
+<<<<<<< HEAD
 createDT(subset(merged_results, Support == 2))
 ```
 
@@ -170,6 +187,10 @@ LRRK2_dat <- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/
    + Can only use a Fisher's exact test (or Chi-squared).
 ```{r HaploReg}
 # Summarize epigenetics across all datasets and loci
+=======
+# Summarize epigenetics 
+## Across all datasets and loci
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
 epi_table <- epigenetics_summary(merged_results,
                      tissue_list = c("BRN","BLD"),
                      epigenetic_variables = c("Promoter_histone_marks","Enhancer_histone_marks"))
@@ -277,6 +298,16 @@ PAINTOR_results_FF <- PAINTOR(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
 createDT(PAINTOR_results_FF)
 ```
 
+<<<<<<< HEAD
+=======
+## LocusZoom Plots
+
+```{r}  
+
+```
+
+
+>>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
 
 ## eQTL Boxplots: Fairfax
 
