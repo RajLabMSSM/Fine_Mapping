@@ -1,0 +1,13 @@
+EID	locus	overlap	score	Annotation	GROUP	ANATOMY	GR	Epigenome.Mnemonic	Standardized.Epigenome.name	Epigenome.name	TYPE	nSnpOverlap	allSnps	enrichment	chromatin_state
+E124	rs76904798	N/A	N/A	E124_Quies_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	2	6	0.33333	Quies
+E124	rs7294619	N/A	N/A	E124_Quies_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	2	6	0.33333	Quies
+E124	rs17443656	N/A	N/A	E124_Quies_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	2	6	0.33333	Quies
+E124	rs11175620	N/A	N/A	E124_Quies_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	2	6	0.33333	Quies
+E124	rs11564266	N/A	N/A	E124_Quies_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	2	6	0.33333	Quies
+E124	rs1388597	N/A	N/A	E124_Quies_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	2	6	0.33333	Quies
+E029	rs76904798	N/A	N/A	E029_Quies_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	4	6	0.66667	Quies
+E029	rs7294619	N/A	N/A	E029_Quies_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	4	6	0.66667	Quies
+E029	rs17443656	N/A	N/A	E029_Quies_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	4	6	0.66667	Quies
+E029	rs11175620	N/A	N/A	E029_Quies_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	4	6	0.66667	Quies
+E029	rs11564266	N/A	N/A	E029_Quies_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	4	6	0.66667	Quies
+E029	rs1388597	N/A	N/A	E029_Quies_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	4	6	0.66667	Quies

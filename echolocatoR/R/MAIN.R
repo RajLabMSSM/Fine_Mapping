@@ -16,7 +16,16 @@
   #  /.' _/ |`'=/ " \='`| \_ `.\
  #  /` .' `\;-,'\___/',-;/` '. '\
 #  /.-'       `\(-V-)/`       `-.\
-# `              "   "           `
+# `              v  v           `
+# 
+#   message("      =/\                  /\=    ")
+#   message("      / \'._   (\_/)   _.'/ \     ")
+#   message("     / .''._'--(o.o)--'_.''. \    ")
+#   message("    /.' _/ |`'=/ { \='`| \_ `.\   ")
+#   message("   /` .' `\;-,'\___/',-;/` '. '\  ")
+#   message("  /.-'       `\(-V-)/`       `-.\ ")
+#   message(" `              v  v           `  ")
+# 
 
 
 # You can learn more about package authoring with RStudio at:
@@ -28,35 +37,46 @@
 #   Test Package:              'Cmd + Shift + T'
  
 # Load libraries
-.libPaths()
+.libPaths()  
 
 library(R.utils)
 library(devtools)
 library(readxl)
-library(DT)
+# library(DT)
 library(data.table)
 library(dplyr)
 library(ggplot2)
 library(plotly)
-library(cowplot)
+# library(cowplot)
 library(ggrepel)
 library(curl) 
 library(gaston)
 library(tidyr)
 library(BiocManager)
-library(biomaRt) # BiocManager::install("biomaRt")
-library(snpStats)  #BiocManager::install("snpStats") 
-library(coloc)
+library(biomaRt) # BiocManager::install("biomaRt") 
+
+install_fGWAS <- function(){
+  devtools::install_github("wzhy2000/fGWAS/pkg")
+  system("git clone https://github.com/wzhy2000/fGWAS.git & cd fGWAS & R CMD INSTALL pkg")
+}
+library(fGWAS) 
+# library(snpStats)  #BiocManager::install("snpStats") 
+# library(coloc)
+
 
 # library(bigsnpr) # BiocManager::install("bigsnpr")
 # install.packages("haploR", dependencies = TRUE)
-library(haploR)
-library(GeneOverlap) #BiocManager::install("GeneOverlap")
+# library(haploR)
+# library(GeneOverlap) #BiocManager::install("GeneOverlap")
+# library(rtracklayer) #BiocManager::install("rtracklayer")
+# BiocManager::install(c("supraHex","graph","Rgraphviz","dnet")) 
+# library(XGR)# install.packages("XGR")
+
 
 
 # *** SUSIE ****
 # library(knitrBootstrap) #install_github('jimhester/knitrBootstrap')
-library(susieR) # devtools::install_github("stephenslab/susieR")
+# library(susieR) # devtools::install_github("stephenslab/susieR")
 
 # *** finemapr ****
 ## finemapr contains: finemap, CAVIAR, and PAINTOR
@@ -70,16 +90,26 @@ library(susieR) # devtools::install_github("stephenslab/susieR")
 # thm <- knitr::knit_theme$get("bipolar")
 # knitr::knit_theme$set(thm)
 
-source("./echolocatoR/R/finemap.R")
+# General
 source("./echolocatoR/R/directory.R")
 source("./echolocatoR/R/query.R")
 source("./echolocatoR/R/LD.R")
-source("./echolocatoR/R/plot.R")
-source("./echolocatoR/R/conditional.R")
 source("./echolocatoR/R/colocalization.R")
-source("./echolocatoR/R/annotate.R")
-source("./echolocatoR/R/GoShifter.R")
-source("./echolocatoR/R/eQTL_boxplots.R")
+# Fine-mapping
+source("./echolocatoR/R/Finemapping/multi_finemap.R")
+source("./echolocatoR/R/Finemapping/SUSIE.R")
+source("./echolocatoR/R/Finemapping/ABF.R")
+source("./echolocatoR/R/Finemapping/FINEMAP.R") 
+source("./echolocatoR/R/Finemapping/PAINTOR.R")
+source("./echolocatoR/R/Finemapping/COJO.R")
+# Plotting
+source("./echolocatoR/R/Plotting/plot.R")
+source("./echolocatoR/R/Plotting/ggbio.R")
+source("./echolocatoR/R/Plotting/eQTL_boxplots.R")
+# Annotation
+source("./echolocatoR/R/Annotation/annotate.R")
+source("./echolocatoR/R/Annotation/GoShifter.R")
+source("./echolocatoR/R/Annotation/XGR.R")
 
 
 
@@ -109,8 +139,9 @@ quickstart <- function(){
   A1_col <<- "A1"
   A2_col <<- "A2"
   finemap_method_list <<- c("SUSIE","ABF","FINEMAP","COJO")
-  method <<- finemap_method <<- "SUSIE"
-  method_list <<- finemap_method
+  finemap_methods <<- c("SUSIE","FINEMAP")
+  method <<- finemap_methods[1]
+  method_list <<- c("SUSIE","FINEMAP")
   force_new_LD <<- F
   before_var <<- "P"
   
@@ -161,13 +192,18 @@ quickstart <- function(){
   
   results_path <<- make_results_path(dataset_name, dataset_type, gene)
   subset_path <<- get_subset_path(results_path, gene)
-  subset_DT <<- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt", sep="\t")
+  subset_DT <<- finemap_DT <<- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt", sep="\t")
+  multi <<- T
+  subtitle=""
   # subset_path <<- 'Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_combined_meta_subset.txt'
   # subset_DT <<- data.table::fread(subset_path, sep="\t")
   LD_path <<- file.path(results_path, "plink/LD_matrix.RData")
   
   fullSS_path <<- file.path("Data",dataset_type,dataset_name,"nallsEtAl2019_allSamples_allVariants.mod.txt")
-  
+  show_plot<<-T
+  subtitle<<-NA
+  multi<<-T
+  LD_SNP<<- NA
   
 
   colDict <<- column_dictionary(fullSS_path)
@@ -190,7 +226,8 @@ quickstart <- function(){
   sample_size <<- NA 
   freq_cutoff <<- 0.1
   
-  finemap_method_list <<- c("SUSIE", "ABF", "FINEMAP", "COJO")
+  finemap_method_list <<- c("SUSIE","FINEMAP")#  "ABF", "COJO"
+  
   consensus <<- T
   
   dataset1_path <<- "./Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_Nalls23andMe_2019_subset_500kb.txt"
@@ -207,7 +244,7 @@ quickstart <- function(){
   show_plot <<- T
   
   goshifter_path <<- "./echolocatoR/tools/goshifter"
-  permute <<- 1000
+  permutations <<- 1000
   remove_tmps <<- T
   chromatin_states <<- c("TssA","EnhA1","EnhA2")
   diff_freq <<- 0.1
@@ -314,7 +351,7 @@ finemap_pipeline <- function(gene,
                              force_new_subset=F, 
                              force_new_LD=F,
                              force_new_finemap=T,
-                             finemap_method="SUSIE",
+                             finemap_methods=c("SUSIE","FINEMAP"),
                              bp_distance=500000, 
                              n_causal=5, 
                              sample_size=NA,
@@ -351,7 +388,8 @@ finemap_pipeline <- function(gene,
                              conditioned_snps,
                              plot_LD = F, 
                              verbose=T,
-                             remove_tmps=T
+                             remove_tmps=T,
+                             plot_types=c("simple","fancy")
                           ){
    # Create paths 
    results_path <- make_results_path(dataset_name, dataset_type, gene)
@@ -390,18 +428,17 @@ finemap_pipeline <- function(gene,
    # Remove pre-specified SNPs
    if(remove_variants!=F){
      printer("Removing specified variants:",paste(remove_variants, collapse=','), v=verbose)
-     subset_DT <- subset(subset_DT, !SNP %in% remove_variants )
+     try({subset_DT <- subset(subset_DT, !(SNP %in% remove_variants) )}) 
    }
    # Filter by MAF
    if(!is.na(min_MAF)){ 
-     subset_DT <- subset(subset_DT, MAF >= min_MAF) 
+     try({subset_DT <- subset(subset_DT, MAF >= min_MAF) })
    } 
    # Trim subset according to annotations of where the gene's limit are 
    subset_DT <- gene_trimmer(subset_DT, trim_gene_limits, gene, min_POS, max_POS) 
    
-  ### Compute LD matrix  
-  printer("",v=verbose)
-  printer("--- Step 2: Calculate Linkage Disequilibrium ---", v=verbose)
+  ### Compute LD matrix 
+  message("--- Step 2: Calculate Linkage Disequilibrium ---")
   
   LD_path <- file.path(results_path,"plink/LD_matrix.RData")
   if(!file.exists(LD_path) | force_new_LD==T){
@@ -436,9 +473,8 @@ finemap_pipeline <- function(gene,
   }
   
   
-  # Final filtering  
-  printer("",v=verbose)
-  printer("-------------- Step 3: Filter SNPs -------------",v=verbose) 
+  # Final filtering   
+  message("-------------- Step 3: Filter SNPs -------------") 
   ## Subset summary stats to only include SNPs found in query
   subset_DT <- subset(subset_DT, SNP %in% unique(row.names(LD_matrix), colnames(LD_matrix) ) )
   subset_DT <- subset_DT[complete.cases(subset_DT),] # Remove any NAs
@@ -447,7 +483,7 @@ finemap_pipeline <- function(gene,
   # finemap 
   finemap_DT <- finemap_handler(results_path = results_path, 
                                 fullSS_path = fullSS_path,
-                                finemap_method = finemap_method, 
+                                finemap_methods = finemap_methods, 
                                 force_new_finemap = force_new_finemap,
                                 dataset_type = dataset_type,
                                 subset_DT = subset_DT, 
@@ -468,21 +504,37 @@ finemap_pipeline <- function(gene,
   # Step 6: COLOCALIZE
   # Step 7: Functionally Fine-map
   
-  # Plot   
-  printer("",v=verbose)
-  printer("--------------- Step 7: Visualize --------------", v=verbose) 
-  mf_plot <- multi_finemap_plot(finemap_DT = finemap_DT,
-                     results_path = results_path,
-                     finemap_method_list = finemap_method, 
-                     conditioned_snps = conditioned_snps,
-                     gene = gene, 
-                     original = T, 
-                     save = T)
-  print(mf_plot)  
+  # Plot    
+  message("--------------- Step 7: Visualize --------------") 
+  if("simple" %in% plot_types){
+    mf_plot <- multi_finemap_plot(finemap_DT = finemap_DT,
+                                  LD_matrix = LD_matrix,
+                                  results_path = results_path,
+                                  finemap_method_list = finemap_methods,
+                                  conditioned_snps = conditioned_snps,
+                                  gene = gene,
+                                  original = T,
+                                  save = T)
+    print(mf_plot)
+  }
+  if("fancy" %in% plot_types){
+    trx <- ggbio_plot(finemap_DT = finemap_DT,
+                      gene = gene,
+                      LD_matrix = LD_matrix,
+                      results_path = results_path,
+                      method_list = finemap_methods,
+                      XGR_libnames = c("ENCODE_TFBS_ClusteredV3_CellTypes",
+                                       "ENCODE_DNaseI_ClusteredV3_CellTypes",
+                                       "Broad_Histone")) 
+  }
+
+ 
+  
+  
   
   # Show results table 
   printer("+",gene,"Credible Set SNPs", v=verbose)
-  createDT( subset(finemap_DT, Support >0) ) %>% print() 
+  print(createDT_html( subset(finemap_DT, Support >0) ))
   
   # Cleanup:
   if(remove_tmps){
@@ -522,7 +574,7 @@ finemap_gene_list <- function(gene_list, fullSS_path,
                              force_new_finemap=T,
                              subset_path="auto", 
                              top_SNPs="auto", 
-                             finemap_method="SUSIE",
+                             finemap_methods=c("SUSIE","FINEMAP"),
                              bp_distance=500000, 
                              n_causal=5, 
                              sample_size=NA,
@@ -555,7 +607,8 @@ finemap_gene_list <- function(gene_list, fullSS_path,
                              conditioned_snps="auto",
                              plot_LD=F,
                              verbose=T,
-                             remove_tmps=T
+                             remove_tmps=T,
+                             plot_types = c("simple","fancy")
                              ){ 
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
@@ -568,12 +621,13 @@ finemap_gene_list <- function(gene_list, fullSS_path,
       gene_limits <- arg_list_handler(trim_gene_limits, i) 
       conditioned_snp <- arg_list_handler(conditioned_snps, i)  
       start_gene <- Sys.time()  
+      message("^^^^^^^^^ Running echolocatoR on: ",gene," ^^^^^^^^^")
       cat('  \n###', gene, '  \n')  
       # Delete the old subset if force_new_subset == T  
       finemap_DT <- finemap_pipeline(gene=gene, 
                                      top_SNPs=top_SNPs, 
                                      fullSS_path=fullSS_path,
-                                     finemap_method=finemap_method,
+                                     finemap_methods=finemap_methods,
                                      force_new_subset=force_new_subset,
                                      force_new_LD=force_new_LD,
                                      force_new_finemap=force_new_finemap,
@@ -613,7 +667,8 @@ finemap_gene_list <- function(gene_list, fullSS_path,
                                      probe_path=probe_path,
                                      conditioned_snps=lead_SNP,
                                      plot_LD=plot_LD,
-                                     remove_tmps=remove_tmps)  
+                                     remove_tmps=remove_tmps,
+                                     plot_types=plot_types)  
       
       # Create summary table for all genes
       printer("Generating summary table...", v=verbose)

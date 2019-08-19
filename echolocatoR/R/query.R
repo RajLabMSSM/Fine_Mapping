@@ -30,36 +30,45 @@ import_topSNPs <- function(topSS_path,
     return(top_SNPs)
   }
   top_SNPs <- topSNPs_reader(topSS_path, sheet)
+  orig_top_SNPs <- top_SNPs
+
+  # Standardize col names 
+  top_SNPs <- top_SNPs %>%
+    dplyr::select(Gene=gene_col,
+                  CHR=chrom_col, 
+                  POS=position_col, 
+                  SNP=snp_col,
+                  P=pval_col, 
+                  Effect=effect_col) 
+    # Add Locus column
+    if(locus_col %in% colnames(orig_top_SNPs)){
+      LOCUS_vector <- dplyr::select(orig_top_SNPs, Locus=locus_col)
+      top_SNPs <- cbind(LOCUS_vector, top_SNPs)
+    } else {
+      top_SNPs <- cbind(Locus=top_SNPs$Gene, top_SNPs)
+    }
   
-  if(remove_variants != F){
-    top_SNPs <- subset(top_SNPs, !(SNP %in% remove_variants))
-  }
-  # Get the top representative SNP and Gene per locus (by lowest p-value)
-  if(group_by_locus){
-    top_SNPs <- top_SNPs %>%
-      dplyr::rename(Locus=locus_col) %>%
-      arrange(`P, all studies`) %>% 
-      dplyr::group_by(Locus) %>% slice(1) %>% 
-      replace(., .=="NA", NA) %>% 
-      subset(!is.na(Locus)) 
-  }
-    # Standardize
-    select_cols <- c(chrom_col, position_col, snp_col, pval_col, effect_col, gene_col)
-    new_cols <- c("CHR","POS","SNP","P","Effect","Gene")
-    if(locus_col %in% colnames(top_SNPs)){
-      top_SNPs <- top_SNPs %>% dplyr::rename(Locus=locus_col)
+    # Remove specific variants
+    if(remove_variants != F){
+      top_SNPs <- subset(top_SNPs, !(SNP %in% remove_variants))
     }
-    if("Locus" %in% colnames(top_SNPs)){        
-      select_cols <- append(select_cols, "Locus")
-      new_cols <-  append(new_cols, "Locus")
-    }
-    top_SNPs <- subset(top_SNPs, select=select_cols)
-    # Standardize names
-    colnames(top_SNPs) <- new_cols
+    
     # Get only the top SNP (sorted by lowest p-val, then highest Effect size) for each gene
-    top_SNPs <- top_SNPs %>% arrange(P, desc(Effect)) %>% group_by(Gene) %>% slice(1)
+    top_SNPs <- top_SNPs %>% 
+      arrange(P, desc(Effect)) %>% 
+      group_by(Gene) %>% 
+      dplyr::slice(1)
     top_SNPs$CHR <- gsub("chr", "",top_SNPs$CHR) 
     top_SNPs$CHR <- as.numeric(top_SNPs$CHR) 
+    # Get the top representative SNP and Gene per locus (by lowest p-value)
+    if(group_by_locus){
+      top_SNPs <- top_SNPs %>%
+        arrange(P) %>% 
+        dplyr::group_by(Locus) %>% dplyr::slice(1) %>% 
+        replace(., .=="NA", NA) %>% 
+        subset(!is.na(Locus)) 
+    }
+    
     createDT(top_SNPs, caption)
     return(data.table::data.table(top_SNPs))  
 }
@@ -80,7 +89,7 @@ auto_topSNPs_sub <- function(top_SNPs, query, gene){
   ## and use the SNP in the first row.
   if(toString(top_SNPs)=="auto"){
     top_SNPs <- query %>% mutate(Gene=gene) %>%
-      arrange(P, desc(Effect)) %>% group_by(Gene) %>% slice(1)
+      arrange(P, desc(Effect)) %>% group_by(Gene) %>% dplyr::slice(1)
   }
   topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),][1,]
   return(topSNP_sub)
@@ -287,7 +296,7 @@ preprocess_subset <- function(gene,
                               return_dt=T,
                               verbose=T){
   printer("",v=verbose)
-  printer("---------------- Step 1.5: Standarize ----------")
+  message("---------------- Step 1.5: Standarize ----------")
   query_check <- data.table::fread(subset_path, sep=file_sep, nrows = 2)
   
   if(dim(query_check)[1]==0){
@@ -353,7 +362,7 @@ preprocess_subset <- function(gene,
     
     # Add leadSNP col 
     ## Get just one SNP per location (just pick the first one)
-    query_mod <- query_mod %>% group_by(CHR, POS) %>% slice(1)
+    query_mod <- query_mod %>% group_by(CHR, POS) %>% dplyr::slice(1)
     ## Mark lead SNP
     query_mod$leadSNP <- ifelse(query_mod$SNP==topSNP_sub$SNP, T, F)
     
@@ -404,7 +413,7 @@ extract_SNP_subset <- function(gene,
                                remove_tmps=T,
                                verbose=T){
   printer("",v=verbose)
-  printer("------------------ Step 1: Query ---------------")
+  message("------------------ Step 1: Query ---------------")
   # topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),][1,]
   # if(is.na(min_POS)){min_POS <- topSNP_sub$POS - bp_distance}
   # if(is.na(max_POS)){max_POS <- topSNP_sub$POS + bp_distance}
@@ -416,7 +425,7 @@ extract_SNP_subset <- function(gene,
     check_if_empty(subset_path, file_sep=file_sep)
     query <- data.table::fread(subset_path, header=T, stringsAsFactors=F, sep="\t")
   } else if (file.exists(multi_path) & force_new_subset==F){
-    printer("+ Importing previous Multi-finemap results...")
+    printer("+ Importing previous Multi-finemap file...Importing summary stats.")
     check_if_empty(multi_path, file_sep=file_sep)
     query <- data.table::fread(multi_path, header=T, stringsAsFactors=F, sep="\t")
   } else {

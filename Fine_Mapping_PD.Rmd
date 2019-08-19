@@ -31,9 +31,9 @@ editor_options:
   chunk_output_type: inline
 --- 
 
-[Scripts to run CAVIAR, FINEMAP (version 1.1) and DAP-G](https://stephenslab.github.io/susie-paper/manuscript_results/pedagogical_example.html)
+
 ```{r setup, message=F, warning=F, dpi = 600}
-# knitr::opts_chunk$set(error = TRUE) # Knit even with errors
+# knitr::opts_chunk$set(error = T) # Knit even with errors
 # devtools::install_local("echolocatoR/", force = T)
 # library("echolocatoR")
 source("echolocatoR/R/MAIN.R")
@@ -50,7 +50,7 @@ coloc_results <- list()
 ## Statistical Fine-mapping {.tabset .tabset-fade .tabset-pills} 
 
 Parkinson's Disease GWAS.
-```{r PD: Nalls23andMe_2019, results = 'asis', fig.height=12, fig.width=9} 
+```{r PD: Nalls23andMe_2019, results = 'asis', fig.height=10, fig.width=7, fig.show='hold'} 
 dataset_name <- "Nalls23andMe_2019"
 top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
   topSS_path = Directory_info(Data_dirs, dataset_name, "topSumStats"),
@@ -61,27 +61,28 @@ top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
   locus_col = "Locus Number",
   remove_variants = "rs34637584")
 # Manually add new SNP of interest
-top_SNPs <-data.table::rbindlist(list(top_SNPs, 
+top_SNPs <- data.table::rbindlist(list(top_SNPs, 
                                       data.table::data.table(CHR=14,POS=55360203, SNP="rs3783642", 
-                                                   P=0, Effect=1, Gene="ATG14", Locus=NA),
+                                                   P=0, Effect=1, Gene="ATG14", Locus=NA ),
                                       data.table::data.table(CHR=12,POS=53797236, SNP="rs34656641",
-                                                   P=0, Effect=1, Gene="SP1", Locus=NA),
+                                                   P=0, Effect=1, Gene="SP1", Locus=NA ),
                                       data.table::data.table(CHR=5,POS=126181862, SNP="rs959573",
-                                                   P=0, Effect=1, Gene="LMNB1", Locus=NA)
-                                      ))
-
+                                                   P=0, Effect=1, Gene="LMNB1", Locus=NA ),
+                                      data.table::data.table(CHR=17,POS=40609405, SNP="rs9897702",
+                                                   P=0, Effect=1, Gene="ATP6V0A1", Locus=NA )
+                                      ), use.names = T)
 gene_list <- unique(top_SNPs$Gene)
 
 finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
-                                               gene_list = "LRRK2",#unique(c("LRRK2", gene_list)),
+                                               gene_list = unique(c("LRRK2", gene_list))[1], #
                                                trim_gene_limits = c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
                                                query_by ="coordinates",
                                                subset_path = "auto",
-                                               finemap_method = c("SUSIE","FINEMAP"),
-                                               #,"ABF","FINEMAP","COJO"), 
-                                               force_new_LD = T,  
+                                               finemap_methods = c("SUSIE","FINEMAP"),
+                                               #,"ABF","COJO"), 
+                                               force_new_LD = F,  
                                                force_new_subset = F,
                                                force_new_finemap = F,
                  # file_path = Directory_info(dataset_name, "fullSumStats"),
@@ -100,53 +101,181 @@ finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
                  remove_variants = c("rs34637584"),
                  remove_correlates = c("rs34637584"),
                  conditioned_snps = "auto", # Use the lead SNP for each gene 
-                 n_causal = 5, 
+                 n_causal = 10, 
+                 plot_types = c("simple"),
                  remove_tmps = F)
- 
 ```
 
 # Summarize Fine-mapping Results
 
-```{r Merge Results, results = 'asis'}
-merged_results <- merge_finemapping_results(finemap_results, 
-                                            top_SNPs,
-                                            xlsx_path ="./Data/finemapping_annotations.xlsx", 
-                                            from_storage = T, 
-                                            haploreg_annotation = T,
-                                            biomart_annotation = T,
+## Gather Annotations
+
+```{r Merge Results}
+merged_results <- merge_finemapping_results(minimum_support=1,
+                                            include_leadSNPs=T,
+                                            xlsx_path="./Data/annotated_finemapping_results.xlsx",
+                                            from_storage=T,
+                                            haploreg_annotation=T,
+                                            biomart_annotation=T, 
                                             verbose = F)
-# Summarize epigenetics 
-## Across all datasets and loci
+createDT(subset(merged_results, Support == 2))
+```
+
+## Mutation Types
+
+```{r Mutation Types}  
+potential_missense <- SNPs_by_mutation_type(merged_results, mutation_type="missense_variant")
+createDT(potential_missense)
+
+candidate_counts <- counts_summary(top_SNPs, merged_results)
+createDT(candidate_counts)
+
+# Distribution of mutation types in Credible Set SNPs 
+mod <- merged_results %>% 
+  mutate(CredSet.Lead = 
+           ifelse(Support>0,
+                  ifelse(leadSNP==T,"CS & leadSNP", "CS & non-leadSNP"),
+                  ifelse(leadSNP==T, "Non-CS & leadSNP","Non-CS & non-leadSNP")),NA) 
+ggplot(data=mod, aes(x=consequence_type_tv, fill=CredSet.Lead)) + 
+  geom_bar(aes(y = ..count..), position="dodge") + # (..count..)/sum(..count..)
+  coord_flip() +
+  labs(title="Proportions of Mutation Types (Biomart)",
+       subtitle = "Support = Within Credible Set",
+       x = "Mutation Type",
+       y="SNP Count") + 
+  theme(legend.text = element_text(size=8))
+```
+
+# Enrichment Tests
+
+Enrichment tests can be conducted using three different approaches:
+  1. __HaploReg__: Fisher's exact test on the Credible Set SNPs (identified through fine-mapping) vs. all the SNPs in the same locus (as background). Annotations were taken from the HaploReg annotation tool using the HaploR R package.
+  2. __XGR__: Fisher's exact test run on BED file annotations pulled from the XGR package.
+  3. __GoShifter__: A more sophisticated approach that performs SNP-level enrichment tests using BED files. However, unlike simpler methods, it also incorporates Linkage Disequilibrium (LD) info into the model. In this pipeline, LD is estimated from the refrence panel (e.g. 1000 Genomes Phase 1).
+    + Because GoShifter does not consider a specific background, these tests were repeated for both the Credible Sets, and then in all the SNPs in the same locus.
+
+```{r  Enrichment Tests}
+LRRK2_dat <- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt",
+                        sep="\t", stringsAsFactors = F) 
+```
+
+## HaploReg
+
+- __NOTE__: Must run 'merge_finemapping_results' with haploreg_annotation=T for this to work.
+- Specify which tissue types you want to check enrichment for (e.g. BRN=Brain, BLD=Blood).
+- Avantages:
+   + Can specify background; HaploR has access to many annotation files.
+   + Very fast.
+- Disadvantages: 
+   + Can only use a Fisher's exact test (or Chi-squared).
+```{r HaploReg}
+# Summarize epigenetics across all datasets and loci
 epi_table <- epigenetics_summary(merged_results,
                      tissue_list = c("BRN","BLD"),
                      epigenetic_variables = c("Promoter_histone_marks","Enhancer_histone_marks"))
 createDT(epi_table)
 
-## Within LRRK2
-### Enrichment 
-LRRK2_dat <- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt",
-                        sep="\t", stringsAsFactors = F) 
-epigenetics_enrichment(snp_list1 = subset(LRRK2_dat, Support >= 1)$SNP %>% unique(), 
-                       snp_list2 = LRRK2_dat$SNP %>% unique(), 
+### Enrichment for just the LRRK2 locus
+epigenetics_enrichment(snp_list1 = unique(subset(LRRK2_dat, Support >= 1)$SNP), 
+                       snp_list2 = unique(LRRK2_dat$SNP), 
                        chisq = T, 
                        fisher = T, 
                        tissue_list = c("BRN","BLD"),
-                       epigenetic_variables = c("Promoter_histone_marks","Enhancer_histone_marks"))
-
-
-                                
-potential_missense <- SNPs_by_mutation_type(merged_results, mutation_type="missense_variant")
-createDT(subset(potential_missense, consequence_type_tv=="missense_variant"))
-
-candidate_counts <- counts_summary(top_SNPs, merged_results)
+                       epigenetic_variables = c("Promoter_histone_marks","Enhancer_histone_marks")) 
 ```
 
-## LocusZoom Plots
+## XGR
 
-```{r}  
-
+- With the XGR enrichment tool, you can specify your own background (e.g. all SNPs within a given locus) relative to the foreground (e.g. Credible Set SNPs within a given locus). By default, it uses all identifiable SNPs from the annotation file as the background.
+- Advantages: 
+   + XGR offers a wide variety of pre-formatted annotation files.
+   + Fairly fast.
+- Disadvantages: 
+   + XGR can only use a simple Fisher's exact test that doesn't account for other confounding factors (such as LD).
+```{r XGR}
+XGR_results <- xgr_annoEnrich_mass(foreground_snps = unique(subset(LRRK2_dat, Support >= 1)$SNP), 
+                                    background_snps = unique(LRRK2_dat$SNP), 
+                                    lib.selections = c("ENCODE_TFBS_ClusteredV3_CellTypes",
+                                                        "ENCODE_DNaseI_ClusteredV3_CellTypes", 
+                                                        # "Broad_Histone",
+                                                        "FANTOM5_Enhancer",
+                                                        "Segment_Combined_Gm12878",
+                                                        "TFBS_Conserved",
+                                                        "ReMap_PublicAndEncode_TFBS",
+                                                        "Blueprint_VenousBlood_Histone",
+                                                        "Blueprint_DNaseI",
+                                                        "Blueprint_Methylation_hyper",
+                                                        "Blueprint_Methylation_hypo",
+                                                        "Genic_anno",
+                                                        "FANTOM5_CAT_Cell",
+                                                        "FANTOM5_CAT_MESH",
+                                                        "GWAScatalog_alltraits"),  
+                                    save_path=F) 
 ```
 
+
+## GoShifter
+
+### Credible Set only
+
+```{r GoShifter: Credible Set only} 
+GS_results_CS <- GoShifter(results_path = "./Data/GWAS/Nalls23andMe_2019/LRRK2/", 
+                            CredibleSet_only = T,
+                            permutations = 1000,
+                            Roadmap_chromatinMarks_search = "monocytes",
+                            chromatin_state = "TssA", #"",Quies 
+                            remove_tmps = T,
+                            verbose = T,
+                            save_results = T) 
+```
+
+### All SNPs in Locus
+
+Don't run this for now because it takes a very long time to complete.
+```{r GoShifter: All SNPs in Locus, eval=F} 
+GS_results_locus <- GoShifter(results_path = "./Data/GWAS/Nalls23andMe_2019/LRRK2/", 
+                        CredibleSet_only = F,
+                        permutations = 1000,
+                        Roadmap_chromatinMarks_search = "monocytes",
+                        chromatin_state = "TssA", 
+                        remove_tmps = T,
+                        verbose = T,
+                        save_results = T)
+createDT(GS_results_locus)
+```
+
+
+# PAINTOR
+
+## GWAS + Epigenetic Annotations
+
+```{r PAINTOR : GWAS + Epigenetic Annotations}
+PAINTOR_results <- PAINTOR(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
+                           GWAS_dataset_name="Nalls23andMe_2019",
+                           eQTL_dataset_name=NA,
+                           gene="LRRK2",
+                           n_causal=5,
+                           XGR_dataset=NA,
+                           Roadmap_chromatinMarks_search="monocytes",
+                           chromatin_state="TssA",
+                           no_annotations=F)
+createDT(PAINTOR_results)
+```
+
+## GWAS + Fairfax eQTLs + Epigenetic Annotations
+
+```{r PAINTOR : GWAS + Fairfax eQTLs + Epigenetic Annotations} 
+PAINTOR_results_FF <- PAINTOR(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
+                           GWAS_dataset_name="Nalls23andMe_2019",
+                           eQTL_dataset_name="Fairfax_2014",
+                           gene="LRRK2",
+                           n_causal=5,
+                           XGR_dataset=NA,
+                           Roadmap_chromatinMarks_search="monocytes",
+                           chromatin_state="TssA",
+                           no_annotations=F)
+createDT(PAINTOR_results_FF)
+```
 
 
 ## eQTL Boxplots: Fairfax
@@ -171,7 +300,8 @@ merged_eQTL_data <- eQTL_boxplots(snp_list,
              .fam_path = "Data/eQTL/Fairfax_2014/volunteers_421.fam",
              gene = "LRRK2",
              show_plot = T,
-             SS_annotations = F) 
+             SS_annotations = F,
+             interact = F) 
 
 ```
 
@@ -267,65 +397,34 @@ colocalize_geneList <- function(gene_list,
 
 ## Colocalization: Fairfax {.tabset .tabset-fade .tabset-pills} 
 
-```{r Colocalization: Nalls23andMe_2019 + Fairfax, results = 'asis', fig.height=7, fig.width=10, eval=T} 
-# Manual check
-printer("CD14")
-ff <- data.table::fread("./Data/eQTL/Fairfax_2014_CD14/LRRK2/LRRK2_Fairfax_2014_CD14_subset.txt", sep="\t")
-subset(ff, SNP=="rs7294619")
+### Summarize
 
-printer("IFN")
-ff <- data.table::fread("./Data/eQTL/Fairfax_2014_IFN/LRRK2_Fairfax_IFN_mod.txt", sep="\t")
-subset(ff, POS=="40617202")
+```{r Colocalization: Nalls23andMe_2019 + Fairfax} 
+gather_ff_data <- function(gene_snp_df){
+  gene_list <- unique(gene_snp_df$Gene)
+  # Loop through genes
+  ff_summary <- lapply(gene_list, function(gene, gene_snp_df.=gene_snp_df){
+    printer("+ Gathering Fairfax eQTLS for LRRK2")
+    bp <- subset(gene_snp_df., Gene==gene)$POS[1]
+    # Loop through eQTL conditions
+    dat <- lapply(c("CD14","IFN","LPS2","LPS24"), function(condition, bp.=bp, gene.=gene){
+      printer("+",condition)
+      ff <- data.table::fread(file.path("./Data/eQTL/Fairfax_2014",condition,gene.,
+                                        paste0(gene.,"_Fairfax_",condition,".txt")), sep="\t") %>% 
+        subset(POS==bp.) %>% 
+        data.table::as.data.table() %>% 
+        tibble::add_column(Condition=condition, .before =1) %>% 
+        dplyr::rename(PROBE_ID=gene)
+      return(ff)
+  }) %>% data.table::rbindlist() 
+    return(dat %>% tibble::add_column(Gene=gene, .before =1))
+}) %>% data.table::rbindlist() 
+  return(ff_summary)
+}
 
-printer("LPS 2-hour")
-ff <- data.table::fread("./Data/eQTL/Fairfax_2014_LPS2/LRRK2/LRRK2_Fairfax_LPS2.txt", sep="\t")
-subset(ff, POS=="40617202")
-
-printer("LPS 24-hour")
-ff <- data.table::fread("./Data/eQTL/Fairfax_2014_LPS24/LRRK2/LRRK2_Fairfax_LPS24.txt", sep="\t")
-subset(ff, POS=="40617202")
-
-# 
-# for(g in c("LRRK2")){
-#   cat('\n')
-#   cat("###", g, "\n") 
-#   for(s in c("IFN","LPS2", "LPS24")){ 
-#     dataset_name <- paste0("Fairfax_2014_",s)
-#     # Fine-map
-#     try({
-#     allResults[[dataset_name]] <- finemap_gene_list( gene_list=c("LRRK2"),  
-#                                                 superpopulation = s,
-#                                                 dataset_name = dataset_name, 
-#                                                 dataset_type = "GWAS",
-#                                                 finemap_method = c("FINEMAP"),#c("SUSIE","ABF","FINEMAP"),
-#                                                 force_new_LD = T,
-#                                                 force_new_finemap = T, 
-#                                                 force_new_subset = T,  
-#                                                 query_by = "probe",
-#                                                 top_SNPs = Nalls_top_SNPs,  
-#                    # fullSS_path = Directory_info(dataset_name, "fullSumStats"),
-#                    fullSS_path = paste0("./Data/eQTL/",dataset_name,"/",g,"_Fairfax_2014_",s,"_mod.txt"),
-#                    subset_path = "auto",
-#                    effect_col = "beta", stderr_col = "calculate", tstat_col = "t-stat", pval_col = "p-value",
-#                    n_causal = 5,  
-#                    LD_block = F) 
-#     })
-#     # Colocalize
-#     coloc_results[[dataset_name]] <- COLOC(
-#         gene = g,
-#         dataset1_path = paste0("./Data/GWAS/Nalls23andMe_2019/",g,"/",g,"_Nalls23andMe_2019_subset.txt"), 
-#         dataset2_path = paste0("./Data/eQTL/Fairfax_2014_",s,"/",g,"/",g,"_Fairfax_2014_",s,"_subset.txt"),
-#         dataset1_type = "cc",
-#         dataset2_type = "quant",
-#         shared_MAF = 1,
-#         PP_threshold = 0.8, 
-#         save_results = T,
-#         show_plot=T)
-#   } 
-#   cat("\n")
-# } 
- 
- 
+gene_snp_df <- subset(merged_results, Gene=="LRRK2" & Support==2, 
+                      select = c("Gene","SNP","CHR","POS"))  %>% unique()
+createDT(gather_ff_data(gene_snp_df)) 
 ```
 
 
@@ -372,8 +471,7 @@ for(g in gene_list){
                    download_reference = T,
                    remove_tmps = F) 
   }  
-}
-
+} 
  
 ```
 

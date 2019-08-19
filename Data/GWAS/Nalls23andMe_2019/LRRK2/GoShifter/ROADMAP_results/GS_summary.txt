@@ -1,0 +1,128 @@
+EID	Standardized.Epigenome.name	enrichment	score	nSnpOverlap	allSnps
+E096	Lung	0.45455	0.485	5	11
+E102	Rectal Mucosa Donor 31	0.45455	0.4855	5	11
+E073	Brain_Dorsolateral_Prefrontal_Cortex	0.45455	0.68925	5	11
+E124	Monocytes-CD14+ RO01746 Primary Cells	0.45455	0.761	5	11
+E104	Right Atrium	0.45455	0.7935	5	11
+E078	Duodenum Smooth Muscle	0.45455	0.8065	5	11
+E035	Primary hematopoietic stem cells	0.45455	0.84825	5	11
+E079	Esophagus	0.36364	0.3305	4	11
+E076	Colon Smooth Muscle	0.36364	0.437	4	11
+E109	Small Intestine	0.36364	0.461	4	11
+E067	Brain Angular Gyrus	0.36364	0.4835	4	11
+E087	Pancreatic Islets	0.36364	0.57275	4	11
+E108	Skeletal Muscle Female	0.36364	0.60225	4	11
+E111	Stomach Smooth Muscle	0.36364	0.678	4	11
+E068	Brain Anterior Caudate	0.36364	0.6975	4	11
+E114	A549 EtOH 0.02pct Lung Carcinoma Cell Line	0.36364	0.7025	4	11
+E065	Aorta	0.36364	0.74875	4	11
+E062	Primary mononuclear cells from peripheral blood	0.36364	0.75475	4	11
+E029	Primary monocytes from peripheral blood	0.36364	0.8464	4	11
+E017	IMR90 fetal lung fibroblasts Cell Line	0.27273	0.1775	3	11
+E054	Ganglion Eminence derived primary cultured neurospheres	0.27273	0.2255	3	11
+E030	Primary neutrophils from peripheral blood	0.27273	0.292	3	11
+E027	Breast Myoepithelial Primary Cells	0.27273	0.3535	3	11
+E105	Right Ventricle	0.27273	0.3615	3	11
+E075	Colonic Mucosa	0.27273	0.3675	3	11
+E095	Left Ventricle	0.27273	0.368	3	11
+E091	Placenta	0.27273	0.432	3	11
+E069	Brain Cingulate Gyrus	0.27273	0.442	3	11
+E100	Psoas Muscle	0.27273	0.458	3	11
+E033	Primary T cells from cord blood	0.27273	0.47425	3	11
+E080	Fetal Adrenal Gland	0.27273	0.4745	3	11
+E074	Brain Substantia Nigra	0.27273	0.515	3	11
+E071	Brain Hippocampus Middle	0.27273	0.526	3	11
+E025	Adipose Derived Mesenchymal Stem Cell Cultured Cells	0.27273	0.5495	3	11
+E055	Foreskin Fibroblast Primary Cells skin01	0.27273	0.55775	3	11
+E097	Ovary	0.27273	0.56975	3	11
+E046	Primary Natural Killer cells from peripheral blood	0.27273	0.59875	3	11
+E059	Foreskin Melanocyte Primary Cells skin01	0.27273	0.6055	3	11
+E032	Primary B cells from peripheral blood	0.27273	0.613	3	11
+E086	Fetal Kidney	0.27273	0.771	3	11
+E050	Primary hematopoietic stem cells G-CSF-mobilized Female	0.18182	0.1085	2	11
+E022	iPS DF 19.11 Cells	0.18182	0.1465	2	11
+E127	NHEK-Epidermal Keratinocyte Primary Cells	0.18182	0.1505	2	11
+E122	HUVEC Umbilical Vein Endothelial Primary Cells	0.18182	0.1535	2	11
+E051	Primary hematopoietic stem cells G-CSF-mobilized Male	0.18182	0.161	2	11
+E045	Primary T cells effector/memory enriched from peripheral blood	0.18182	0.1755	2	11
+E088	Fetal Lung	0.18182	0.179	2	11
+E052	Muscle Satellite Cultured Cells	0.18182	0.189	2	11
+E120	HSMM Skeletal Muscle Myoblasts Cells	0.18182	0.1895	2	11
+E008	H9 Cells	0.18182	0.23	2	11
+E023	Mesenchymal Stem Cell Derived Adipocyte Cultured Cells	0.18182	0.273	2	11
+E066	Liver	0.18182	0.31	2	11
+E113	Spleen	0.18182	0.325	2	11
+E106	Sigmoid Colon	0.18182	0.3345	2	11
+E089	Fetal Muscle Trunk	0.18182	0.339	2	11
+E063	Adipose Nuclei	0.18182	0.3575	2	11
+E116	GM12878 Lymphoblastoid Cells	0.18182	0.4326	2	11
+E072	Brain Inferior Temporal Lobe	0.18182	0.517	2	11
+E126	NHDF-Ad Adult Dermal Fibroblast Primary Cells	0.18182	0.528	2	11
+E103	Rectal Smooth Muscle	0.18182	0.5735	2	11
+E077	Duodenum Mucosa	0.18182	0.6505	2	11
+E107	Skeletal Muscle Male	0.18182	0.694	2	11
+E101	Rectal Mucosa Donor 29	0.18182	0.7175	2	11
+E047	Primary T CD8+ naive cells from peripheral blood	0.09091	0.1065	1	11
+E042	Primary T helper 17 cells PMA-I stimulated	0.09091	0.1625	1	11
+E028	Breast variant Human Mammary Epithelial Cells (vHMEC)	0.09091	0.1745	1	11
+E121	HSMM cell derived Skeletal Muscle Myotubes Cells	0.09091	0.178	1	11
+E036	Primary hematopoietic stem cells short term culture	0.09091	0.1885	1	11
+E037	Primary T helper memory cells from peripheral blood 2	0.09091	0.206	1	11
+E129	Osteoblast Primary Cells	0.09091	0.23	1	11
+E094	Gastric	0.09091	0.2305	1	11
+E031	Primary B cells from cord blood	0.09091	0.26125	1	11
+E057	Foreskin Keratinocyte Primary Cells skin02	0.09091	0.2775	1	11
+E090	Fetal Muscle Leg	0.09091	0.284	1	11
+E070	Brain Germinal Matrix	0.09091	0.2865	1	11
+E125	NH-A Astrocytes Primary Cells	0.09091	0.2905	1	11
+E098	Pancreas	0.09091	0.3085	1	11
+E092	Fetal Stomach	0.09091	0.3105	1	11
+E026	Bone Marrow Derived Cultured Mesenchymal Stem Cells	0.09091	0.3855	1	11
+E049	Mesenchymal Stem Cell Derived Chondrocyte Cultured Cells	0.09091	0.408	1	11
+E128	NHLF Lung Fibroblast Primary Cells	0.09091	0.423	1	11
+E056	Foreskin Fibroblast Primary Cells skin02	0.09091	0.4755	1	11
+E058	Foreskin Keratinocyte Primary Cells skin03	0.09091		1	11
+E061	Foreskin Melanocyte Primary Cells skin03	0.09091		1	11
+E081	Fetal Brain Male	0	0.054	0	11
+E099	Placenta Amnion	0	0.1545	0	11
+E024	ES-UCSF4  Cells	0	0.1875	0	11
+E053	Cortex derived primary cultured neurospheres	0	0.1895	0	11
+E082	Fetal Brain Female	0	0.265	0	11
+E117	HeLa-S3 Cervical Carcinoma Cell Line	0	0.276	0	11
+E001	ES-I3 Cells	0		0	11
+E002	ES-WA7 Cells	0		0	11
+E003	H1 Cells	0		0	11
+E004	H1 BMP4 Derived Mesendoderm Cultured Cells	0		0	11
+E005	H1 BMP4 Derived Trophoblast Cultured Cells	0		0	11
+E006	H1 Derived Mesenchymal Stem Cells	0		0	11
+E007	H1 Derived Neuronal Progenitor Cultured Cells	0		0	11
+E009	H9 Derived Neuronal Progenitor Cultured Cells	0		0	11
+E010	H9 Derived Neuron Cultured Cells	0		0	11
+E011	hESC Derived CD184+ Endoderm Cultured Cells	0		0	11
+E012	hESC Derived CD56+ Ectoderm Cultured Cells	0		0	11
+E013	hESC Derived CD56+ Mesoderm Cultured Cells	0		0	11
+E014	HUES48 Cells	0		0	11
+E015	HUES6 Cells	0		0	11
+E016	HUES64 Cells	0		0	11
+E018	iPS-15b Cells	0		0	11
+E019	iPS-18 Cells	0		0	11
+E020	iPS-20b Cells	0		0	11
+E021	iPS DF 6.9 Cells	0		0	11
+E034	Primary T cells from peripheral blood	0		0	11
+E038	Primary T helper naive cells from peripheral blood	0		0	11
+E039	Primary T helper naive cells from peripheral blood	0		0	11
+E040	Primary T helper memory cells from peripheral blood 1	0		0	11
+E041	Primary T helper cells PMA-I stimulated	0		0	11
+E043	Primary T helper cells from peripheral blood	0		0	11
+E044	Primary T regulatory cells from peripheral blood	0		0	11
+E048	Primary T CD8+ memory cells from peripheral blood	0		0	11
+E083	Fetal Heart	0		0	11
+E084	Fetal Intestine Large	0		0	11
+E085	Fetal Intestine Small	0		0	11
+E093	Fetal Thymus	0		0	11
+E110	Stomach Mucosa	0		0	11
+E112	Thymus	0		0	11
+E115	Dnd41 TCell Leukemia Cell Line	0		0	11
+E118	HepG2 Hepatocellular Carcinoma Cell Line	0		0	11
+E119	HMEC Mammary Epithelial Primary Cells	0		0	11
+E123	K562 Leukemia Cells	0		0	11

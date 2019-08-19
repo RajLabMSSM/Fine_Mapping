@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="4f362142-f93c-4902-8303-c9f02356798c" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/../echolocatoR/tools/PAINTOR_V3.0" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.gitmodules" beforeDir="false" afterPath="$PROJECT_DIR$/../.gitmodules" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/ASXL3/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/ASXL3/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/ATG14/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/ATG14/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/BIN3/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/BIN3/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/BRIP1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/BRIP1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/BST1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/BST1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/C5orf24/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/C5orf24/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CAB39L/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CAB39L/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CAMK2D/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CAMK2D/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CASC16/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CASC16/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CD19/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CD19/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CHD9/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CHD9/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CHRNB1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CHRNB1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CLCN3/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CLCN3/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CRHR1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CRHR1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CRLS1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CRLS1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CTSB/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/CTSB/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/DLG2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/DLG2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/DNAH17/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/DNAH17/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/DYRK1A/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/DYRK1A/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/ELOVL7/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/ELOVL7/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FAM171A2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FAM171A2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FAM47E-STBD1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FAM47E-STBD1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FAM49B/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FAM49B/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FBRSL1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FBRSL1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FCGR2A/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FCGR2A/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FGF20/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FGF20/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FYN/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/FYN/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/GALC/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/GALC/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/GBF1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/GBF1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/GCH1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/GCH1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/GPNMB/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/GPNMB/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/GS1-124K5.11/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/GS1-124K5.11/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/HIP1R/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/HIP1R/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/HLA-DRB5/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/HLA-DRB5/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/IGSF9B/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/IGSF9B/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/INPP5F/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/INPP5F/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/IP6K2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/IP6K2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/ITGA8/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/ITGA8/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/ITPKB/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/ITPKB/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/KCNIP3/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/KCNIP3/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/KCNS3/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/KCNS3/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/KPNA1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/KPNA1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/KRTCAP2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/KRTCAP2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LCORL/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LCORL/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LINC00693/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LINC00693/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LOC100131289/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LOC100131289/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/FINEMAP/data.config" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/FINEMAP/data.config" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/GoShifter/GS_results.nperm1000.enrich" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/GoShifter/GS_results.nperm1000.enrich" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/GoShifter/GS_results.nperm1000.locusscore" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/GoShifter/GS_results.nperm1000.locusscore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/GoShifter/GS_results.nperm1000.snpoverlap" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/GoShifter/GS_results.nperm1000.snpoverlap" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/GoShifter/snpmap.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/GoShifter/snpmap.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MAP4K4/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MAP4K4/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MBNL2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MBNL2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MCCC1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MCCC1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MED12L/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MED12L/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MEX3C/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MEX3C/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MIPOL1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/MIPOL1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/NOD2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/NOD2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/NUCKS1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/NUCKS1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/PAM/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/PAM/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RETREG3/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RETREG3/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RIMS1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RIMS1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RIT2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RIT2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RNF141/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RNF141/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RPS12/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RPS12/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RPS6KL1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/RPS6KL1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SATB1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SATB1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SCAF11/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SCAF11/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SETD1A/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SETD1A/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SH3GL2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SH3GL2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SIPA1L2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SIPA1L2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SNCA/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SNCA/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SP1/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SP1/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SPPL2B/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SPPL2B/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SPTSSB/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SPTSSB/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/STK39/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/STK39/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SYT17/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/SYT17/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/TMEM163/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/TMEM163/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/TMEM175/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/TMEM175/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/TRIM40/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/TRIM40/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/UBAP2/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/UBAP2/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/VAMP4/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/VAMP4/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/VPS13C/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/VPS13C/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/WNT3/Multi-finemap/multi_finemap_plot.png" beforeDir="false" afterPath="$PROJECT_DIR$/../Data/GWAS/Nalls23andMe_2019/WNT3/Multi-finemap/multi_finemap_plot.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/eQTL/Fairfax_2014/rs76904798.tsv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Data/finemapping_annotations.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Fine_Mapping_PD.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/../Fine_Mapping_PD.Rmd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Fine_Mapping_PD.html" beforeDir="false" afterPath="$PROJECT_DIR$/../Fine_Mapping_PD.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/GoShifter.R" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/LD.R" beforeDir="false" afterPath="$PROJECT_DIR$/../echolocatoR/R/LD.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/MAIN.R" beforeDir="false" afterPath="$PROJECT_DIR$/../echolocatoR/R/MAIN.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/OpenTargets.R" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/annotate.R" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/conditional.R" beforeDir="false" afterPath="$PROJECT_DIR$/../echolocatoR/R/conditional.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/directory.R" beforeDir="false" afterPath="$PROJECT_DIR$/../echolocatoR/R/directory.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/eQTL_boxplots.R" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/finemap.R" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/plot.R" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/R/query.R" beforeDir="false" afterPath="$PROJECT_DIR$/../echolocatoR/R/query.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/IMPACT" beforeDir="false" afterPath="$PROJECT_DIR$/../echolocatoR/tools/IMPACT" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/goshifter" beforeDir="false" afterPath="$PROJECT_DIR$/../echolocatoR/tools/goshifter" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/CANVIS.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/CANvis_Sample/CANVIS.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/CANvis_Sample/canvis.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/CANvis_Sample/canvis.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/CANvis_Sample/chr4.3473139.rs6831256.annot.filt.300" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/CANvis_Sample/chr4.3473139.rs6831256.ld.filt.300" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/CANvis_Sample/chr4.3473139.rs6831256.post.filt.300" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/CANvis_Sample/run_canvis.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/canvis.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/CANVIS/install.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/PAINTOR" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/PAINTOR_Utilities/AnnotateLocus.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/PAINTOR_Utilities/CalcLD_1KG_VCF.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/PAINTOR_Utilities/CheckLD.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus1.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus1.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus10" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus10.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus10.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus11" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus11.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus11.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus12" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus12.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus12.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus13" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus13.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus13.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus14" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus14.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus14.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus15" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus15.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus15.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus16" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus16.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus16.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus17" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus17.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus17.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus18" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus18.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus18.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus19" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus19.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus19.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus2.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus2.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus20" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus20.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus20.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus21" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus21.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus21.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus22" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus22.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus22.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus23" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus23.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus23.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus24" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus24.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus24.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus25" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus25.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus25.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus26" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus26.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus26.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus27" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus27.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus27.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus28" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus28.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus28.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus29" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus29.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus29.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus3.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus3.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus30" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus30.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus30.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus31" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus31.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus31.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus32" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus32.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus32.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus33" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus33.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus33.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus34" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus34.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus34.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus35" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus35.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus35.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus36" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus36.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus36.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus37" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus37.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus37.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus38" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus38.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus38.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus39" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus39.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus39.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus4.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus4.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus5" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus5.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus5.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus6" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus6.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus6.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus7" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus7.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus7.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus8" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus8.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus8.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus9" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus9.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/Locus9.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData/input.files" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData1/Locus1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData1/Locus1.annotations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData1/Locus1.ld" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../echolocatoR/tools/paintor/SampleData1/input.files" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../eqtl_boxplots.R" beforeDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileEditorManager">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/paintor/paintor.sh">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="334">
+              <caret line="34" column="14" selection-start-line="34" selection-start-column="14" selection-end-line="34" selection-end-column="14" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/myMerge.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/multiGrep_no_w.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/getBest.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>allel</find>
+      <find>allele</find>
+    </findStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectFrameBounds">
+    <option name="x" value="178" />
+    <option name="y" value="23" />
+    <option name="width" value="1239" />
+    <option name="height" value="877" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="Scope" />
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="Wong_scripts" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Wong_scripts" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Wong_scripts" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Wong_scripts" type="462c0819:PsiDirectoryNode" />
+              <item name="tools" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="4f362142-f93c-4902-8303-c9f02356798c" name="Default Changelist" comment="" />
+      <created>1561754647622</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1561754647622</updated>
+      <workItem from="1561754648784" duration="403000" />
+      <workItem from="1562113141163" duration="283000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TimeTrackingManager">
+    <option name="totallyTimeSpent" value="686000" />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="178" y="23" width="1239" height="877" extended-state="0" />
+    <layout>
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25396827" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
+      <window_info anchor="bottom" id="Version Control" order="8" />
+      <window_info anchor="bottom" id="Database Changes" order="9" />
+      <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
+      <window_info anchor="bottom" id="Terminal" order="11" />
+      <window_info anchor="bottom" id="Python Console" order="12" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="right" id="SciView" order="3" />
+      <window_info anchor="right" id="R Graphics" order="4" />
+      <window_info anchor="right" id="R Packages" order="5" />
+      <window_info anchor="right" id="Database" order="6" />
+    </layout>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/paintor/.paintor.sh.swn">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/transpose.sh">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/paintor/paintor.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="334">
+          <caret line="34" column="14" selection-start-line="34" selection-start-column="14" selection-end-line="34" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/myMerge.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/multiGrep_no_w.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/getBest.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+  </component>
+</project>

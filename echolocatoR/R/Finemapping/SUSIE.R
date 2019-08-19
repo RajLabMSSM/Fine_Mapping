@@ -1,0 +1,112 @@
+
+# ***************** #
+####    SUSIE    ####   
+# ***************** #
+
+
+get_sample_size <- function(subset_DT, sample_size=NA){
+  if(is.na(sample_size)){
+    if("N_cases" %in% colnames(subset_DT) & "N_controls" %in% colnames(subset_DT)){
+      sample_size <- max(subset_DT$N_cases) + max(subset_DT$N_controls)
+    } else {
+      sample_size <- 10000
+      printer("++ No sample size variable detected...Defaulting to:",sample_size) 
+    }
+  }
+  return(sample_size)
+} 
+
+get_var_y <- function(subset_DT, dataset_type){ 
+  if(dataset_type=="GWAS" & "N_cases" %in% colnames(subset_DT) & "N_controls" %in% colnames(subset_DT)){
+    printer("++ Computing phenotype variance...") 
+    phenotype_variance <- var(c(rep(0, max(subset_DT$N_cases)),
+                                rep(1, max(subset_DT$N_controls)))
+    ) 
+  } else if(dataset_type=="eQTL" & "Expression" %in% colnames(subset_DT)){ 
+    phenotype_variance <- var(subset_DT$Expression)
+  } else {
+    printer("++ Phenotype variance could not be calculated from this data.") 
+    printer("    Estimating prior variance instead...")
+    phenotype_variance <- NA
+  }
+  return(list(phenotype_variance=phenotype_variance))
+}
+
+
+
+check_credible <- function(subset_DT, fitted_bhat){
+  ## *** IMPORTANT! ***: In case susieR cannot identify any credible set, 
+  # take the snps with the top 5 PIPs and provide a warning message. Interpret these snps with caution.
+  
+  # Credible_Set <- subset_DT[ as.numeric(strsplit( as.character(summary(fitted_bhat)$cs$variable) ,",")), ]$SNP  
+  printer("++",length(Credible_Set),"SNPs included in Credible Set") 
+  return(Credible_Set)
+}  
+error_handling <- function(code) {
+  tryCatch(code,
+           error = function(c) {
+             printer("--- ERROR ---")
+             printer("****** Could NOT identify credible set. Default to SNPs with the top 5 PIPs ******") 
+             CS <- finemap_DT %>% arrange(desc(PIP))
+             Credible_Set <- as.character(CS[1:5,]$SNP)
+             return(Credible_Set)
+           },
+           warning = function(c) "Warning",
+           message = function(c) "Message"
+  )
+}
+
+SUSIE <- function(subset_DT, 
+                  LD_matrix, 
+                  dataset_type="GWAS",
+                  n_causal=5,
+                  sample_size=NA, 
+                  var_y="estimate"){
+  # Sum of Single Effects (SuSiE): Iterative Bayesian Step-wise Selection
+  # https://stephenslab.github.io/susieR/
+  vars <- get_var_y(subset_DT, dataset_type)
+  sample_size <- get_sample_size(subset_DT, sample_size)
+  
+  printer("+ Fine-mapping with SUSIE")
+  fitted_bhat <- susieR::susie_bhat(bhat = subset_DT$Effect,
+                                    shat = subset_DT$StdErr,
+                                    R = LD_matrix,
+                                    n = sample_size, # Number of samples/individuals in the dataset
+                                    L = n_causal, # we assume there are at *most* 'L' causal variables
+                                    ## NOTE: setting L == 1 has a strong tendency to simply return the SNP with the largest effect size.
+                                    
+                                    estimate_prior_variance = TRUE, # default = FALSE
+                                    scaled_prior_variance = 0.1, # 0.1: Equates to "proportion of variance explained"
+                                    
+                                    standardize = TRUE,
+                                    estimate_residual_variance = TRUE, # TRUE
+                                    var_y = vars$phenotype_variance, # Variance of the phenotype (e.g. gene expression, or disease status)
+                                    
+                                    verbose = FALSE ) 
+  # try({susieR::susie_plot_iteration(fitted_bhat, n_causal, 'test_track_fit')})
+  
+  printer("++ Extracting Credible Sets...") 
+  susie_snps <- names(fitted_bhat$X_column_scale_factors)
+  CS_indices <- susieR::susie_get_cs(fitted_bhat)$cs
+  Credible_Sets <- lapply(CS_indices, function(x){susie_snps[x]}) #%>% unlist()
+  
+  printer("++ Merging susieR results with original data")
+  # Create coordinates col
+  # subset_DT$Coord <- paste(subset_DT$CHR, subset_DT$POS, sep=":")  
+  res_DT <- data.table::data.table(SNP = names(fitted_bhat$X_column_scale_factors), 
+                                   Probability = fitted_bhat$pip )
+  finemap_DT <- data.table:::merge.data.table(x = data.table::data.table(subset_DT, key="SNP"), 
+                                              y = data.table::data.table(res_DT, key="SNP")) 
+  finemap_DT <- finemap_DT %>% arrange(desc(Probability))
+  # Assign credible set #, or 0 to denote that it's not part of any credible set
+  ## NOTE: if a SNP is part of more than one list, the top-ranked group to which is belong is used
+  CS_dict <- list() 
+  for(i in 1:length(Credible_Sets)){
+    for(s in Credible_Sets[[i]]){
+      CS_dict <- append(CS_dict, setNames(i,s))
+    }  
+  }
+  finemap_DT$Credible_Set <- lapply(finemap_DT$SNP, function(x){ if(x %in% names(CS_dict)){ CS_dict[[x]] } else{0}}) %>% unlist()   
+  return(finemap_DT)
+}
+

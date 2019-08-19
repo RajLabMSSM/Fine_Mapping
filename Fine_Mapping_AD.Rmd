@@ -1,0 +1,105 @@
+---
+title: "<center><h1>Fine Mapping:</h1>Alzheimer's Disease</h1></center>" 
+author: 
+    "<div class='container'>
+     <h3>Brian M. Schilder, Bioinformatician II<br>
+     Raj Lab<br>
+     Department of Neuroscience<br>
+     Icahn School of Medicine at Mount Sinai<br>
+     NYC, New York<br>
+     </h3> 
+     <a href='https://github.com/RajLabMSSM/Fine_Mapping' target='_blank'><img src='./echolocatoR/images/echo_logo_sm.png'></a> 
+     <a href='https://github.com/RajLabMSSM' target='_blank'><img src='./web/images/github.png'></a> 
+     <a class='item' href='https://rajlabmssm.github.io/RajLab_website/' target='_blank'>
+        <img src='./web/images/brain-icon.png'>
+        <span class='caption'>RAJ LAB</span>
+     <a href='https://icahn.mssm.edu/' target='_blank'><img src='./web/images/sinai.png'></a>
+     </div>"
+date: "<br>Most Recent Update:<br> `r Sys.Date()`"
+output:
+ html_document:
+    theme: cerulean
+    highlight: zenburn
+    code_folding: show
+    toc: true
+    toc_float: true
+    smooth_scroll: true
+    number_sections: false
+    self_contained: true
+    css: ./web/css/style.css
+editor_options: 
+  chunk_output_type: inline
+--- 
+ 
+```{r setup, message=F, warning=F, dpi = 600}
+knitr::opts_chunk$set(error = T) # Knit even with errors
+# devtools::install_local("echolocatoR/", force = T)
+# library("echolocatoR")
+source("echolocatoR/R/MAIN.R")
+# MINERVA PATHS TO SUMMARY STATISTICS DATASETS: 
+Data_dirs <- read.csv("./Data/directories_table.csv")
+finemap_results <- list()
+coloc_results <- list()
+```
+
+
+
+# Kunkle et. al. (2019)
+
+## Statistical Fine-mapping {.tabset .tabset-fade .tabset-pills} 
+
+Parkinson's Disease GWAS.
+```{r Kunkle_2019, results = 'asis', fig.height=10, fig.width=7, fig.show='hold'} 
+dataset_name <- "Kunkle_2019"
+top_SNPs <- import_topSNPs(
+              topSS_path = Directory_info(Data_dirs, dataset_name, "topSumStats"),
+              sheet = "Supplementary Table 6",
+              chrom_col = "Chr", 
+              position_col = "Basepair", 
+              snp_col="SNP",
+              pval_col="P", 
+              effect_col="Beta", 
+              gene_col="LOCUS",
+              locus_col = "LOCUS",
+              caption= "Kunkle et al. (2019) GWAS Summary Stats",
+              group_by_locus = T)  
+
+
+finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
+                                               gene_list = "PTK2B",
+                                               trim_gene_limits = F,
+                                               dataset_name = dataset_name,
+                                               dataset_type = "GWAS",
+                                               query_by ="coordinates",
+                                               subset_path = "auto",
+                                               finemap_method = c("SUSIE","FINEMAP"), 
+                                               force_new_LD = F,  
+                                               force_new_subset = F,
+                                               force_new_finemap = T,
+                                               file_sep = " ", 
+                 # file_path = Directory_info(dataset_name, "fullSumStats"),
+                 fullSS_path = "./Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt",
+                 chrom_col = "Chromosome", 
+                 position_col = "Position", 
+                 snp_col = "MarkerName",
+                 pval_col = "Pvalue", 
+                 effect_col = "Beta", 
+                 stderr_col = "SE",
+                 A1_col = "Effect_allele",
+                 A2_col = "Non_Effect_allele",
+                 bp_distance = 500000*2,
+                 download_reference = T, 
+                 LD_reference = "1KG_Phase1",
+                 superpopulation = "EUR", 
+                 LD_block = F,  
+                 n_causal = 5, 
+                 remove_tmps = F) 
+
+```
+
+
+
+
+
+
+

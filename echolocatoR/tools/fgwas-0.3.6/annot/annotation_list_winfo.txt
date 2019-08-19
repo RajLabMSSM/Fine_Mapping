@@ -1,0 +1,450 @@
+ENCODE/dnase/wgEncodeDukeDnase8988T.bed.gz	DNAse	Pancreatic cancer (8988T)
+ENCODE/dnase/wgEncodeDukeDnaseAoSMC.bed.gz	DNAse	Aortic smooth muscle
+ENCODE/dnase/wgEncodeDukeDnaseChorion.bed.gz	DNAse	Chorion
+ENCODE/dnase/wgEncodeDukeDnaseCLL.bed.gz	DNAse	B-cell leukemia (CLL)
+ENCODE/dnase/wgEncodeDukeDnaseFibrobl.bed.gz	DNAse	Fibroblasts
+ENCODE/dnase/wgEncodeDukeDnaseFibroP.bed.gz	DNAse	Fibroblasts (Parkinson's patient)
+ENCODE/dnase/wgEncodeDukeDnaseGliobla.bed.gz	DNAse	Glioblastoma
+ENCODE/dnase/wgEncodeDukeDnaseGM12891.bed.gz	DNAse	Lymphblastoid cell line (GM12891)
+ENCODE/dnase/wgEncodeDukeDnaseGM12892.bed.gz	DNAse	Lymphblastoid cell line (GM12892)
+ENCODE/dnase/wgEncodeDukeDnaseGM18507.bed.gz	DNAse	Lymphblastoid cell line (GM18507)
+ENCODE/dnase/wgEncodeDukeDnaseGM19238.bed.gz	DNAse	Lymphblastoid cell line (GM19238)
+ENCODE/dnase/wgEncodeDukeDnaseGM19239.bed.gz	DNAse	Lymphblastoid cell line (GM19239)
+ENCODE/dnase/wgEncodeDukeDnaseGM19240.bed.gz	DNAse	Lymphblastoid cell line (GM19240)
+ENCODE/dnase/wgEncodeDukeDnaseH9ES.bed.gz	DNAse	Embryonic stem cells (H9)
+ENCODE/dnase/wgEncodeDukeDnaseHeLaS3IFNa4h.bed.gz	DNAse	HeLa
+ENCODE/dnase/wgEncodeDukeDnaseHepatocytes.bed.gz	DNAse	Hepatocytes
+ENCODE/dnase/wgEncodeDukeDnaseHPDE6E6E7.bed.gz	DNAse	Pancreatic duct cells
+ENCODE/dnase/wgEncodeDukeDnaseHSMMemb.bed.gz	DNAse	Embryonic myoblasts
+ENCODE/dnase/wgEncodeDukeDnaseHTR8svn.bed.gz	DNAse	Trophoblast cell line
+ENCODE/dnase/wgEncodeDukeDnaseHuh7.bed.gz	DNAse	Hepatocelluar carcinoma
+ENCODE/dnase/wgEncodeDukeDnaseiPS.bed.gz	DNAse	iPS cells
+ENCODE/dnase/wgEncodeDukeDnaseIshikawaEstradiol.bed.gz	DNAse	Endometrial cancer (Estradiol)
+ENCODE/dnase/wgEncodeDukeDnaseIshikawaTamoxifen.bed.gz	DNAse	Endometrial cancer (Tamoxifen)
+ENCODE/dnase/wgEncodeDukeDnaseLNCaPAndrogen.bed.gz	DNAse	Prostate cancer
+ENCODE/dnase/wgEncodeDukeDnaseMCF7Hypoxia.bed.gz	DNAse	Mammary gland cancer
+ENCODE/dnase/wgEncodeDukeDnaseMedullo.bed.gz	DNAse	Medulloblastoma
+ENCODE/dnase/wgEncodeDukeDnaseMelano.bed.gz	DNAse	Melanocytes
+ENCODE/dnase/wgEncodeDukeDnaseMyometr.bed.gz	DNAse	Myometrium
+ENCODE/dnase/wgEncodeDukeDnaseOsteobl.bed.gz	DNAse	Osteoblasts
+ENCODE/dnase/wgEncodeDukeDnasePanIsletD.bed.gz	DNAse	De-differentiated pancreatic islets
+ENCODE/dnase/wgEncodeDukeDnasePanIslets.bed.gz	DNAse	Pancreatic islets
+ENCODE/dnase/wgEncodeDukeDnasepHTE.bed.gz	DNAse	Tracheal epithelial cells
+ENCODE/dnase/wgEncodeDukeDnaseProgFib.bed.gz	DNAse	Fibroblasts [indiv. w/ progeria]
+ENCODE/dnase/wgEncodeDukeDnaseRWPE1.bed.gz	DNAse	Prostate
+ENCODE/dnase/wgEncodeDukeDnaseStellate.bed.gz	DNAse	Stellate
+ENCODE/dnase/wgEncodeDukeDnaseT47D.bed.gz	DNAse	Breast epithelial cancer
+ENCODE/dnase/wgEncodeDukeDnaseTh0.bed.gz	DNAse	Naive T cell
+ENCODE/dnase/wgEncodeDukeDnaseUrothelia.bed.gz	DNAse	Urothelium
+ENCODE/dnase/wgEncodeDukeDnaseUrotheliaUT189.bed.gz	DNAse	Urothelium
+ENCODE/dnase/wgEncodeUWDukeDnaseA549.bed.gz	DNAse	Aveolar epithelium cancer
+ENCODE/dnase/wgEncodeUWDukeDnaseGM12878.bed.gz	DNAse	Lymphblastoid cell line (GM12878)
+ENCODE/dnase/wgEncodeUWDukeDnaseH1hESC.bed.gz	DNAse	Embryonic stem cells (H1)
+ENCODE/dnase/wgEncodeUWDukeDnaseHeLaS3.bed.gz	DNAse	HeLa
+ENCODE/dnase/wgEncodeUWDukeDnaseHepG2.bed.gz	DNAse	Liver carcinoma
+ENCODE/dnase/wgEncodeUWDukeDnaseHMEC.bed.gz	DNAse	Mammary epithelial cells
+ENCODE/dnase/wgEncodeUWDukeDnaseHSMM.bed.gz	DNAse	Myoblasts
+ENCODE/dnase/wgEncodeUWDukeDnaseHSMMtube.bed.gz	DNAse	Skeletal muscle myotube
+ENCODE/dnase/wgEncodeUWDukeDnaseHUVEC.bed.gz	DNAse	Umbilical vein epithelium
+ENCODE/dnase/wgEncodeUWDukeDnaseK562.bed.gz	DNAse	Leukemia
+ENCODE/dnase/wgEncodeUWDukeDnaseLNCaP.bed.gz	DNAse	Prostate cancer
+ENCODE/dnase/wgEncodeUWDukeDnaseMCF7.bed.gz	DNAse	Mammary gland cancer
+ENCODE/dnase/wgEncodeUWDukeDnaseNHEK.bed.gz	DNAse	Epidermal keratinocytes
+ENCODE/dnase/wgEncodeUWDukeDnaseTh1.bed.gz	DNAse	Th1 T cells
+stam_dnase/A549-DS14289.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Aveolar epithelium cancer
+stam_dnase/AG04449-DS12319.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fibroblast
+stam_dnase/AG04450-DS12270.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fibroblast
+stam_dnase/AG09309-DS12352.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fibroblast
+stam_dnase/AG09319-DS12291.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fibroblast
+stam_dnase/AG10803-DS12384.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fibroblast
+stam_dnase/AoAF-DS13523.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Aortic adventitial cells
+stam_dnase/BE2_C-DS14625.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Neuroblastoma
+stam_dnase/BJ-DS10081.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fibroblast
+stam_dnase/CACO2-DS8235.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Colorectal cancer
+stam_dnase/CD14-DS18065.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CD14+ cells
+stam_dnase/CD19-DS17281.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CD19+ cells
+stam_dnase/CD20-DS17371.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CD20+ cells
+stam_dnase/CD20-DS17541.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CD20+ cells
+stam_dnase/CD34-DS12274.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CD34+ cells
+stam_dnase/CD3_CordBlood-DS17706.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CD3+ cells
+stam_dnase/CD3-DS17198.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CD3+ cells
+stam_dnase/CD4-DS15947.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CD4+ cells
+stam_dnase/CD56-DS16376.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CD56+ cells
+stam_dnase/CD8-DS17203.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CD8+ cells
+stam_dnase/CMK-DS12393.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	CMK leukemia line
+stam_dnase/fAdrenal-DS12528.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal adrenal gland
+stam_dnase/fAdrenal-DS15123.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal adrenal gland
+stam_dnase/fAdrenal-DS17319.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal adrenal gland
+stam_dnase/fAdrenal-DS17677.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal adrenal gland
+stam_dnase/fAdrenal-DS20343.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal adrenal gland
+stam_dnase/fBrain-DS11872.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS11877.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS14464.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS14717.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS14718.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS14803.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS14815.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS15453.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS16302.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS20221.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS20226.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fBrain-DS20231.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal brain
+stam_dnase/fHeart-DS12531.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS12810.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS15643.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS15839.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS16018.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS16146.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS16500.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS16582.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS16621.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS16819.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS19427.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fHeart-DS19431.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal heart
+stam_dnase/fIntestine_Lg-DS16027.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS16164.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS16563.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17094.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17157.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17313.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17422.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17462.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17502.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17647.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17748.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17785.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17841.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS17990.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Lg-DS18499.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal large intestine
+stam_dnase/fIntestine_Sm-DS16559.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS16712.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS16822.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS16975.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS17092.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS17150.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS17317.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS17425.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS17643.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS17763.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS17808.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS17844.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fIntestine_Sm-DS18495.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal small intestine
+stam_dnase/fKidney-DS10986.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney-DS12635.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney-DS16139.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney-DS16837.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney-DS17522.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney-DS17753.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney-DS20564.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_L-DS16446.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_L-DS16579.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_L-DS16805.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_L-DS17140.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_L-DS18466.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_R-DS15651.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_R-DS16441.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_R-DS16801.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_R-DS17144.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_R-DS18463.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney
+stam_dnase/fKidney_renal_cortex-DS17307.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex-DS17387.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex-DS17455.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex-DS17756.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex-DS17804.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex-DS18428.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex-DS19388.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex-DS20568.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex_L-DS17550.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex_L-DS18542.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex_L-DS18931.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex_L-DS19257.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex_R-DS17545.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex_R-DS18928.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_cortex_R-DS19254.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal cortex
+stam_dnase/fKidney_renal_pelvis-DS17381.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis-DS17451.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis-DS17760.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis-DS18088.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis-DS18431.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis-DS19386.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis-DS20448.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis_L-DS17553.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis_L-DS18666.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis_L-DS18964.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis_L-DS19238.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis_R-DS17548.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis_R-DS18663.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal kidney*
+stam_dnase/fKidney_renal_pelvis_R-DS18961.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fKidney_renal_pelvis_R-DS19235.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal renal pelvis
+stam_dnase/fLung-DS12646.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS12817.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS13507.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS13985.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS14666.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS14724.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS14751.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS14809.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS14820.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS15227.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS15461.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung-DS15573.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS15637.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS16570.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS17105.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS17154.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS17464.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS17674.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS17739.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS17835.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS17959.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS18170.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS18421.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_L-DS18487.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_R-DS15632.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_R-DS16566.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_R-DS16790.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_R-DS17101.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_R-DS17162.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_R-DS17670.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_R-DS17831.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_R-DS17954.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_R-DS18418.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fLung_R-DS18492.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal lung
+stam_dnase/fMuscle_arm-DS17432.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS17765.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS17825.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS17848.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS18080.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS18176.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS18379.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS18452.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS18473.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS18559.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS18992.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS19051.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS19053.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS19270.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS19295.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS19380.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_arm-DS19646.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS17767.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS17850.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS18083.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS18377.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS18454.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS18468.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS18842.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS19117.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS19384.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS19441.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS19648.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_back-DS20244.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS17429.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS18386.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS18456.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS18471.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS18844.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS19115.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS19158.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS19272.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS19291.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS19436.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS19643.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_leg-DS20239.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_lower_limb-DS18174.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_trunk-DS17827.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_trunk-DS20242.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_trunk-DS20544.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_upper_back-DS19283.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_upper_limb_sk-DS17661.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fMuscle_upper_trunk-DS17664.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal muscle
+stam_dnase/fPlacenta-DS17639.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Placenta
+stam_dnase/fPlacenta-DS17744.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Placenta
+stam_dnase/fPlacenta-DS19391.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Placenta
+stam_dnase/fPlacenta-DS20346.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Placenta
+stam_dnase/fSkin-DS10987.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal skin
+stam_dnase/fSkin_fibro_abdomen-DS19558.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts*
+stam_dnase/fSkin_fibro_abdomen-DS19561.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts*
+stam_dnase/fSkin_fibro_back-DS19174.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts [back]
+stam_dnase/fSkin_fibro_back-DS19233.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts [back]
+stam_dnase/fSkin_fibro_bicep_L-DS19857.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts
+stam_dnase/fSkin_fibro_bicep_L-DS19867.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts
+stam_dnase/fSkin_fibro_bicep_R-DS19745.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts
+stam_dnase/fSkin_fibro_bicep_R-DS19761.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts
+stam_dnase/fSkin_fibro_leg_L_quad-DS20046.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts
+stam_dnase/fSkin_fibro_leg_L_quad-DS20056.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts
+stam_dnase/fSkin_fibro_leg_R_quad-DS19943.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts
+stam_dnase/fSkin_fibro_leg_R_quad-DS19948.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts
+stam_dnase/fSkin_fibro_scalp-DS19444.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts
+stam_dnase/fSkin_fibro_scalp-DS19449.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts
+stam_dnase/fSkin_fibro_upper_back-DS19696.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts [back]
+stam_dnase/fSkin_fibro_upper_back-DS19706.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal fibroblasts [back]
+stam_dnase/fSpinal_cord-DS18501.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal spinal cord
+stam_dnase/fSpinal_cord-DS20351.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal spinal cord
+stam_dnase/fSpinal_cord-DS20530.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal spinal cord
+stam_dnase/fSpleen-DS17448.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal spleen
+stam_dnase/fStomach-DS16530.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fStomach-DS17172.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fStomach-DS17325.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fStomach-DS17659.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fStomach-DS17750.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fStomach-DS17878.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fStomach-DS17963.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fStomach-DS18389.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fStomach-DS18821.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fStomach-DS20349.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fStomach-DS20546.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal stomach
+stam_dnase/fTestes-DS18942.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal testes
+stam_dnase/fThymus-DS16490.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal thymus
+stam_dnase/fThymus-DS16841.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal thymus
+stam_dnase/fThymus-DS17323.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal thymus
+stam_dnase/fThymus-DS17474.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal thymus
+stam_dnase/fThymus-DS17875.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal thymus
+stam_dnase/fThymus-DS17876.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal thymus
+stam_dnase/fThymus-DS18382.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal thymus
+stam_dnase/fThymus-DS19287.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal thymus
+stam_dnase/fThymus-DS20335.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal thymus
+stam_dnase/fThymus-DS20341.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fetal thymus
+stam_dnase/GM06990-DS7748.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Lymophblastoid cell line
+stam_dnase/GM12864-DS12431.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Lymophblastoid cell line
+stam_dnase/GM12865-DS12436.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Lymophblastoid cell line
+stam_dnase/GM12878-DS10671.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Lymophblastoid cell line
+stam_dnase/H1_P18-DS18873.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Embryonic stem cells (H1)
+stam_dnase/H9_P42-DS18522.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Embryonic stem cells (H9)
+stam_dnase/HAc-DS14765.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Astrocytes
+stam_dnase/HAEpiC-DS12663.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Amniotic epithelial cells
+stam_dnase/HAh-DS15192.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Astrocytes
+stam_dnase/HAsp-DS14790.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Astrocytes
+stam_dnase/HBMEC-DS13817.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Brain microvascular epithelium
+stam_dnase/HCFaa-DS13480.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Cardiac fibroblasts
+stam_dnase/HCF-DS12501.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Cardiac fibroblasts
+stam_dnase/HCM-DS12599.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Cardiac myocytes
+stam_dnase/HConF-DS11642.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Conjunctival fibroblasts
+stam_dnase/HCPEpiC-DS12447.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Choroid plexus epithelial cells
+stam_dnase/HCT116-DS13551.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Colorectal carcinoma
+stam_dnase/HEEpiC-DS12763.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Esophageal epithelium
+stam_dnase/Hela-DS10011.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	HeLa
+stam_dnase/HEPG2-DS7764.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Liver carcinoma
+stam_dnase/HESC-DS10167.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Embryonic stem cells
+stam_dnase/hESCT0-DS11909.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	ES-derived T0 cells
+stam_dnase/HFF-DS15115.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Foreskin fibroblast
+stam_dnase/HFF_MyC-DS15079.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Foreskin fibroblast
+stam_dnase/HGF-DS11752.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Gingival fibroblast
+stam_dnase/HIPEpiC-DS12684.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Iris pigment epithelial cells
+stam_dnase/HL60-DS11809.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Promyelocytic leukemia
+stam_dnase/HMEC-DS8680.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Mammary epithelium
+stam_dnase/HMF-DS13363.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Mammary fibroblasts
+stam_dnase/HMVEC_dAd-DS12957.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Microvascular endothelium
+stam_dnase/HMVEC_dBlAd-DS13337.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Microvascular endothelial cells
+stam_dnase/HMVEC_dBlNeo-DS13242.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Microvascular endothelial cells
+stam_dnase/HMVEC_dLyAd-DS13261.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Microvascular endothelial cells
+stam_dnase/HMVEC_dLyNeo-DS13150.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Microvascular endothelial cells
+stam_dnase/HMVEC_dNeo-DS12937.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Microvascular endothelial cells
+stam_dnase/HMVEC_LBl-DS13372.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Microvascular endothelial cells
+stam_dnase/HMVEC_LLy-DS13185.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Microvascular endothelial cells
+stam_dnase/HNPCEpiC-DS12467.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Cilliary epithelial cells
+stam_dnase/HPAEC-DS12916.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Pulmonary artery epithelial cells
+stam_dnase/HPAF-DS13411.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Pulmonary artery fibroblasts
+stam_dnase/HPdLF-DS13573.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Periodontal ligament fibroblasts
+stam_dnase/HPF-DS13390.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Pulmonary fibroblasts
+stam_dnase/HRCE-DS10666.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Renal cortex
+stam_dnase/HRE-DS10641.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Renal epithelium
+stam_dnase/HRGEC-DS13705.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Renal glomerular endothelium
+stam_dnase/HRPEpiC-DS12583.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Retinal pigment endothelium
+stam_dnase/HSMM_D-DS15542.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Myoblasts
+stam_dnase/HSMM-DS14426.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Myoblasts
+stam_dnase/hTH17-DS11039.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Th17 T cells
+stam_dnase/hTH1-DS17592.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Th1 T cells
+stam_dnase/hTH1-DS7840.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Th1 T cells
+stam_dnase/hTH2-DS17597.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Th2 T cells
+stam_dnase/hTH2-DS7842.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Th2 T cells
+stam_dnase/HUVEC-DS10060.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Umbilical vein endothelium
+stam_dnase/HVMF-DS13981.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Villous mesenchymal fibroblast 
+stam_dnase/IMR90-DS13219.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Lung fibroblasts
+stam_dnase/iPS_19_11-DS15153.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	iPS cells
+stam_dnase/iPS_19_7-DS15148.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	iPS cells
+stam_dnase/iPS_4_7-DS15169.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	iPS cells
+stam_dnase/iPS_6_9-DS15164.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	iPS cells
+stam_dnase/Jurkat-DS12659.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	T cell leukemia
+stam_dnase/K562-DS9767.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	K562 leukemia cell line
+stam_dnase/LNCap-DS14684.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Prostate cancer
+stam_dnase/MCF7-DS9445.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Mammary gland cancer
+stam_dnase/Mesendoderm-DS19310.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Mesendoderm
+stam_dnase/NB4-DS12543.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Promyelocytic leukemia
+stam_dnase/NHA-DS12800.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Astrocytes
+stam_dnase/NHDF_Ad-DS12863.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Dermal fibroblasts
+stam_dnase/NHDF_Neo-DS11923.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Dermal fibroblasts
+stam_dnase/NHEK-DS11474.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Epidermal keratinocytes
+stam_dnase/NHLF-DS12829.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Lung fibroblasts
+stam_dnase/NPC-DS18739.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	NPC??
+stam_dnase/NT2_D1-DS14575.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Embryonal carcinoma
+stam_dnase/PANC1-DS9955.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Pancreatic carcinoma
+stam_dnase/PrEC-DS12098.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Prostate epithelium
+stam_dnase/RPTEC-DS14061.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Renal proximal tubule epithelium
+stam_dnase/SAEC-DS10518.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Small airway epithelium
+stam_dnase/Skin_Fibroblasts-DS18224.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fibroblast
+stam_dnase/Skin_Fibroblasts-DS18229.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fibroblast
+stam_dnase/Skin_Fibroblasts-DS18252.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fibroblast
+stam_dnase/Skin_Fibroblasts-DS18256.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Fibroblast
+stam_dnase/Skin_Keratinocytes-DS18692.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Keratinocytes
+stam_dnase/Skin_Keratinocytes-DS18695.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Keratinocytes
+stam_dnase/Skin_Keratinocytes-DS18714.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Keratinocytes
+stam_dnase/Skin_Keratinocytes-DS18718.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Keratinocytes
+stam_dnase/Skin_Melanocytes-DS18590.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Melanocytes
+stam_dnase/Skin_Melanocytes-DS18601.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Melanocytes
+stam_dnase/SkMC-DS11949.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Skeletal muscle
+stam_dnase/SK_N_MC-DS14408.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Neuroepithelioma
+stam_dnase/SKNSH-DS8482.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Neuroblastoma
+stam_dnase/Trophoblast-DS19317.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Trophoblast
+stam_dnase/vHMEC-DS18438.hg19.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Mammary epithelium
+stam_dnase/WERI_Rb1-DS13681.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Retinoblastoma
+stam_dnase/WI_38-DS14315.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	Lung fibroblast
+stam_dnase/WI_38_TAM-DS14323.hotspot.twopass.fdr0.05.merge.bed.gz	DNAse	lung fibroblast
+segmentation/gm12878.combined.CTCF.bed.gz	Seg	CTCF binding (LCL)
+segmentation/gm12878.combined.E.bed.gz	Seg	Enhancer (LCL)
+segmentation/gm12878.combined.PF.bed.gz	Seg	Promoter flanking (LCL)
+segmentation/gm12878.combined.R.bed.gz	Seg	Repressed (LCL)
+segmentation/gm12878.combined.T.bed.gz	Seg	Transcribed (LCL)
+segmentation/gm12878.combined.TSS.bed.gz	Seg	TSS (LCL)
+segmentation/gm12878.combined.WE.bed.gz	Seg	Weak enhancer (LCL)
+segmentation/h1hesc.combined.CTCF.bed.gz	Seg	CTCF binding (ES cells)
+segmentation/h1hesc.combined.E.bed.gz	Seg	Enhancer (ES cells)
+segmentation/h1hesc.combined.PF.bed.gz	Seg	Promoter flanking (ES cells)
+segmentation/h1hesc.combined.R.bed.gz	Seg	Repressed (ES cells)
+segmentation/h1hesc.combined.T.bed.gz	Seg	Trascribed (ES cells)
+segmentation/h1hesc.combined.TSS.bed.gz	Seg	TSS (ES cells)
+segmentation/h1hesc.combined.WE.bed.gz	Seg	Weak enhancer (ES cells)
+segmentation/helas3.combined.CTCF.bed.gz	Seg	CTCF (HeLa)
+segmentation/helas3.combined.E.bed.gz	Seg	Enhancer (HeLa)
+segmentation/helas3.combined.PF.bed.gz	Seg	Promoter flanking (HeLa)
+segmentation/helas3.combined.R.bed.gz	Seg	Repressed (HeLa)
+segmentation/helas3.combined.T.bed.gz	Seg	Transcribed (HeLa)
+segmentation/helas3.combined.TSS.bed.gz	Seg	TSS (HeLa)
+segmentation/helas3.combined.WE.bed.gz	Seg	Weak enhancer (HeLa)
+segmentation/hepg2.combined.CTCF.bed.gz	Seg	CTCF binding (HepG2)
+segmentation/hepg2.combined.E.bed.gz	Seg	Enhancer (HepG2)
+segmentation/hepg2.combined.PF.bed.gz	Seg	Promoter-flanking (HepG2)
+segmentation/hepg2.combined.R.bed.gz	Seg	Repressed (HepG2)
+segmentation/hepg2.combined.T.bed.gz	Seg	Transcribed (HepG2)
+segmentation/hepg2.combined.TSS.bed.gz	Seg	TSS (HepG2)
+segmentation/hepg2.combined.WE.bed.gz	Seg	Weak enhancer (HepG2)
+segmentation/huvec.combined.CTCF.bed.gz	Seg	CTCF binding (HUVEC)
+segmentation/huvec.combined.E.bed.gz	Seg	Enhancer (HUVEC)
+segmentation/huvec.combined.PF.bed.gz	Seg	Promoter-flanking (HUVEC)
+segmentation/huvec.combined.R.bed.gz	Seg	Repressed (HUVEC)
+segmentation/huvec.combined.T.bed.gz	Seg	Transcribed (HUVEC)
+segmentation/huvec.combined.TSS.bed.gz	Seg	TSS (HUVEC)
+segmentation/huvec.combined.WE.bed.gz	Seg	Weak enhancer (HUVEC)
+segmentation/k562.combined.CTCF.bed.gz	Seg	CTCF binding (K562)
+segmentation/k562.combined.E.bed.gz	Seg	Enhancer (K562)
+segmentation/k562.combined.PF.bed.gz	Seg	Promoter-flanking (K562)
+segmentation/k562.combined.R.bed.gz	Seg	Repressed (K562)
+segmentation/k562.combined.T.bed.gz	Seg	Transcribed (K562)
+segmentation/k562.combined.TSS.bed.gz	Seg	TSS (K562)
+segmentation/k562.combined.WE.bed.gz	Seg	Weak enhancer (K562)
+ensembl_genes/ens_coding_exons.bed.gz	Gene	Coding exons
+ensembl_genes/ens_noncoding_exons.bed.gz	Gene	Non-coding genes
+ensembl_genes/ens_utr3_exons.bed.gz	Gene	3' UTR
+ensembl_genes/ens_utr5_exons.bed.gz	Gene	5' UTR
+nonsyn	Gene	Nonsynonymous
+syn	Gene	Synonymous

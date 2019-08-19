@@ -4,3 +4,9 @@
 [submodule "echolocatoR/tools/IMPACT"]
 	path = echolocatoR/tools/IMPACT
 	url = https://github.com/immunogenomics/IMPACT.git
+[submodule "echolocatoR/tools/PAINTOR_V3.0"]
+	path = echolocatoR/tools/PAINTOR_V3.0
+	url = https://github.com/gkichaev/PAINTOR_V3.0.git
+[submodule "echolocatoR/tools/fGWAS"]
+	path = echolocatoR/tools/fGWAS
+	url = https://github.com/wzhy2000/fGWAS.git

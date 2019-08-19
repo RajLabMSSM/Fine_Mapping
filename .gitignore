@@ -16,3 +16,4 @@
 Manuscripts/
 /Data/**/**/**/FINEMAP/data.ld
 /Data/**/**/**/plink/LD_matrix.RData
+/echolocatoR/tools/fgwas-0.3.6/annot/*.gz 
