@@ -38,7 +38,7 @@ editor_options:
 # library("echolocatoR")
 source("echolocatoR/R/MAIN.R")
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS: 
-Data_dirs <- read.csv("./Data/directories_table.csv")
+# Data_dirs <- read.csv("./Data/directories_table.csv")
 finemap_results <- list()
 coloc_results <- list()
 ```

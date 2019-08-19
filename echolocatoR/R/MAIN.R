@@ -55,11 +55,11 @@ library(tidyr)
 library(BiocManager)
 library(biomaRt) # BiocManager::install("biomaRt") 
 
-install_fGWAS <- function(){
-  devtools::install_github("wzhy2000/fGWAS/pkg")
-  system("git clone https://github.com/wzhy2000/fGWAS.git & cd fGWAS & R CMD INSTALL pkg")
-}
-library(fGWAS) 
+# install_fGWAS <- function(){
+#   devtools::install_github("wzhy2000/fGWAS/pkg")
+#   system("git clone https://github.com/wzhy2000/fGWAS.git & cd fGWAS & R CMD INSTALL pkg")
+# }
+# library(fGWAS) 
 # library(snpStats)  #BiocManager::install("snpStats") 
 # library(coloc)
 
@@ -102,6 +102,7 @@ source("./echolocatoR/R/Finemapping/ABF.R")
 source("./echolocatoR/R/Finemapping/FINEMAP.R") 
 source("./echolocatoR/R/Finemapping/PAINTOR.R")
 source("./echolocatoR/R/Finemapping/COJO.R")
+
 # Plotting
 source("./echolocatoR/R/Plotting/plot.R")
 source("./echolocatoR/R/Plotting/ggbio.R")
