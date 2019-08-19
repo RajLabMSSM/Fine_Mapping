@@ -164,8 +164,7 @@ snp_plot <- function(finemap_DT,
       p <- ggplot(data = DT, aes(x=POS, y= -log10(P), label=SNP, color= r2 ))  
     # Fine-mapping methods
     } else if (multi){
-      title <- paste0(gene," : After fine-mapping (",method,")")
-<<<<<<< HEAD:echolocatoR/R/Plotting/plot.R
+      title <- paste0(gene," : After fine-mapping (",method,")") 
       DT <- DT %>% dplyr::rename(Probability = paste0(method,".Probability"), 
                                  Credible_Set = paste0(method,".Credible_Set")) 
       is.na(DT$Probability) <- 0 
