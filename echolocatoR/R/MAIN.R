@@ -95,7 +95,7 @@ source("./echolocatoR/R/directory.R")
 source("./echolocatoR/R/query.R")
 source("./echolocatoR/R/LD.R")
 source("./echolocatoR/R/colocalization.R")
-<<<<<<< HEAD
+
 # Fine-mapping
 source("./echolocatoR/R/Finemapping/multi_finemap.R")
 source("./echolocatoR/R/Finemapping/SUSIE.R")
@@ -112,11 +112,6 @@ source("./echolocatoR/R/Plotting/eQTL_boxplots.R")
 source("./echolocatoR/R/Annotation/annotate.R")
 source("./echolocatoR/R/Annotation/GoShifter.R")
 source("./echolocatoR/R/Annotation/XGR.R")
-=======
-source("./echolocatoR/R/annotate.R")
-source("./echolocatoR/R/GoShifter.R")
-source("./echolocatoR/R/eQTL_boxplots.R")
->>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
 
 
 
@@ -250,12 +245,8 @@ quickstart <- function(){
   which_merge <<-1
   show_plot <<- T
   
-  goshifter_path <<- "./echolocatoR/tools/goshifter"
-<<<<<<< HEAD
-  permutations <<- 1000
-=======
-  permute <<- 1000
->>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
+  goshifter_path <<- "./echolocatoR/tools/goshifter" 
+  permutations <<- 1000 
   remove_tmps <<- T
   chromatin_states <<- c("TssA","EnhA1","EnhA2")
   diff_freq <<- 0.1
@@ -544,12 +535,9 @@ finemap_pipeline <- function(gene,
   
   
   # Show results table 
-  printer("+",gene,"Credible Set SNPs", v=verbose)
-<<<<<<< HEAD
+  printer("+",gene,"Credible Set SNPs", v=verbose) 
   print(createDT_html( subset(finemap_DT, Support >0) ))
-=======
-  createDT( subset(finemap_DT, Support >0) ) %>% print() 
->>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
+ 
   
   # Cleanup:
   if(remove_tmps){
@@ -636,10 +624,7 @@ finemap_gene_list <- function(gene_list, fullSS_path,
       gene_limits <- arg_list_handler(trim_gene_limits, i) 
       conditioned_snp <- arg_list_handler(conditioned_snps, i)  
       start_gene <- Sys.time()  
-<<<<<<< HEAD
       message("^^^^^^^^^ Running echolocatoR on: ",gene," ^^^^^^^^^")
-=======
->>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4
       cat('  \n###', gene, '  \n')  
       # Delete the old subset if force_new_subset == T  
       finemap_DT <- finemap_pipeline(gene=gene, 

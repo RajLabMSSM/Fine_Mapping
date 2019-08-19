@@ -165,41 +165,40 @@ COJO <- function(subset_DT,
     dir.create(genome_dir, showWarnings = F, recursive = T)
     cojo_path <- genome_dir
     
-<<<<<<< HEAD:echolocatoR/R/Finemapping/COJO.R
-    # Convert all full vcfs to merged plink
-    base_dir <- "./Data/Reference/1000_Genomes/Phase1"
-    vcf_list <- list.files(base_dir, pattern = "*.vcf")
-    vcf_list <- fread(paste0(dirname(base_dir),"/1KG-P3_vcfs.txt"), header = F)$V1
-    
-    ## Convert
-    chromo_list <- c()
-    for(vcf in vcf_list){
-      chromo <- strsplit(basename(vcf),"[.]")[[1]][[2]]
-      cmd <- paste(plink_file(), 
-            " --vcf",vcf, 
-            "--maf 0.0", 
-            "--recode",
-            "--out",paste0(base_dir, chromo) 
-            )
-      chromo_list <- c(chromo_list, chromo)
-      # system(cmd)
-    }
-    
-    ## Merge
-    allfiles <- data.table::data.table(PED =  paste0(chromo_list,".ped"), 
-                                       MAP =  paste0(chromo_list,".map")) 
-    data.table::fwrite(allfiles,file.path(dirname(base_dir),"allfiles.txt"), sep="\t", col.names = F)
-    paste(plink_file(),
-          "--merge-list","allfiles.txt",
-          "--make-bed",
-          "--out MERGED")
-    
-=======
-    # Convert full vcf to plink
-    paste(plink_file(), " --vcf",vcf,
-    "myvcf.vcf --maf 0.05 --recode --out myplink
-")
->>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4:echolocatoR/R/conditional.R
+# <<<<<<< HEAD:echolocatoR/R/Finemapping/COJO.R
+#     # Convert all full vcfs to merged plink
+#     base_dir <- "./Data/Reference/1000_Genomes/Phase1"
+#     vcf_list <- list.files(base_dir, pattern = "*.vcf")
+#     vcf_list <- fread(paste0(dirname(base_dir),"/1KG-P3_vcfs.txt"), header = F)$V1
+#     
+#     ## Convert
+#     chromo_list <- c()
+#     for(vcf in vcf_list){
+#       chromo <- strsplit(basename(vcf),"[.]")[[1]][[2]]
+#       cmd <- paste(plink_file(), 
+#             " --vcf",vcf, 
+#             "--maf 0.0", 
+#             "--recode",
+#             "--out",paste0(base_dir, chromo) 
+#             )
+#       chromo_list <- c(chromo_list, chromo)
+#       # system(cmd)
+#     }
+#     
+#     ## Merge
+#     allfiles <- data.table::data.table(PED =  paste0(chromo_list,".ped"), 
+#                                        MAP =  paste0(chromo_list,".map")) 
+#     data.table::fwrite(allfiles,file.path(dirname(base_dir),"allfiles.txt"), sep="\t", col.names = F)
+#     paste(plink_file(),
+#           "--merge-list","allfiles.txt",
+#           "--make-bed",
+#           "--out MERGED")
+#     
+# =======
+#     # Convert full vcf to plink
+#     paste(plink_file(), " --vcf",vcf,
+#     "myvcf.vcf --maf 0.05 --recode --out myplink")
+# >>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4:echolocatoR/R/conditional.R
   } else {
     # Use subset of summary stats (not for the stepwise conditional procedure)
     cojo.ma <- subset_DT %>% dplyr::rename(N_cases = N_cases_col, 
