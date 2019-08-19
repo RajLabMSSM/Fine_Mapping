@@ -17,3 +17,10 @@ Manuscripts/
 /Data/**/**/**/FINEMAP/data.ld
 /Data/**/**/**/plink/LD_matrix.RData
 /echolocatoR/tools/fgwas-0.3.6/annot/*.gz 
+
+# psychENCODE
+
+# Annotations
+/echolocatoR/tools/Annotations/*.rds
+/echolocatoR/tools/Annotations/psychENCODE/DER-08a_hg19_eQTL.significant.txt
+/echolocatoR/tools/Annotations/psychENCODE/DER-10a_hg19_isoQTL.significant.txt

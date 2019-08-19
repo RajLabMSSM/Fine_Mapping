@@ -95,7 +95,6 @@ fgwas.prepare_input <- function(results_path,
                                                by = "Gene")
     dat.fgwas <- unique(dat.fgwas) %>% arrange(SEGNUMBER)
     # Write file
-    
     dat.path <- file.path(results_path,"fGWAS","Input",paste0("dat.fgwas.",group,".txt"))
     dir.create(dirname(dat.path), showWarnings = F, recursive = T)
     fgwas.inputs <- append(fgwas.inputs,
@@ -155,7 +154,8 @@ fgwas.run <- function(results_path,
 }
 
 
-
+fgwas.gather_results <- function(results_path, 
+                                 output_dir)
 
 
 # dat.path <- file.path(results_path,"fGWAS/fgwas.data.txt")
