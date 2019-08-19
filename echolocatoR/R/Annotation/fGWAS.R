@@ -155,9 +155,7 @@ fgwas.run <- function(results_path,
 
 
 fgwas.gather_results <- function(results_path, 
-                                 output_dir=file.path(results_path,"fGWAS")){
-  
-}
+                                 output_dir)
 
 
 # dat.path <- file.path(results_path,"fGWAS/fgwas.data.txt")
