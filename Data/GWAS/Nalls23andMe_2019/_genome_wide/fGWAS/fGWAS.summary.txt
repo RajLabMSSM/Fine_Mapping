@@ -1,0 +1,7 @@
+llk.file	SNP.Group	Annot	params.file	ln(lk):	nparam:	AIC:	parameter	CI_lo	CI_hi	estimate
+Consensus__nonsyn.llk	Consensus	nonsyn	Consensus__nonsyn.params	-149.503	0	299.007				
+Consensus__syn.llk	Consensus	syn	Consensus__syn.params	-149.503	0	299.007				
+CS__nonsyn.llk	CS	nonsyn	CS__nonsyn.params	-246.939	0	493.877				
+CS__syn.llk	CS	syn	CS__syn.params	-246.939	0	493.877				
+leadSNP__nonsyn.llk	leadSNP	nonsyn	leadSNP__nonsyn.params	1422.99	0	-2845.97				
+leadSNP__syn.llk	leadSNP	syn	leadSNP__syn.params	1422.99	0	-2845.97				
