@@ -50,7 +50,7 @@ fgwas.download_annotations <- function(FM_all,
   # Path/file names
   Input_path <- file.path(results_path,"fGWAS","Input")
   dir.create(Input_path, showWarnings = F, recursive = T)
-  annot.file.name <- file.path(Input_path, paste0("annotations.",dataset,".txt"))
+  annot.file.name <- file.path(Input_path, paste0("annotations.",basename(dataset),".txt"))
   # Takes a long time: Redo only if it doesn't exist (or its being forced to)
   if(!file.exists(annot.file.name) | force_new_annot==T){
     # https://github.com/joepickrell/1000-genomes
