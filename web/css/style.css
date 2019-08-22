@@ -130,7 +130,7 @@ selected row color = background-color */
   
 /*Allow scrolling when output is too long*/
 pre {
-max-height: 800px;
+max-height: 400px;
 float: left;
 width: 910px;
 overflow-y: auto;

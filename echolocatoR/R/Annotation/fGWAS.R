@@ -328,42 +328,48 @@ fgwas <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
 fgwas.boxplot <- function(DF, 
                           title="fGWAS Enrichment Results", 
                           subtitle = "451 Annotations", 
-                          show_plot = T){
+                          show_plot = T, 
+                          interact = T){
   DF$Enrichment <- ifelse(results.DF$estimate==0, "None", 
                      ifelse(results.DF$estimate>0, "Enriched","Depleted"))
   DF$Enrichment <- factor(DF$Enrichment, levels = c("Enriched","Depleted","None"),
                      labels = c("Enriched","Depleted","None"), 
                      ordered = T) 
-  counts <- DF %>% dplyr::group_by(SNP.Group, Enrichment, .drop=F) %>% count() %>% 
-    arrange(Enrichment, SNP.Group) %>% 
-    subset(Enrichment!="None")
-  x.ticks <- paste0(counts$SNP.Group,"\n(n=",counts$n,")")
+  # counts <- DF %>% dplyr::group_by(SNP.Group, Enrichment, .drop=F) %>% count() %>% 
+  #   arrange(Enrichment, SNP.Group) %>% 
+  #   subset(Enrichment!="None")
+  # x.ticks <- paste0(counts$SNP.Group,"\n(n=",counts$n,")")
   
-  stat_box_data <- function(y, upper_limit = min(DF$estimate) * 1.15) {
+  stat_box_data <- function(y, lower_limit = min(DF$estimate) * 1.15) {
     return( 
       data.frame(
-        y = 0.95 * upper_limit,
+        y = 0.95 * lower_limit,
         label = paste0('n=', length(y))
       )
     )
   }
   
-  bp <- ggplot(DF, aes(x=SNP.Group, y=estimate, fill=SNP.Group)) +
+  bp <- ggplot(DF, aes(x=SNP.Group, y=estimate, fill=SNP.Group, 
+                       text = paste("Annotation:",Annot))) +
     geom_point(show.legend = F, aes(alpha=0.7)) +
     geom_jitter(width = .2, show.legend = F) +
     geom_boxplot(show.legend = F, aes(alpha=0.7)) + 
     facet_grid("~Enrichment") +
-    stat_summary(
-      fun.data = stat_box_data, 
-      geom = "text", 
-      hjust = 0.5,
-      vjust = 0.9
-    ) + 
+    # stat_summary(
+    #   fun.data = stat_box_data, 
+    #   geom = "text", 
+    #   hjust = 0.5,
+    #   vjust = 0.9
+    # ) + 
     theme_classic() + 
     scale_fill_brewer(palette = "Dark2") + 
     labs(title=title, subtitle = subtitle) + 
     theme(plot.title = element_text(hjust = 0.5), 
           plot.subtitle = element_text(hjust = 0.5))  
+  if(interact){
+    bp <- plotly::ggplotly(bp)
+    # bp <- htmltools::tagList(list(bp))
+  }
   if(show_plot){print(bp)}
   return(bp)
 }
@@ -372,11 +378,11 @@ fgwas.boxplot <- function(DF,
 fgwas.heatmap <- function(DF, 
                           annotation_or_tissue="tissue",
                           show_plot=T){
-  library(heatmaply)
+  # library(heatmaply)
   annot_files <- fgwas.annotation_names()
-  
+  colors <- RColorBrewer::brewer.pal(11,"Spectral")  
   if(annotation_or_tissue=="annotation"){
-    colors <- RColorBrewer::brewer.pal(11,"Spectral") 
+   
     ## By each annotation
     mat <- reshape2::acast(DF, Annot~SNP.Group, value.var="estimate", 
                            fun.aggregate = mean, drop = F, fill = 0)  
@@ -388,7 +394,7 @@ fgwas.heatmap <- function(DF,
       all.x = T) 
     mat.annot <- data.frame(mat.annot[,-c("bed.name","Name")], 
                             row.names = mat.annot$Annot) 
-    hm <- heatmaply(mat.annot, 
+    hm <- heatmaply::heatmaply(mat.annot, 
               height = 10, width = 5,
               cexRow = .7,
               # column_text_angle = 0,
@@ -406,7 +412,7 @@ fgwas.heatmap <- function(DF,
                                               all.x = T)
     mat <- reshape2::acast(DF.annot, description~SNP.Group, value.var="estimate", 
                            fun.aggregate = mean, drop = F) 
-    hm <- heatmaply(mat,  
+    hm <- heatmaply::heatmaply(mat,  
               height = 10, width = 5,
               cexRow = .7,
               # column_text_angle = 0,
@@ -419,7 +425,9 @@ fgwas.heatmap <- function(DF,
               k_row = 5,
               colors = colors)
   }
-  if(show_plot){print(hm)}
+  # Print and return plot
+  # hm <- htmltools::tagList(list(hm))
+  if(show_plot){print(hm)} 
   return(hm)
 }
 

@@ -41,25 +41,28 @@ summarise_SNPgroup_overlap <- function(FM_sub, ASSAY_sub, assay_type, gene){
   CS <- subset(FM_sub, Support > 0)$SNP_id %>% unique() 
   # % Consensus SNPs that are sig HITS
   Consensus <- subset(FM_sub, Consensus_SNP==T)$SNP_id %>% unique() 
-  
-  # % Lead SNPs that are sig HITS
-  if(assay_type=="HiC.ENH"){
-    CS <- gsub(":*", "",CS)
-    Consensus <- gsub(":*", "",Consensus)
-    top.hit <- NA
-    GWAS_lead <- subset(FM_sub, leadSNP==T)$POS %>% unique()
-    GWAS_lead.HIT <- NA
-    HIT.total <- dim(ASSAY_sub)[1] 
-    CS.HIT <- sum(CS >= ASSAY_sub$Enhancer_Start_hg19 & CS <= ASSAY_sub$Enhancer_End_hg19 )
-    Consensus.HIT <- sum(Consensus >= ASSAY_sub$Enhancer_Start_hg19 & Consensus <= ASSAY_sub$Enhancer_End_hg19 )
-  } else{
-    top.hit <- ASSAY_sub[1,]$SNP_id
-    GWAS_lead <- subset(FM_sub, leadSNP==T)$SNP_id %>% unique()
-    GWAS_lead.HIT <- sum(GWAS_lead %in% unique(ASSAY_sub["SNP_id"]))
-    HIT.total <- length(unique(ASSAY_sub$SNP_id))
-    CS.HIT = sum(CS %in% unique(ASSAY_sub$SNP_id))
-    Consensus.HIT <- sum(Consensus %in% unique(ASSAY_sub$SNP_id))
-  }
+  suppressWarnings(
+    # % Lead SNPs that are sig HITS
+    if(assay_type=="HiC.ENH"){
+      CS <- gsub(":*", "",CS)
+      Consensus <- gsub(":*", "",Consensus)
+      top.hit <- NA
+      GWAS_lead <- subset(FM_sub, leadSNP==T)$POS %>% unique()
+      GWAS_lead.HIT <- NA
+      HIT.total <- dim(ASSAY_sub)[1] 
+      CS.HIT <- sum(CS >= min(ASSAY_sub$Enhancer_Start_hg19) & 
+                      CS <= max(ASSAY_sub$Enhancer_End_hg19) )
+      Consensus.HIT <- sum(Consensus >= min(ASSAY_sub$Enhancer_Start_hg19) & 
+                             Consensus <= max(ASSAY_sub$Enhancer_End_hg19) )
+    } else{
+      top.hit <- ASSAY_sub[1,]$SNP_id
+      GWAS_lead <- subset(FM_sub, leadSNP==T)$SNP_id %>% unique()
+      GWAS_lead.HIT <- sum(GWAS_lead %in% unique(ASSAY_sub["SNP_id"]))
+      HIT.total <- length(unique(ASSAY_sub$SNP_id))
+      CS.HIT = sum(CS %in% unique(ASSAY_sub$SNP_id))
+      Consensus.HIT <- sum(Consensus %in% unique(ASSAY_sub$SNP_id))
+    }
+  )
 
   # Create report
   dat <- data.frame(HIT.total = HIT.total,
