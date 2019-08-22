@@ -24,17 +24,17 @@
 ## Fine-mapping Tools  
 
 Currently implemented:  
-	### [susieR](https://github.com/stephenslab/susieR)  
-	### [FINEMAP](http://www.christianbenner.com)  
-	### [ABF](https://cran.r-project.org/web/packages/coloc/vignettes/vignette.html)
-	### [GCTA-COJO](https://cnsgenomics.com/software/gcta/#COJO)
-	### [PAINTOR](https://github.com/gkichaev/PAINTOR_V3.0)  
+### [susieR](https://github.com/stephenslab/susieR)  
+### [FINEMAP](http://www.christianbenner.com)  
+### [ABF](https://cran.r-project.org/web/packages/coloc/vignettes/vignette.html)
+### [GCTA-COJO](https://cnsgenomics.com/software/gcta/#COJO)
+### [PAINTOR](https://github.com/gkichaev/PAINTOR_V3.0)  
 
 Planning to implement:  
-	### [CAVIAR](http://genetics.cs.ucla.edu/caviar/)  
-	### [CAVIAR-BF](https://www.ncbi.nlm.nih.gov/pubmed/25948564)  
-	### [eCAVIAR](http://genetics.cs.ucla.edu/caviar/)  
-	### [DAP](https://github.com/xqwen/dap)  
+### [CAVIAR](http://genetics.cs.ucla.edu/caviar/)  
+### [CAVIAR-BF](https://www.ncbi.nlm.nih.gov/pubmed/25948564)  
+### [eCAVIAR](http://genetics.cs.ucla.edu/caviar/)  
+### [DAP](https://github.com/xqwen/dap)  
 
 <br>
 
