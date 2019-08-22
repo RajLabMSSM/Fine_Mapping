@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+helas3.combined.WE_ln <-65 -45 >20

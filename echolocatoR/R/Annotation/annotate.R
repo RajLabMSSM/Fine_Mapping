@@ -110,13 +110,18 @@ merge_finemapping_results <- function(minimum_support=1,
   if(haploreg_annotation){
     HR_query <- haploReg(snp_list = unique(merged_results$SNP), verbose = verbose)
     merged_results <- data.table:::merge.data.table(merged_results, HR_query, 
-                                                    by.x = "SNP", by.y = "rsID", all = T)
+                                                    by.x = "SNP", 
+                                                    by.y = "rsID", 
+                                                    all = T,
+                                                    allow.cartesian=TRUE)
   }
   if(biomart_annotation){
     biomart_query <- biomart_snp_info(snp_list = merged_results$SNP, verbose = verbose) 
-    merged_results <- data.table:::merge.data.table(merged_results, 
-                                                      biomart_query, 
-                                                       by.x = "SNP", by.y = "refsnp_id", all = T)  
+    merged_results <- data.table:::merge.data.table(merged_results, biomart_query, 
+                                                      by.x = "SNP",
+                                                      by.y = "refsnp_id", 
+                                                      all = T, 
+                                                      allow.cartesian=TRUE)  
   }
   
   if(xlsx_path!=F){

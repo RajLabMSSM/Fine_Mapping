@@ -9,18 +9,32 @@
 # Reference: 
 # https://science.sciencemag.org/content/362/6420/eaat8464
 
-library(dplyr)
-library(ggplot2)
-root <- "./echolocatoR/tools/Annotations/psychENCODE"
-ASSAY_files <- file.path(root,
-                       c("DER-08a_hg19_eQTL.significant.txt",
-                         "DER-09_hg19_cQTL.significant.txt",
-                         "DER-10a_hg19_isoQTL.significant.txt",
-                         "INT-16_HiC_EP_linkages_cross_assembly.csv"))  
-ASSAY_files = setNames(ASSAY_files, nm = c("eQTL","cQTL","isoQTL","HiC")) 
+# library(dplyr)
+# library(ggplot2) 
 
-
-
+psychENCODE.download_summary_stats <- function(
+  output_dir = "./echolocatoR/tools/Annotations/psychENCODE",
+  url.list = file.path("http://resource.psychencode.org/Datasets/",
+                       c("Derived/QTLs/DER-08a_hg19_eQTL.significant.txt", 
+                         "Derived/QTLs/DER-09_hg19_cQTL.significant.txt",
+                         "Derived/QTLs/DER-10a_hg19_isoQTL.significant.txt",
+                         "Integrative/INT-16_HiC_EP_linkages_cross_assembly.csv")) 
+                                               ){
+  printer("psychENCODE:: Downloading summary stats.") 
+  # QTLs
+  for(URL in url.list){ 
+    output.path <- file.path(output_dir, basename(URL))
+    if(file.exists(output.path) | file.exists(paste0(output.path,".gz")) ){
+      printer("psychENCODE:: File already exists.")
+    } else{ 
+      printer("psychENCODE:: Downloading:")
+      printer("              ",basename(URL))
+      dat <- data.table::fread(URL)
+      data.table::fwrite(dat,  output.path)
+      gzip(output.path)
+    } 
+  }    
+}
 
 summarise_SNPgroup_overlap <- function(FM_sub, ASSAY_sub, assay_type, gene){
   # % CS SNPs that are sig HITS
@@ -68,7 +82,15 @@ summarise_SNPgroup_overlap <- function(FM_sub, ASSAY_sub, assay_type, gene){
   return(dat)
 }
 
-FM.ASSAY_summary <- function(){
+psychENCODE.assay_summary <- function(){
+  root <- "./echolocatoR/tools/Annotations/psychENCODE"
+  ASSAY_files <- file.path(root,
+                         c("DER-08a_hg19_eQTL.significant.txt.gz",
+                           "DER-09_hg19_cQTL.significant.txt.gz",
+                           "DER-10a_hg19_isoQTL.significant.txt.gz",
+                           "INT-16_HiC_EP_linkages_cross_assembly.csv.gz"))
+  ASSAY_files = setNames(ASSAY_files, nm = c("eQTL","cQTL","isoQTL","HiC"))
+
   # Import annotated fine-mapping results across all loci 
   # FM_results <- data.table::as.data.table(readxl::read_excel("Data/annotated_results_table.xlsx"))
   FM_results <- merge_finemapping_results() 
@@ -160,10 +182,13 @@ plot_percent_HITs <- function(per_df){
   g <- ggplot(data=merged_DF, aes(x=ASSAY_type, y=Percent, fill=SNP.Group ), color=SNP.Group ) +  
     geom_col(show.legend = T, alpha=.9, position = "dodge") +
     labs(title=paste0("psychENCODE Frontal Cortex"),
-         subtitle = paste0("% SNP group containing any significant hit")) +
+         subtitle = paste0("% SNP group containing any significant hit"),
+         x="Assay Type", y="% SNPs") +
     theme(plot.title = element_text(hjust = 0.5), 
           plot.subtitle = element_text(hjust = 0.5),
-          legend.position = "bottom") + 
+          legend.position = "bottom",
+          legend.text = element_text(color ="gray14", size=8), 
+          legend.title = element_text(color = "gray14", size=10)) + 
     geom_text(aes(label=Total), vjust=-0.3, size=3.5, position = position_dodge(1)) +
     scale_fill_brewer(palette="Paired")
   # print(g)
@@ -200,19 +225,21 @@ plot_has_top_HIT <- function(per_df){
   g2 <- ggplot(data=merged_DF, aes(x=ASSAY_type, y=Percent, fill=SNP.Group ), color=SNP.Group ) +  
     geom_col(show.legend = T, alpha=.9, position = "dodge") +
     labs(title=paste0("psychENCODE Frontal Cortex"),
-         subtitle = paste0("% SNP group containing the top hit")) +
+         subtitle = paste0("% SNP group containing the top hit"),
+         x="Assay Type", y="% SNPs") +
     theme(plot.title = element_text(hjust = 0.5), 
           plot.subtitle = element_text(hjust = 0.5),
-          legend.position = "bottom") + 
+          legend.position = "bottom",
+          legend.text = element_text(color ="gray14", size=8), 
+          legend.title = element_text(color = "gray14", size=10)) + 
     geom_text(aes(label=Total), vjust=-0.3, size=3.5, position = position_dodge(1)) + 
-    scale_fill_brewer(palette="Paired")
+    scale_fill_brewer(palette="Paired") 
   return(g2)
 }
 
 
 
-QTL_overlap_plots <- function(percent_df){ 
-  percent_df <- FM.ASSAY_summary()
+psychENCODE.overlap_plots <- function(percent_df){
   # Plot
   p1 <- plot_percent_HITs(percent_df) + ylim(0,50)
   p2 <- plot_has_top_HIT(percent_df) + ylim(0,50) 

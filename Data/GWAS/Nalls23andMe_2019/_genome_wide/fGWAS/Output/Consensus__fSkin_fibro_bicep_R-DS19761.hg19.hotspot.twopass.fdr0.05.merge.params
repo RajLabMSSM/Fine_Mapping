@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+fSkin_fibro_bicep_R-DS19761.hg19.hotspot.twopass.fdr0.05.merge_ln <-20 2.29688 >20

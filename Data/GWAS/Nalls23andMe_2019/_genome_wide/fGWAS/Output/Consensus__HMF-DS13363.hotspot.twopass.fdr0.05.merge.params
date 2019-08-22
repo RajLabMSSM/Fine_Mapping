@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+HMF-DS13363.hotspot.twopass.fdr0.05.merge_ln <-20 34 >54

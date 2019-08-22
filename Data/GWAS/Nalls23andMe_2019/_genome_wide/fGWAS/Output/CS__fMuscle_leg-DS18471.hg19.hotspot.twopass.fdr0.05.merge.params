@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+fMuscle_leg-DS18471.hg19.hotspot.twopass.fdr0.05.merge_ln -2.84347 1.28906 6.41421

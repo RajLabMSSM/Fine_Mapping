@@ -110,8 +110,11 @@ source("./echolocatoR/R/Plotting/ggbio.R")
 source("./echolocatoR/R/Plotting/eQTL_boxplots.R")
 # Annotation
 source("./echolocatoR/R/Annotation/annotate.R")
-source("./echolocatoR/R/Annotation/GoShifter.R")
+source("./echolocatoR/R/Annotation/GoShifter_new.R") # ***
 source("./echolocatoR/R/Annotation/XGR.R")
+source("./echolocatoR/R/Annotation/fGWAS.R")
+source("./echolocatoR/R/Annotation/psychENCODE.R")
+
 
 
 
@@ -308,6 +311,13 @@ createDT <- function(DF, caption="", scrollY=400){
 createDT_html <- function(DF, caption="", scrollY=400){
   htmltools::tagList( createDT(DF, caption, scrollY))
 } 
+
+
+dt.replace <- function(DT, target, replacement){
+  # Annoyingly, there is no native function for this in data.table
+  for(col in names(DT)) set(DT, i=which(DT[[col]]==target), j=col, value=replacement)
+  return(DT)
+}
 
 
 gene_trimmer <- function(subset_DT, trim_gene_limits, gene, min_POS, max_POS){

@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+wgEncodeUWDukeDnaseGM12878_ln <-65 -45 2.32329

@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+hepg2.combined.CTCF_ln 0.483279 64 >84

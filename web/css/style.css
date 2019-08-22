@@ -126,3 +126,16 @@ selected row color = background-color */
        -moz-transition-duration: 0.5s;
             transition-duration: 0.5s;
   }
+  
+  
+/*Allow scrolling when output is too long*/
+pre {
+max-height: 800px;
+float: left;
+width: 910px;
+overflow-y: auto;
+}
+
+pre.r {
+  max-height: none;
+}

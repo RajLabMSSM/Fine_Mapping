@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+fIntestine_Lg-DS17422.hg19.hotspot.twopass.fdr0.05.merge_ln <-49.75 -29.75 3.14683

@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+wgEncodeUWDukeDnaseHSMMtube_ln <-65 -45 2.89488
