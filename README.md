@@ -4,7 +4,6 @@
 ### Here, we fine-map loci from recent GWAS to identify causal genetic variants that have been previously associated with Parkinson's Disease (PD) or Alzheimer's Disease (PD).  
 ### All data and results can viewed and downloaded via the following interactive Rmarkdown output files below.  
 
-![Batty](./echolocatoR/images/echo_logo_sm.png)  
 
 <hr>
 
@@ -14,28 +13,30 @@
 #### [Annotation & Enrichment](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping.Enrichment.html)  
 #### [eQTL Boxplot Demo](https://rajlabmssm.github.io/Fine_Mapping/eQTL_boxplots_demo.html)
 
+<br>
 
 ## Workflow  
 
 ![echoFlow](./echolocatoR/images/echolocatoR_Flowchart.png)
 
-
+<br>
 
 ## Fine-mapping Tools  
 
 Currently implemented:  
-### [susieR](https://github.com/stephenslab/susieR)  
-### [FINEMAP](http://www.christianbenner.com)  
-### [ABF](https://cran.r-project.org/web/packages/coloc/vignettes/vignette.html)
-### [GCTA-COJO](https://cnsgenomics.com/software/gcta/#COJO)
-### [PAINTOR](https://github.com/gkichaev/PAINTOR_V3.0)  
+	### [susieR](https://github.com/stephenslab/susieR)  
+	### [FINEMAP](http://www.christianbenner.com)  
+	### [ABF](https://cran.r-project.org/web/packages/coloc/vignettes/vignette.html)
+	### [GCTA-COJO](https://cnsgenomics.com/software/gcta/#COJO)
+	### [PAINTOR](https://github.com/gkichaev/PAINTOR_V3.0)  
 
 Planning to implement:  
-### [CAVIAR](http://genetics.cs.ucla.edu/caviar/)  
-### [CAVIAR-BF](https://www.ncbi.nlm.nih.gov/pubmed/25948564)  
-### [eCAVIAR](http://genetics.cs.ucla.edu/caviar/)  
-### [DAP](https://github.com/xqwen/dap)  
+	### [CAVIAR](http://genetics.cs.ucla.edu/caviar/)  
+	### [CAVIAR-BF](https://www.ncbi.nlm.nih.gov/pubmed/25948564)  
+	### [eCAVIAR](http://genetics.cs.ucla.edu/caviar/)  
+	### [DAP](https://github.com/xqwen/dap)  
 
+<br>
 
 ## Annotation & Enrichment Tools  
 
@@ -44,6 +45,7 @@ Planning to implement:
 ### [fGWAS](https://github.com/joepickrell/fgwas)  
 ### [GoShifter](https://github.com/immunogenomics/goshifter)  
 
+<br>
 
 
 ## Datasets
