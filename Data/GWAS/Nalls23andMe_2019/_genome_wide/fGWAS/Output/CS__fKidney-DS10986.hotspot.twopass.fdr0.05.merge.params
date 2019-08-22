@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+fKidney-DS10986.hotspot.twopass.fdr0.05.merge_ln -1.12379 2.24219 >20

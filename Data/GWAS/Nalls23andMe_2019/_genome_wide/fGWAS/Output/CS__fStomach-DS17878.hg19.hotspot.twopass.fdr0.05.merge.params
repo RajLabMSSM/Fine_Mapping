@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+fStomach-DS17878.hg19.hotspot.twopass.fdr0.05.merge_ln -2.84227 1.2207 5.06461

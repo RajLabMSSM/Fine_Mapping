@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+fThymus-DS16841.hg19.hotspot.twopass.fdr0.05.merge_ln <-20 0.476562 >20

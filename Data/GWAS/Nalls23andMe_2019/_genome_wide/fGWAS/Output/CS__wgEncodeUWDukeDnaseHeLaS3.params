@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+wgEncodeUWDukeDnaseHeLaS3_ln <-81 -61 >20

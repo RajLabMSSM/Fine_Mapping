@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+fSkin_fibro_back-DS19174.hg19.hotspot.twopass.fdr0.05.merge_ln <-51.5 -31.5 >20

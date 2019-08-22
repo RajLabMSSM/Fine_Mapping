@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+fHeart-DS19427.hg19.hotspot.twopass.fdr0.05.merge_ln <-20 0.140625 3.47033

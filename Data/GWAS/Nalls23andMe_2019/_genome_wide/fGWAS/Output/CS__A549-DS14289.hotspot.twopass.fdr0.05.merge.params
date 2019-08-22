@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+A549-DS14289.hotspot.twopass.fdr0.05.merge_ln <-20 1.21875 >20

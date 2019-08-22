@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+fKidney_renal_cortex_L-DS17550.hg19.hotspot.twopass.fdr0.05.merge_ln -0.830757 3.24414 >20

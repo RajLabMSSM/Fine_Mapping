@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+wgEncodeDukeDnaseGM18507_ln <-81 -61 >20

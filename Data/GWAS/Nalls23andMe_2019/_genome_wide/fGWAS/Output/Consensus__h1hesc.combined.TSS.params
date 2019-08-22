@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+h1hesc.combined.TSS_ln <-81 -61 >20

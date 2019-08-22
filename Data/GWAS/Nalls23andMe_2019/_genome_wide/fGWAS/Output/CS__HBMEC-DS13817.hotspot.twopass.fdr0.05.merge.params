@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+HBMEC-DS13817.hotspot.twopass.fdr0.05.merge_ln <-65 -45 4.0528

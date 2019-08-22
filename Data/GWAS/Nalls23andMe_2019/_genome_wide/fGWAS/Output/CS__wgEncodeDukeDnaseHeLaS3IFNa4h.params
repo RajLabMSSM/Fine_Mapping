@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+wgEncodeDukeDnaseHeLaS3IFNa4h_ln <-65 -45 4.29322

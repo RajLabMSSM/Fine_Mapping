@@ -21,3 +21,4 @@ Manuscripts/
 /echolocatoR/tools/Annotations/*.rds
 /echolocatoR/tools/Annotations/psychENCODE/DER-08a_hg19_eQTL.significant.txt
 /echolocatoR/tools/Annotations/psychENCODE/DER-10a_hg19_isoQTL.significant.txt
+echolocatoR/tools/Annotations/psychENCODE/*.txt.gz

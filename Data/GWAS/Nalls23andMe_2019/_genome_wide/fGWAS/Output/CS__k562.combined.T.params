@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+k562.combined.T_ln <-20 -3.66406 -0.961889

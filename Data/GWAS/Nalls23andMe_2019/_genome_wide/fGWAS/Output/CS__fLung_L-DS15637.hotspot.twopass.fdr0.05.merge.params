@@ -1,0 +1,2 @@
+parameter CI_lo estimate CI_hi
+fLung_L-DS15637.hotspot.twopass.fdr0.05.merge_ln <-65 -45 1.34408

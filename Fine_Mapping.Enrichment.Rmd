@@ -1,0 +1,192 @@
+---
+title: "<center><h1>Fine Mapping:</h1>Enrichment</h1></center>" 
+author: 
+    "<div class='container'>
+     <h3>Brian M. Schilder, Bioinformatician II<br>
+     Raj Lab<br>
+     Department of Neuroscience<br>
+     Icahn School of Medicine at Mount Sinai<br>
+     NYC, New York<br>
+     </h3> 
+     <a href='https://github.com/RajLabMSSM/Fine_Mapping' target='_blank'><img src='./echolocatoR/images/echo_logo_sm.png'></a> 
+     <a href='https://github.com/RajLabMSSM' target='_blank'><img src='./web/images/github.png'></a> 
+     <a class='item' href='https://rajlabmssm.github.io/RajLab_website/' target='_blank'>
+        <img src='./web/images/brain-icon.png'>
+        <span class='caption'>RAJ LAB</span>
+     <a href='https://icahn.mssm.edu/' target='_blank'><img src='./web/images/sinai.png'></a>
+     </div>"
+date: "<br>Most Recent Update:<br> `r Sys.Date()`"
+output:
+ html_document:
+    theme: cerulean
+    highlight: zenburn
+    code_folding: show
+    toc: true
+    toc_float: true
+    smooth_scroll: true
+    number_sections: false
+    self_contained: true
+    css: ./web/css/style.css
+editor_options: 
+  chunk_output_type: inline
+--- 
+
+```{r setup, message=F, warning=F, dpi = 600, cache=T}
+source("echolocatoR/R/MAIN.R")
+```
+
+# Fine-mapping Summaries
+
+- First, we gather annotations from HaploReg and/or Biomart and assess the distribtuion of differenrt SNP Groups (e.g. GWAS lead SNPs, Credible Sets, Consensus SNPs).  
+
+```{r Merge Results}
+merged_results <- merge_finemapping_results(minimum_support=1,
+                                            include_leadSNPs=T,
+                                            xlsx_path="./Data/annotated_finemapping_results.xlsx",
+                                            from_storage=T,
+                                            haploreg_annotation=T,
+                                            biomart_annotation=T, 
+                                            verbose = F)
+merged_results <- subset(merged_results, Dataset=="./Data/GWAS/Nalls23andMe_2019")
+createDT(subset(merged_results, Support == 2))
+```
+
+## Mutation Types
+
+```{r Mutation Types}  
+potential_missense <- SNPs_by_mutation_type(merged_results, mutation_type="missense_variant")
+createDT(potential_missense)
+
+# candidate_counts <- counts_summary(top_SNPs, merged_results)
+# createDT(candidate_counts)
+
+# Distribution of mutation types in Credible Set SNPs 
+mod <- merged_results %>% 
+  mutate(CredSet.Lead = 
+           ifelse(Support>0,
+                  ifelse(leadSNP==T,"CS & leadSNP", "CS & non-leadSNP"),
+                  ifelse(leadSNP==T, "Non-CS & leadSNP","Non-CS & non-leadSNP")),NA) 
+ggplot(data=mod, aes(x=consequence_type_tv, fill=CredSet.Lead)) + 
+  geom_bar(aes(y = ..count..), position="dodge") + # (..count..)/sum(..count..)
+  coord_flip() +
+  labs(title="Proportions of Mutation Types (Biomart)",
+       subtitle = "Support = Within Credible Set",
+       x = "Mutation Type",
+       y="SNP Count") + 
+  theme(legend.text = element_text(size=8))
+```
+
+# psychENCODE
+
+- Results from the psychENCODE project have been [published](https://science.sciencemag.org/content/362/6420/eaat8464) and the [data made available](http://resource.psychencode.org/?_ga=2.202944787.381602893.1563834178-1901423550.1563307711).  
+- We perform an inital assesment of what percentage of each SNP Group contains expression, isoform, or chromatin QTLs (e/iso/cQTL).  
+
+```{r psychENCODE, class.output = "pre"}
+psychENCODE.download_summary_stats()
+percent_df <- psychENCODE.assay_summary()
+psychENCODE.overlap_plots(percent_df)
+```
+
+
+
+
+# fGWAS
+
+- fGWAS is designed to take all signficant SNPs from a GWAS and test for enrichment of various functional (e.g. DNAase hit, chromatin peak), genic (e.g. synonymous, noncoding) and/or distance (e.g.) annotations.  
+- Here we use fGWAS to test for enrichment amongst three different groups of SNPs:  
+  1. **lead SNPs**: The top SNP (sorted by GWAS FDR) from each locus in the original GWAS.  
+  2. **Credible Set SNPs**: SNPs that were identified by at least one fine-mapping tool.  
+  3. **Consensus SNPs**: SNPs that were identified by ALL fine-mapping tools tested.  
+- We use enrichment as a way to tell us whether our fine-mapping is working, i.e. it's identifying SNPs that are more functionally releveant and thus more likely to play a role in the phenotype (e.g. Parksinon's).
+  + Specifically, we are using the 451 pre-formatted annotations found [here](https://github.com/joepickrell/fgwas)  
+
+## Run fGWAS
+
+```{r Run fGWAS, class.output = "pre"} 
+results.DF <- fgwas(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+                    fgwas.out = file.path(results_path,"fGWAS","Output"),
+                    fgwas = "./echolocatoR/tools/fgwas-0.3.6/src/fgwas",
+                    dataset = "./Data/GWAS/Nalls23andMe_2019",
+                    remove_tmps = T,
+                    force_new_fgwas = F)
+createDT(results.DF)
+```
+
+## Plot fGWAS
+
+- Each of the enrichment test results (451 annotations x 3 SNP Groups) were grouped according to their *estimate* (i.e. their enrichment score). No tests yielded and estimate of 0:  
+  + **Enriched**: ``estimate > 0``
+  + **Depleted**: ``estimate < 0`` 
+
+```{r fGWAS boxplot}
+bp <- fgwas.boxplot(results.DF)
+```
+
+- Estimates are averaged by tissue here. 
+- You can also view each annotation as a separate row by selecting ``annotation_or_tissue = "annotation``.  
+  + In this view, additional metadata variables can be explored on the right side columns.
+
+```{r fGWAS - Heatmaps, fig.height=11, fig.width=5}
+# By Tissue
+hm <- fgwas.heatmap(results.DF, annotation_or_tissue = "tissue")
+# By Annotation
+hm <- fgwas.heatmap(results.DF, annotation_or_tissue = "annotation")
+```
+
+
+ 
+
+# GoShifter
+
+__GoShifter__: Performs SNP-level enrichment tests using BED files. However, unlike simpler methods, it also incorporates Linkage Disequilibrium (LD) info into the model. In this pipeline, LD is estimated from the refrence panel (e.g. 1000 Genomes Phase 1).
+    + Because GoShifter does not consider a specific background, these tests were repeated for both the Credible Sets, and then in all the SNPs in the same locus.
+- GoShifter was used to test for enrichment in three different SNP Groups:  
+  1. **Credible Set**: SNPs that were prioritized by at least one fine-mapping tool.
+  2. **Lead SNPs**: The top N significant SNPs in the original GWAS, where N is equal to the number of Credible Set SNPs.
+  3. **Random**: A randomly chosen numer of SNPs
+
+- Plots:  
+  + **Histograms**: For each enrichment test, GoShifter produces a p-value. However in the documentation they state that p-value is calculated accordingly: *"P-value is the number of times the “enrichment” is greater or equal to the observed overlap divided by total number of permutations."*
+  + This can be written as:``sum(enrichment >= nSnpOverlap) / n.permutations``
+  + However, the given p-value (GS.pval) and the calculated p.value (pval) differ quite a lot, and I'm not sure why this is.
+  
+  
+```{r GoShifter: SNP Groups} 
+GoShifter.list_chromatin_states()
+
+results_path <- "./Data/GWAS/Nalls23andMe_2019/LRRK2"
+finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt")) 
+# Create different subsets of SNPs to test for enrichment
+snp_df.CS <- subset(finemap_DT, Support>0) 
+snp_df.GWAS <- (finemap_DT %>% dplyr::arrange(P, desc(Effect)))[1:nrow(snp_df.CS),]
+snp_df.Random <- finemap_DT[sample(nrow(finemap_DT), nrow(snp_df.CS)), ]
+snp.df.list <- list("CS"=snp_df.CS, "GWAS"=snp_df.GWAS, "Random"=snp_df.Random)
+ 
+GS.groups <- lapply(names(snp.df.list), function(group){
+  printer("GoShifter:: testing enrichment for SNP Group:",group)
+  GS.RESULTS <- GoShifter(results_path = results_path,
+                           snp_df = snp.df.list[[group]],
+                           SNP.Group = group,
+                           ROADMAP_search = c("monocyte","brain"), 
+                           ROADMAP_type = c("PrimaryCell","PrimaryTissue"),
+                           chromatin_states = c("TssA","Quies"),#NA,
+                           R2_filter = 0.8, # Include LD SNPs at rsquared >= NUM [default: 0.8]
+                           overlap_threshold = 1, 
+                           remove_tmps = F, 
+                           force_new_goshifter = F)
+  GS.RESULTS$SNP.Group <- group
+  return(GS.RESULTS)
+}) %>% data.table::rbindlist()
+head(GS.groups)
+```
+
+```{r GoShifter - Histograms}
+# GoShifter.histograms(GS_results_CS)
+hst <- GoShifter.histograms_SNPgroups(GS.groups)
+```
+
+
+```{r GoShifter - Heatmap}
+hm <- GoShifter.heatmap(GS.groups)
+```
+

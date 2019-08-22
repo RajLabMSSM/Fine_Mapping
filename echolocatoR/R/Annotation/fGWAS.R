@@ -18,6 +18,7 @@
 
 install_fGWAS <- function(echo_path="./echolocatoR/tools", 
                           download.annotations=F){
+  printer("fGWAS:: Installing and compiling fGWAS.")
   # Install R wrapper
   # devtools::install_github("wzhy2000/fGWAS/pkg")
   # # Install and compile tool
@@ -47,6 +48,8 @@ fgwas.download_annotations <- function(FM_all,
                                        force_new_annot = F,
                                        dataset = ""
                                        ){
+  printer("fGWAS: Downloading annotations from GitHub repo:")
+  printer("       https://github.com/joepickrell/1000-genomes")
   # Path/file names
   Input_path <- file.path(results_path,"fGWAS","Input")
   dir.create(Input_path, showWarnings = F, recursive = T)
@@ -92,6 +95,11 @@ fgwas.annotation_names <- function(fgwas="./echolocatoR/tools/fgwas-0.3.6/src/fg
                                               "annot", "annotation_list_winfo.txt"),
                                    col.names = c('bed.name',"type","description"))
   annot_files$Name <- gsub(".bed.gz","",basename(annot_files$bed.name)) 
+  annot_files$Source <- lapply(annot_files$bed.name, function(s){strsplit(s,"/")[[1]][1]}) %>% unlist() 
+  annot_files <- tidyr::separate(annot_files, col = "Name", 
+                                 into=c("Annot"), 
+                                 sep="\\.",remove=F, extra="drop")
+  annot_files$Annot <- make.unique(annot_files$Annot)
   return(annot_files)
 }
 
@@ -113,6 +121,7 @@ fgwas.prepare_input <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_gen
                                 force_new_annot = F,
                                 dataset = "./Data/GWAS/Nalls23andMe_2019" 
                                 ){
+  printer("fGWAS: Preparing input files.")
   # """
   # 1. SNPID: a SNP identifier
   # 2. CHR: the chromosome for the SNP
@@ -225,21 +234,14 @@ fgwas.gather_results <- function(results_path,
 }
 
 
-
 fgwas.run <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
                       fgwas.out = file.path(results_path,"fGWAS","Output"),
-                      fgwas = "./echolocatoR/tools/fgwas-0.3.6/src/fgwas",
-                      remove_tmps = T){
-  # Prepare inputs
-  prepare_input.list <- fgwas.prepare_input(results_path,
-                                            SNP.Groups = c("leadSNP","CS","Consensus")) 
-  fgwas.inputs <- prepare_input.list$fgwas.inputs
-  overlap.DF <- prepare_input.list$overlap.DF  
-  
+                      fgwas = "./echolocatoR/tools/fgwas-0.3.6/src/fgwas"){
   # Iterate over each annotation file,
   ## so you can figure out where are significant.
   dir.create(file.path(fgwas.out), showWarnings = F, recursive = T) 
-  for(annot in annot_files$Name){
+  fg.start <- Sys.time()
+  for(annot in rownames(overlap.DF)){
     printer("")
     printer("------------------")
     printer("------------------")
@@ -266,24 +268,172 @@ fgwas.run <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
       system(cmd) 
     } 
   }
-  # Gather results
-  results.DF <- fgwas.gather_results(results_path = results_path) 
-  data.table::fwrite(results.DF, file.path(results_path,"fGWAS","fGWAS.summary.txt"), sep="\t")
-  # Delete tmp files (input/output)
-  if(remove_tmps){
-    printer("fGWAS: Removing tmp input files...")
-    # Remove Input  
-    suppressWarnings(file.remove(list.files(file.path(dirname(fgwas.out),"Input"), pattern = ".gz")))
-    # Remove Output
-    removeDirectory(fgwas.out, recursive = T, mustExist = F) 
+  fg.end <- Sys.time()
+  printer("fGWAS:",nrow(overlap.DF)*ncol(overlap.DF),"enrichment tests run in",
+          round(fg.end-fg.start,2))
+}
+
+
+
+fgwas <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+                  fgwas.out = file.path(results_path,"fGWAS","Output"),
+                  fgwas = "./echolocatoR/tools/fgwas-0.3.6/src/fgwas",
+                  dataset = "./Data/GWAS/Nalls23andMe_2019",
+                  remove_tmps = T,
+                  force_new_fgwas = F){
+  # [0] Check if results already exist for this dataset
+  output.summary <- file.path(results_path,"fGWAS",paste0("fGWAS_summary.",basename(dataset),".txt"))
+  if(file.exists(output.summary) & force_new_fgwas!=T){
+    printer("fGWAS:: Results file already exists.")
+    printer("  Importing: ",output.summary)
+    results.DF <- data.table::fread(output.summary)
+  } else {
+    # [1] Prepare inputs
+    prepare_input.list <- fgwas.prepare_input(results_path,
+                                              SNP.Groups = c("leadSNP","CS","Consensus"),
+                                              dataset = dataset) 
+    fgwas.inputs <- prepare_input.list$fgwas.inputs
+    overlap.DF <- prepare_input.list$overlap.DF   
+    
+    # [2] Run fGWAS
+    fgwas.run(results_path=results_path,
+              fgwas.out=fgwas.out,
+              fgwas=fgwas) 
+    
+    # [3] Gather results
+    results.DF <- fgwas.gather_results(results_path = results_path) 
+    data.table::fwrite(results.DF, output.summary, sep="\t")
+    
+    # [4] Delete tmp files (input/output)
+    if(remove_tmps){
+      printer("fGWAS: Removing tmp input files...")
+      # Remove Input  
+      suppressWarnings(file.remove(list.files(file.path(dirname(fgwas.out),"Input"), pattern = ".gz")))
+      # Remove Output
+      removeDirectory(fgwas.out, recursive = T, mustExist = F) 
+    }
   }
+  
   return(results.DF)
 }
 
 
-fgwas.plot <- function(results.DF){
-  ggplot(results.DF, aes(x=SNP.Group, y=`AIC:`)) + geom_col()
-  ggplot(results.DF, aes(x=SNP.Group, y=estimate)) + geom_col()
+
+
+
+
+##### PLOTS #######
+
+# Boxplot
+fgwas.boxplot <- function(DF, 
+                          title="fGWAS Enrichment Results", 
+                          subtitle = "451 Annotations", 
+                          show_plot = T){
+  DF$Enrichment <- ifelse(results.DF$estimate==0, "None", 
+                     ifelse(results.DF$estimate>0, "Enriched","Depleted"))
+  DF$Enrichment <- factor(DF$Enrichment, levels = c("Enriched","Depleted","None"),
+                     labels = c("Enriched","Depleted","None"), 
+                     ordered = T) 
+  counts <- DF %>% dplyr::group_by(SNP.Group, Enrichment, .drop=F) %>% count() %>% 
+    arrange(Enrichment, SNP.Group) %>% 
+    subset(Enrichment!="None")
+  x.ticks <- paste0(counts$SNP.Group,"\n(n=",counts$n,")")
+  
+  stat_box_data <- function(y, upper_limit = min(DF$estimate) * 1.15) {
+    return( 
+      data.frame(
+        y = 0.95 * upper_limit,
+        label = paste0('n=', length(y))
+      )
+    )
+  }
+  
+  bp <- ggplot(DF, aes(x=SNP.Group, y=estimate, fill=SNP.Group)) +
+    geom_point(show.legend = F, aes(alpha=0.7)) +
+    geom_jitter(width = .2, show.legend = F) +
+    geom_boxplot(show.legend = F, aes(alpha=0.7)) + 
+    facet_grid("~Enrichment") +
+    stat_summary(
+      fun.data = stat_box_data, 
+      geom = "text", 
+      hjust = 0.5,
+      vjust = 0.9
+    ) + 
+    theme_classic() + 
+    scale_fill_brewer(palette = "Dark2") + 
+    labs(title=title, subtitle = subtitle) + 
+    theme(plot.title = element_text(hjust = 0.5), 
+          plot.subtitle = element_text(hjust = 0.5))  
+  if(show_plot){print(bp)}
+  return(bp)
+}
+
+
+fgwas.heatmap <- function(DF, 
+                          annotation_or_tissue="tissue",
+                          show_plot=T){
+  library(heatmaply)
+  annot_files <- fgwas.annotation_names()
+  
+  if(annotation_or_tissue=="annotation"){
+    colors <- RColorBrewer::brewer.pal(11,"Spectral") 
+    ## By each annotation
+    mat <- reshape2::acast(DF, Annot~SNP.Group, value.var="estimate", 
+                           fun.aggregate = mean, drop = F, fill = 0)  
+    # Add annotation metadata
+    mat.annot <- data.table:::merge.data.table(
+      data.table(mat, keep.rownames = "Annot", key="Annot"),
+      annot_files, 
+      by = "Annot",
+      all.x = T) 
+    mat.annot <- data.frame(mat.annot[,-c("bed.name","Name")], 
+                            row.names = mat.annot$Annot) 
+    hm <- heatmaply(mat.annot, 
+              height = 10, width = 5,
+              cexRow = .7,
+              # column_text_angle = 0,
+              main = "fGWAS Enrichment: by Annotation",
+              ylab = "Annotation", 
+              xlab = "SNP Group", 
+              key.title = "Estimate", 
+              dendrogram = "row", 
+              k_row = 5,
+              colors = colors) 
+  } else {
+    ## By Tissue 
+    DF.annot <- data.table:::merge.data.table(DF, annot_files, 
+                                              by = "Annot",
+                                              all.x = T)
+    mat <- reshape2::acast(DF.annot, description~SNP.Group, value.var="estimate", 
+                           fun.aggregate = mean, drop = F) 
+    hm <- heatmaply(mat,  
+              height = 10, width = 5,
+              cexRow = .7,
+              # column_text_angle = 0,
+              main = "fGWAS Enrichment: by Tissue",
+              ylab = "Tissue", 
+              xlab = "SNP Group", 
+              key.title = "Estimate", 
+              dendrogram = "row",
+              column_text_angle = 0,
+              k_row = 5,
+              colors = colors)
+  }
+  if(show_plot){print(hm)}
+  return(hm)
+}
+
+fgwas.plots <- function(results.DF){
+  DF <- results.DF 
+  # Boxplot
+  bp <- fgwas.boxplot(DF,
+                      title="fGWAS Enrichment Results", 
+                      subtitle = "451 Annotations")
+  print(bp)
+  
+  # Heatmap
+  hm <- fgwas.heatmap(DF, annotation_or_tissue="tissue")
+  print(hm)
 }
 
 
