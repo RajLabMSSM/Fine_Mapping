@@ -10,9 +10,9 @@
 
 ## Current Results  
 ### Parkinson's Disease  
-- [Fine-mapping 78 Loci](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD.html)  
-- [Annotation & Enrichment](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping.Enrichment.html)  
-- [eQTL Boxplot Demo](https://rajlabmssm.github.io/Fine_Mapping/eQTL_boxplots_demo.html)
+#### [Fine-mapping 78 Loci](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD.html)  
+#### [Annotation & Enrichment](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping.Enrichment.html)  
+#### [eQTL Boxplot Demo](https://rajlabmssm.github.io/Fine_Mapping/eQTL_boxplots_demo.html)
 
 
 ## Workflow  
