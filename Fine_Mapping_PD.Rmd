@@ -74,7 +74,7 @@ top_SNPs <- data.table::rbindlist(list(top_SNPs,
 gene_list <- unique(top_SNPs$Gene)
 
 finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
-                                               gene_list = unique(c("LRRK2", gene_list))[1], #
+                                               gene_list = unique(c("LRRK2", gene_list)), #
                                                trim_gene_limits = c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
