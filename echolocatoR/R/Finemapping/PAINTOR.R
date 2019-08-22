@@ -192,13 +192,11 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
     if(!is.na(Roadmap_chromatinMarks_search)){
       if(Roadmap_chromatinMarks_search=="all_cell_types"){Roadmap_chromatinMarks_search <- ""}
       # Version 1: Subset locally 
-      RoadMap_ref <- GS_construct_reference(fuzzy_search = Roadmap_chromatinMarks_search)  #
-      bed_names <- GS_bed_names(RoadMap_ref)
-      BED_paths <- GS_download_roadmap_annotations(output_dir = "echolocatoR/tools/Annotations",
-                                                   finemap_DT = locus_DT,
-                                                   bed_names = bed_names,
-                                                   chromatin_state = chromatin_state,
-                                                   verbose = T) 
+      RoadMap_ref <- GoShifter.search_ROADMAP(fuzzy_search = Roadmap_chromatinMarks_search)  #
+      bed_names <- GoShifter.bed_names(RoadMap_ref)
+      BED_paths <- GoShifter.get_roadmap_annotations(bed.list = bed_names, 
+                                                     chromatin_state = chromatin_state, 
+                                                     verbose = T) 
       try({lapply(BED_paths, gunzip)})
       BED_paths <- gsub(".gz","",BED_paths)
       # Version 2: Subset via tabix

@@ -1,14 +1,17 @@
 # Fine_Mapping
 
-### echolocatoR is an open-source R library that wraps, integrates and extends several commonly used genetic and functional fine mapping tools, as well as annotation and enrichment tools. 
-### Here, we fine-map loci from recent GWAS to identify causal genetic variants that have been previously associated with Parkinson's Disease (PD) or Alzheimer's Disease (PD).  
-### All data and results can viewed and downloaded via the following interactive Rmarkdown output files below.  
+#### echolocatoR is an open-source R library that wraps, integrates and extends several commonly used genetic and functional fine mapping tools, as well as annotation and enrichment tools. 
+#### Here, we fine-map loci from recent GWAS to identify causal genetic variants that have been previously associated with Parkinson's Disease (PD) or Alzheimer's Disease (PD).  
+#### All data and results can viewed and downloaded via the following interactive Rmarkdown output files below.  
 
 
-<hr>
+<hr><hr>
 
 ## Current Results  
+
 ### Parkinson's Disease  
+
+#### [Fine-mapping 8 loci](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_8.PD.loci.html)
 #### [Fine-mapping 78 Loci](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD.html)  
 #### [Annotation & Enrichment](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping.Enrichment.html)  
 #### [eQTL Boxplot Demo](https://rajlabmssm.github.io/Fine_Mapping/eQTL_boxplots_demo.html)
@@ -61,6 +64,11 @@ Planning to implement:
 #### [Posthuma et al. (2018)](https://www.nature.com/articles/s41588-018-0311-9)
 #### [Kunkle et al. (2019)](https://www.nature.com/articles/s41588-019-0358-2)
 
+### LD Reference Panels  
+
+#### [1000 Genomes Phase 1]()  
+#### [1000 Genomes Phase 3]()  
+
 
 ### QTL
 
@@ -74,7 +82,7 @@ Planning to implement:
 - expression QTL (eQTL), chromatin QTL (cQTL) and isoform QTL (isoQTL) from Control, Schizophrenia, Bipolar Disorder, and Autism Spectrum Disorder populations.  
 
 
-<hr>
+<hr><hr>
 
 ## Author
 
