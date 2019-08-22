@@ -16,8 +16,8 @@ author:
      <a href='https://icahn.mssm.edu/' target='_blank'><img src='./web/images/sinai.png'></a>
      </div>"
 date: "<br>Most Recent Update:<br> `r Sys.Date()`"
-output:
- html_document:
+output: 
+  rmarkdown::html_document:
     theme: cerulean
     highlight: zenburn
     code_folding: show
@@ -31,8 +31,10 @@ editor_options:
   chunk_output_type: inline
 --- 
 
-```{r setup, message=F, warning=F, dpi = 600, cache=T}
+```{r setup, message=F, warning=F, dpi = 600, cache=F}
 source("echolocatoR/R/MAIN.R")
+library(dplyr)  
+library(plotly)
 ```
 
 # Fine-mapping Summaries
@@ -117,20 +119,24 @@ createDT(results.DF)
 - Each of the enrichment test results (451 annotations x 3 SNP Groups) were grouped according to their *estimate* (i.e. their enrichment score). No tests yielded and estimate of 0:  
   + **Enriched**: ``estimate > 0``
   + **Depleted**: ``estimate < 0`` 
+- When ``interact=T``, hover to explore more information about each data point, including the annotation that the enirchment test was conducted with.  
 
-```{r fGWAS boxplot}
-bp <- fgwas.boxplot(results.DF)
+```{r fGWAS - Boxplot, results="asis"}
+bp <- fgwas.boxplot(results.DF, interact=T) 
+print(bp)
 ```
 
 - Estimates are averaged by tissue here. 
 - You can also view each annotation as a separate row by selecting ``annotation_or_tissue = "annotation``.  
   + In this view, additional metadata variables can be explored on the right side columns.
 
-```{r fGWAS - Heatmaps, fig.height=11, fig.width=5}
+```{r fGWAS - Heatmaps, fig.height=11, fig.width=5, results="asis"}
 # By Tissue
 hm <- fgwas.heatmap(results.DF, annotation_or_tissue = "tissue")
+print(hm)
 # By Annotation
 hm <- fgwas.heatmap(results.DF, annotation_or_tissue = "annotation")
+print(hm)
 ```
 
 
@@ -149,11 +155,18 @@ __GoShifter__: Performs SNP-level enrichment tests using BED files. However, unl
   + **Histograms**: For each enrichment test, GoShifter produces a p-value. However in the documentation they state that p-value is calculated accordingly: *"P-value is the number of times the “enrichment” is greater or equal to the observed overlap divided by total number of permutations."*
   + This can be written as:``sum(enrichment >= nSnpOverlap) / n.permutations``
   + However, the given p-value (GS.pval) and the calculated p.value (pval) differ quite a lot, and I'm not sure why this is.
-  
-  
-```{r GoShifter: SNP Groups} 
-GoShifter.list_chromatin_states()
 
+## Prepare Data
+
+```{r GoShifter - Chromatin States}
+# List all chromatin state options
+chrom.states.df <- GoShifter.list_chromatin_states()
+createDT(chrom.states.df)
+```
+
+
+```{r GoShifter - SNP Groups}
+# Prepare Data
 results_path <- "./Data/GWAS/Nalls23andMe_2019/LRRK2"
 finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt")) 
 # Create different subsets of SNPs to test for enrichment
@@ -161,7 +174,11 @@ snp_df.CS <- subset(finemap_DT, Support>0)
 snp_df.GWAS <- (finemap_DT %>% dplyr::arrange(P, desc(Effect)))[1:nrow(snp_df.CS),]
 snp_df.Random <- finemap_DT[sample(nrow(finemap_DT), nrow(snp_df.CS)), ]
 snp.df.list <- list("CS"=snp_df.CS, "GWAS"=snp_df.GWAS, "Random"=snp_df.Random)
- 
+```
+
+  
+```{r GoShifter - Run}
+# Iterate GoShifter over each SNP Group
 GS.groups <- lapply(names(snp.df.list), function(group){
   printer("GoShifter:: testing enrichment for SNP Group:",group)
   GS.RESULTS <- GoShifter(results_path = results_path,
@@ -177,7 +194,7 @@ GS.groups <- lapply(names(snp.df.list), function(group){
   GS.RESULTS$SNP.Group <- group
   return(GS.RESULTS)
 }) %>% data.table::rbindlist()
-head(GS.groups)
+createDT(head(GS.groups))
 ```
 
 ```{r GoShifter - Histograms}
@@ -186,7 +203,8 @@ hst <- GoShifter.histograms_SNPgroups(GS.groups)
 ```
 
 
-```{r GoShifter - Heatmap}
+```{r GoShifter - Heatmap, results="asis"}
 hm <- GoShifter.heatmap(GS.groups)
+print(hm)
 ```
 

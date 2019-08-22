@@ -110,7 +110,7 @@ source("./echolocatoR/R/Plotting/ggbio.R")
 source("./echolocatoR/R/Plotting/eQTL_boxplots.R")
 # Annotation
 source("./echolocatoR/R/Annotation/annotate.R")
-source("./echolocatoR/R/Annotation/GoShifter_new.R") # ***
+source("./echolocatoR/R/Annotation/GoShifter.R") # ***
 source("./echolocatoR/R/Annotation/XGR.R")
 source("./echolocatoR/R/Annotation/fGWAS.R")
 source("./echolocatoR/R/Annotation/psychENCODE.R")
