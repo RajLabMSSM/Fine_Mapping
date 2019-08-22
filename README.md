@@ -17,7 +17,7 @@
 
 ## Workflow  
 
-[echoFlow](./echolocatoR/images/echolocatoR_Flowchart.png)
+![echoFlow](./echolocatoR/images/echolocatoR_Flowchart.png)
 
 
 
