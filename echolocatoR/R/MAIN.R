@@ -107,7 +107,7 @@ source("./echolocatoR/R/Finemapping/COJO.R")
 # Plotting
 source("./echolocatoR/R/Plotting/plot.R")
 source("./echolocatoR/R/Plotting/ggbio.R")
-source("./echolocatoR/R/Plotting/eQTL_boxplots.R")
+source("./echolocatoR/R/Plotting/QTL_boxplots.R")
 # Annotation
 source("./echolocatoR/R/Annotation/annotate.R")
 source("./echolocatoR/R/Annotation/GoShifter.R") # ***

@@ -16,7 +16,7 @@
 
 # """
 
-install_fGWAS <- function(echo_path="./echolocatoR/tools", 
+fGWAS.install <- function(echo_path="./echolocatoR/tools", 
                           download.annotations=F){
   printer("fGWAS:: Installing and compiling fGWAS.")
   # Install R wrapper
@@ -38,12 +38,12 @@ install_fGWAS <- function(echo_path="./echolocatoR/tools",
   system(cmd)
   # Create symlink?...
   if(download.annotations){
-    fgwas.download_annotations()
+    fGWAS.download_annotations()
   }
 }
 
 
-fgwas.download_annotations <- function(FM_all,
+fGWAS.download_annotations <- function(FM_all,
                                        results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
                                        force_new_annot = F,
                                        dataset = ""
@@ -89,7 +89,7 @@ fgwas.download_annotations <- function(FM_all,
 
 
 
-fgwas.annotation_names <- function(fgwas="./echolocatoR/tools/fgwas-0.3.6/src/fgwas"){ 
+fGWAS.annotation_names <- function(fgwas="./echolocatoR/tools/fgwas-0.3.6/src/fgwas"){ 
   ## Get annotation names from summary file
   annot_files <- data.table::fread(file.path( dirname(dirname(fgwas)),
                                               "annot", "annotation_list_winfo.txt"),
@@ -103,7 +103,7 @@ fgwas.annotation_names <- function(fgwas="./echolocatoR/tools/fgwas-0.3.6/src/fg
   return(annot_files)
 }
 
-fgwas.top_annotations <- function(dat.fgwas, annot_files, SNP.Group=""){
+fGWAS.top_annotations <- function(dat.fgwas, annot_files, SNP.Group=""){
   ## Count how many SNPs have hits per annotation
   overlapping.snps <- subset(dat.fgwas, select=as.character(annot_files$Name) ) %>% 
     colSums() 
@@ -116,7 +116,7 @@ fgwas.top_annotations <- function(dat.fgwas, annot_files, SNP.Group=""){
  
 
 
-fgwas.prepare_input <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+fGWAS.prepare_input <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
                                 SNP.Groups = c("leadSNP","CS","Consensus"),
                                 force_new_annot = F,
                                 dataset = "./Data/GWAS/Nalls23andMe_2019" 
@@ -136,11 +136,11 @@ fgwas.prepare_input <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_gen
                                       include_leadSNPs = T) 
   FM_all <- subset(FM_all, Dataset==dataset)
   # Gather annotations data and merge with FM_all
-  FM_annot <- fgwas.download_annotations(FM_all,
+  FM_annot <- fGWAS.download_annotations(FM_all,
                                          force_new_annot = force_new_annot, 
                                          dataset = dataset)
   # List annotation names
-  annot_files <- fgwas.annotation_names()
+  annot_files <- fGWAS.annotation_names()
   
   
   # Construct input for each SNP.Group
@@ -182,7 +182,7 @@ fgwas.prepare_input <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_gen
                                                    N.SNPs=nrow(dat.fgwas)))
    
     # Report annotations with the most overlap
-    overlap.df <- fgwas.top_annotations(dat.fgwas, annot_files, SNP.Group=group)
+    overlap.df <- fGWAS.top_annotations(dat.fgwas, annot_files, SNP.Group=group)
     overlap.df.list <- append(overlap.df.list, overlap.df)
   } 
   overlap.DF <- cbind.data.frame(overlap.df.list) %>% `row.names<-`(rownames(overlap.df)) 
@@ -191,7 +191,7 @@ fgwas.prepare_input <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_gen
 
  
 
-fgwas.gather_results <- function(results_path, 
+fGWAS.gather_results <- function(results_path, 
                                  output_dir=file.path(results_path,"fGWAS/Output")){
   printer("+ fGWAS: Gathering all results...")
   #### Default output:
@@ -234,7 +234,7 @@ fgwas.gather_results <- function(results_path,
 }
 
 
-fgwas.run <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+fGWAS.run <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
                       fgwas.out = file.path(results_path,"fGWAS","Output"),
                       fgwas = "./echolocatoR/tools/fgwas-0.3.6/src/fgwas"){
   # Iterate over each annotation file,
@@ -289,19 +289,19 @@ fgwas <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
     results.DF <- data.table::fread(output.summary)
   } else {
     # [1] Prepare inputs
-    prepare_input.list <- fgwas.prepare_input(results_path,
+    prepare_input.list <- fGWAS.prepare_input(results_path,
                                               SNP.Groups = c("leadSNP","CS","Consensus"),
                                               dataset = dataset) 
     fgwas.inputs <- prepare_input.list$fgwas.inputs
     overlap.DF <- prepare_input.list$overlap.DF   
     
     # [2] Run fGWAS
-    fgwas.run(results_path=results_path,
+    fGWAS.run(results_path=results_path,
               fgwas.out=fgwas.out,
               fgwas=fgwas) 
     
     # [3] Gather results
-    results.DF <- fgwas.gather_results(results_path = results_path) 
+    results.DF <- fGWAS.gather_results(results_path = results_path) 
     data.table::fwrite(results.DF, output.summary, sep="\t")
     
     # [4] Delete tmp files (input/output)
@@ -325,7 +325,7 @@ fgwas <- function(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
 ##### PLOTS #######
 
 # Boxplot
-fgwas.boxplot <- function(DF, 
+fGWAS.boxplot <- function(DF, 
                           title="fGWAS Enrichment Results", 
                           subtitle = "451 Annotations", 
                           show_plot = T, 
@@ -375,11 +375,11 @@ fgwas.boxplot <- function(DF,
 }
 
 
-fgwas.heatmap <- function(DF, 
+fGWAS.heatmap <- function(DF, 
                           annotation_or_tissue="tissue",
                           show_plot=T){
   # library(heatmaply)
-  annot_files <- fgwas.annotation_names()
+  annot_files <- fGWAS.annotation_names()
   colors <- RColorBrewer::brewer.pal(11,"Spectral")  
   if(annotation_or_tissue=="annotation"){
    
@@ -431,16 +431,16 @@ fgwas.heatmap <- function(DF,
   return(hm)
 }
 
-fgwas.plots <- function(results.DF){
+fGWAS.plots <- function(results.DF){
   DF <- results.DF 
   # Boxplot
-  bp <- fgwas.boxplot(DF,
+  bp <- fGWAS.boxplot(DF,
                       title="fGWAS Enrichment Results", 
                       subtitle = "451 Annotations")
   print(bp)
   
   # Heatmap
-  hm <- fgwas.heatmap(DF, annotation_or_tissue="tissue")
+  hm <- fGWAS.heatmap(DF, annotation_or_tissue="tissue")
   print(hm)
 }
 

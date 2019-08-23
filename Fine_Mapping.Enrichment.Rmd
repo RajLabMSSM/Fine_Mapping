@@ -31,7 +31,7 @@ editor_options:
   chunk_output_type: inline
 --- 
 
-```{r setup, message=F, warning=F, dpi = 600, cache=F}
+```{r setup, message=F, warning=F, dpi = 600, cache=F, class.output = "pre"}
 source("echolocatoR/R/MAIN.R")
 library(dplyr)  
 library(plotly)
@@ -104,7 +104,7 @@ psychENCODE.overlap_plots(percent_df)
 
 ## Run fGWAS
 
-```{r Run fGWAS, class.output = "pre"} 
+```{r Run fGWAS} 
 results.DF <- fgwas(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
                     fgwas.out = file.path(results_path,"fGWAS","Output"),
                     fgwas = "./echolocatoR/tools/fgwas-0.3.6/src/fgwas",

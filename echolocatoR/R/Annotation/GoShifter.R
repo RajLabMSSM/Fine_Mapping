@@ -59,7 +59,7 @@ GoShifter.create_LD <- function(results_path, verbose=T){
 }
 
 
-GoShifter.search_ROADMAP <- function(Roadmap_reference = "./echolocatoR/tools/goshifter/annotation_files/ROADMAP_Epigenomic.js",
+GoShifter.search_ROADMAP <- function(Roadmap_reference = "./echolocatoR/tools/Annotations/ROADMAP/ROADMAP_Epigenomic.js",
                                    EID_filter = NA,
                                    GROUP_filter = NA,
                                    ANATOMY_filter = NA,
@@ -108,47 +108,57 @@ GoShifter.bed_names <- function(RM_ref, suffix="_15_coreMarks_mnemonics.bed.gz")
   return(bed_names)
 }
  
-GoShifter.list_chromatin_states <- function(goshifter_path = "./echolocatoR/tools/goshifter"){
+GoShifter.list_chromatin_states <- function(annotations_path = "./echolocatoR/tools/Annotations"){
   # Term key for chromatin states
-  chromState_key <- data.table::fread(file.path(goshifter_path,  "annotation_files", 
+  chromState_key <- data.table::fread(file.path(annotations_path, "ROADMAP", 
                                                 "ROADMAP_chromatinState_HMM.tsv"))
   return(chromState_key)
 }
 
 
 
-GoShifter.get_roadmap_annotations <- function(goshifter_path = "./echolocatoR/tools/goshifter", 
+GoShifter.get_roadmap_annotations <- function(annotations_path = "./echolocatoR/tools/Annotations", 
                                               bed.list,
                                               chromatin_state = "TssA",
                                               verbose = T){
-  output_paths <- lapply(bed.list, function(bed, v=verbose){ 
+  output_paths <- lapply(bed.list, function(bed, v=verbose){
     eid <- strsplit(bed, "_")[[1]][1]
-    output_path <- file.path(goshifter_path,"annotation_files",bed) 
+    roadmap.annot.path <- file.path(annotations_path,"ROADMAP/Chromatin_Marks")
+    dir.create(roadmap.annot.path, showWarnings = F, recursive = T)
+    output_path <- file.path(roadmap.annot.path, bed)
     bed_subset <- file.path(dirname(output_path), paste0(eid,"_",chromatin_state,"_subset.bed"))
     bed_subset.gz <- paste0(bed_subset,".gz") 
     bed_url <- file.path("https://egg2.wustl.edu/roadmap/data/byFileType",
                          "chromhmmSegmentations/ChmmModels/coreMarks/jointModel/final",
                          bed)
+   
     # If you have the exact file subset you need, just load it
     if(file.exists(bed_subset.gz)){
-      printer("+++ Importing Previously downloaded BED subset:",bed_subset.gz, v=v);
+      printer("+++ GoShifter:: Importing Previously downloaded BED subset:",bed_subset.gz, v=v);
       dat <- data.table::fread(bed_subset.gz, col.names = c("Chrom", "Start","End","State","NA") ) 
     } else {
       # If you have the right file but it needs to be subset
       if (file.exists(output_path)){
-        printer("+++ Importing Previously downloaded full BED:",bed_subset.gz, v=v);
+        printer("+++ GoShifter:: Importing Previously downloaded full BED:",bed_subset.gz, v=v);
         dat <- data.table::fread(output_path, col.names = c("Chrom", "Start","End","State") )
       } else {
-        printer("+++ Downloading annotation BED file from Roadmap server...", v=v)
-        dat <- data.table::fread(bed_url, col.names = c("Chrom", "Start","End","State") )
-        data.table::fwrite(dat, bed, col.names = F, sep = " ")
+        printer("+++ GoShifter:: Downloading annotation BED file from Roadmap server...", v=v)
+        dat <- data.table::fread(bed_url, col.names = c("Chrom", "Start","End","State") )  
+        data.table::fwrite(dat, file.path(roadmap.annot.path, bed), col.names = F, sep = " ")
       }
-      # Subset data to just the chromatin state(s) you want to check enrichment for
-      printer("+++ Subsetting bed file: ",chromatin_state)
+      # Subset data to just the chromatin state(s) you want to check enrichment for 
       dat[, c("Num", "State") := tstrsplit(State, "_", fixed=TRUE)] # inplace transform
-      dat <- dat[State == chromatin_state,]  
-      data.table::fwrite(dat, bed_subset, col.names = F,sep = "\t") 
-      gzip(bed_subset, destname=bed_subset.gz, overwrite = T)
+      if(!is.na(chromatin_state)){
+        printer("+++ GoShifter:: Subsetting BED file by chromatin state: ",chromatin_state)
+        dat <- dat[State == chromatin_state,]
+        data.table::fwrite(dat, bed_subset, col.names = F,sep = "\t") 
+        gzip(bed_subset, destname=bed_subset.gz, overwrite = T)
+      } else {
+        printer("+++ GoShifter:: Including all",length(unique(dat$State)),"chromatin states.")
+        bed_subset.gz <- file.path(roadmap.annot.path, bed)
+      }
+      printer("+++ GoShifter:: BED file saved to  ==> ", bed_subset.gz)
+      
     } 
     return(bed_subset.gz)
   }) %>% unlist() 
