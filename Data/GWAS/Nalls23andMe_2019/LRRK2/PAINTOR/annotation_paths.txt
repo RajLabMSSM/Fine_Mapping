@@ -1,0 +1,15 @@
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E053_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E054_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E067_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E068_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E069_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E070_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E071_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E072_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E073_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E074_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E081_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E082_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E124_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E125_TssA_subset.bed
+./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E029_TssA_subset.bed

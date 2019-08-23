@@ -31,15 +31,9 @@ editor_options:
   chunk_output_type: inline
 --- 
  
-```{r setup, message=F, warning=F, dpi = 600}
-knitr::opts_chunk$set(error = T) # Knit even with errors
-# devtools::install_local("echolocatoR/", force = T)
-# library("echolocatoR")
-source("echolocatoR/R/MAIN.R")
-# MINERVA PATHS TO SUMMARY STATISTICS DATASETS: 
-Data_dirs <- read.csv("./Data/directories_table.csv")
+```{r setup, message=F, warning=F, dpi = 600} 
+source("echolocatoR/R/MAIN.R") 
 finemap_results <- list()
-coloc_results <- list()
 ```
 
 
@@ -52,7 +46,7 @@ Parkinson's Disease GWAS.
 ```{r Kunkle_2019, results = 'asis', fig.height=10, fig.width=7, fig.show='hold'} 
 dataset_name <- "Kunkle_2019"
 top_SNPs <- import_topSNPs(
-              topSS_path = Directory_info(Data_dirs, dataset_name, "topSumStats"),
+              topSS_path = Directory_info(dataset_name, "topSumStats"),
               sheet = "Supplementary Table 6",
               chrom_col = "Chr", 
               position_col = "Basepair", 
@@ -75,7 +69,7 @@ finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
                                                finemap_method = c("SUSIE","FINEMAP"), 
                                                force_new_LD = F,  
                                                force_new_subset = F,
-                                               force_new_finemap = T,
+                                               force_new_finemap = F,
                                                file_sep = " ", 
                  # file_path = Directory_info(dataset_name, "fullSumStats"),
                  fullSS_path = "./Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt",
@@ -93,7 +87,7 @@ finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
                  superpopulation = "EUR", 
                  LD_block = F,  
                  n_causal = 5, 
-                 remove_tmps = F) 
+                 remove_tmps = T) 
 
 ```
 

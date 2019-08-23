@@ -31,10 +31,10 @@ editor_options:
   chunk_output_type: inline
 --- 
 
-
 ```{r setup, message=F, warning=F, dpi = 600, class.output = "pre"} 
 source("echolocatoR/R/MAIN.R")
 ```
+
 
   
 # PAINTOR
@@ -118,10 +118,11 @@ merged_eQTL_data <- eQTL_boxplots(snp_list,
 ```
 
 
+# Colocalization
 
 ## Colocalization: MESA {.tabset .tabset-fade .tabset-pills} 
 
-```{r Colocalization - Nalls23andMe_2019 + MESA, results = 'asis', fig.height=7, fig.width=10, eval=F}  
+```{r Colocalization - Nalls23andMe_2019 + MESA, results = 'asis', fig.height=7, fig.width=10, eval=F, include=F}  
 subpops <- c("CAU","AFA","HIS")
 dataset2_pathList <- paste0("./Data/eQTL/MESA_",subpops,"/LRRK2_",subpops,"_MESA.txt")
 
@@ -211,7 +212,7 @@ colocalize_geneList <- function(gene_list,
 
 ### Summarize
 
-```{r Colocalization - Nalls23andMe_2019 + Fairfax} 
+```{r Colocalization - Nalls23andMe_2019 + Fairfax, eval=F, include=F} 
 gather_ff_data <- function(gene_snp_df){
   gene_list <- unique(gene_snp_df$Gene)
   # Loop through genes
@@ -254,7 +255,7 @@ createDT(gather_ff_data(gene_snp_df))
 
 ## MESA {.tabset .tabset-fade .tabset-pills}
 
-```{r eQTL - MESA (AFA), results = 'asis', fig.height=8, fig.width=7, eval=F}
+```{r eQTL - MESA (AFA), results = 'asis', fig.height=8, fig.width=7, eval=F, include=F}
 gene_list <- c("LRRK2") 
 subpops <- c("CAU","AFA","HIS")  
 
@@ -294,26 +295,26 @@ for(g in gene_list){
 + Use the Nalls et al. (2019) LRRK2 locus to query for SNPs in the eQTL data.  
 + SS Files are SPACE-delimited (not tab-delimited)  
 
-```{r Fairfax, results = 'asis', fig.height=8, fig.width=7, eval=F} 
-
+```{r Fairfax, results = 'asis', fig.height=8, fig.width=7, eval=F, include=F} 
+FF_finemapping <- list()
 # +++++++++++++++ CD14 Stimulation +++++++++++++++ #
 dataset_name <- "Fairfax_2014_CD14"
-allResults[[dataset_name]] <- finemap_gene_list( gene_list=c("LRRK2"),  
+FF_finemapping[[dataset_name]] <- finemap_gene_list(gene_list=c("LRRK2"),  
                                                 superpopulation = "CAU",
                                                 dataset_name = dataset_name, 
                                                 dataset_type = "eQTL",
                                                 top_SNPs = Nalls_top_SNPs, 
                                                 query_by = "probes",
-                                                probe_path = "./Data/eQTL/gene.ILMN.map",
+                                                probe_path = "./Data/eQTL/Fairfax_2014/gene.ILMN.map",
                    file_sep = " ",                            
                    # fullSS_path = Directory_info(Data_dirs, dataset_name, "fullSumStats"),
-                   fullSS_path = "./Data/eQTL/Fairfax_2014_CD14/LRRK2_Fairfax_CD14.txt",
+                   fullSS_path = "./Data/eQTL/Fairfax_2014/CD14/LRRK2/LRRK2_Fairfax_CD14.txt",
                    subset_path = "auto",
                    chrom_col = "CHR", position_col = "POS", snp_col="SNP",
                    pval_col="p-value", effect_col="beta", gene_col="gene", 
                    stderr_col = "calculate",  tstat_col = "t-stat",
-                   vcf_folder = vcf_folder, n_causal = 1, 
-                   force_new_subset = force_new_subset,
+                   n_causal = 1, 
+                   force_new_subset = F,
                    LD_block = T)
 
 ```
