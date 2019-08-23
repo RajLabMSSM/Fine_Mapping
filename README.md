@@ -11,9 +11,15 @@
 
 ### Parkinson's Disease  
 
-#### [Fine-mapping 8 loci](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_8.PD.loci.html)
-#### [Fine-mapping 78 Loci](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD.html)  
+#### [Genetic Fine-mapping 8 loci](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_8.PD.loci.html)
+#### [Genetic Fine-mapping 78 Loci](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD.html) 
+#### [Functional Fine-mapping of LRRK2 Locus](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping.Functional.html) 
+- Functional fine-mapping of the LRRK2 locus using PAINTOR.
+-   
 #### [Annotation & Enrichment](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping.Enrichment.html)  
+- Annotation of all 78 loci usig Biomart and HaploReg.  
+- Enrichment tests on all 78 loci using fGWAS.
+- Enrichment tests on LRRK2 locus using GoShifter.
 #### [eQTL Boxplot Demo](https://rajlabmssm.github.io/Fine_Mapping/eQTL_boxplots_demo.html)
 
 <br>

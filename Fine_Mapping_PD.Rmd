@@ -76,7 +76,7 @@ top_SNPs <- data.table::rbindlist(list(top_SNPs,
 gene_list <- unique(top_SNPs$Gene)
 
 finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
-                                               gene_list = unique(c("LRRK2", gene_list))[1:3], #
+                                               gene_list = unique(c("LRRK2", gene_list)), #
                                                trim_gene_limits = c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
@@ -121,7 +121,7 @@ merged_results <- merge_finemapping_results(minimum_support=1,
                                             haploreg_annotation=T,
                                             biomart_annotation=T, 
                                             verbose = F)
-createDT(subset(merged_results, Support == 2))
+createDT(subset(merged_results, Consensus_SNP == T))
 ```
 
 
