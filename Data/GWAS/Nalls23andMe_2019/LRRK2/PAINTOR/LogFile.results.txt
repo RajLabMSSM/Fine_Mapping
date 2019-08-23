@@ -1,2 +1,0 @@
-locus_name prior_variance ld_pcs
-LRRK2.Nalls23andMe_2019.Fairfax_2014 -19.387,-10.7065,-1.61477,-6.49774,-3.34739 22,22,22,22,22

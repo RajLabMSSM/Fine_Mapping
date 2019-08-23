@@ -10,7 +10,7 @@ getmode <- function(v) {
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
-construct_coloc_dataset <- function(subset_DT, 
+COLOC.construct_dataset <- function(subset_DT, 
                                     sample_size=NA, 
                                     proportion_cases=5e-324, # Doesn't allow actual 0, so use smallest number R allows
                                     MAF=NA,
@@ -64,9 +64,9 @@ COLOC <- function(gene,
   subset_DT1 <- subset(subset_DT1, SNP %in% common_SNPs) %>% group_by(SNP) %>% slice(1) %>% data.frame()
   subset_DT2 <- subset(subset_DT2, SNP %in% common_SNPs) %>% group_by(SNP) %>% slice(1) %>% data.frame()
 
-  dataset1 <- construct_coloc_dataset(subset_DT1,
+  dataset1 <- COLOC.construct_dataset(subset_DT1,
                                       type = dataset1_type)
-  dataset2 <- construct_coloc_dataset(subset_DT2, 
+  dataset2 <- COLOC.construct_dataset(subset_DT2, 
                                       proportion_cases = dataset2_proportion_cases,
                                       type = dataset2_type)
   if(shared_MAF==1){

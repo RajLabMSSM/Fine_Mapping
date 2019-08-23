@@ -32,7 +32,7 @@ editor_options:
 --- 
 
 
-```{r setup, message=F, warning=F, dpi = 600}
+```{r setup, message=F, warning=F, dpi = 600, class.output = "pre"}
 # knitr::opts_chunk$set(error = T) # Knit even with errors
 # devtools::install_local("echolocatoR/", force = T)
 # library("echolocatoR")
@@ -49,11 +49,13 @@ coloc_results <- list()
 
 ## Statistical Fine-mapping {.tabset .tabset-fade .tabset-pills} 
 
-Parkinson's Disease GWAS.
-```{r PD: Nalls23andMe_2019, results = 'asis', fig.height=10, fig.width=7, fig.show='hold'} 
+Parkinson's Disease GWAS.  
+
+```{r PD: Nalls23andMe_2019, results = 'asis', fig.height=10, fig.width=7}
+# fig.show='hold'
 dataset_name <- "Nalls23andMe_2019"
 top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
-  topSS_path = Directory_info(Data_dirs, dataset_name, "topSumStats"),
+  topSS_path = Directory_info(dataset_name, "topSumStats"),
   chrom_col = "CHR", position_col = "BP", snp_col="SNP",
   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
   caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats",
@@ -74,7 +76,7 @@ top_SNPs <- data.table::rbindlist(list(top_SNPs,
 gene_list <- unique(top_SNPs$Gene)
 
 finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
-                                               gene_list = unique(c("LRRK2", gene_list)), #
+                                               gene_list = unique(c("LRRK2", gene_list))[1:3], #
                                                trim_gene_limits = c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
@@ -103,7 +105,7 @@ finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
                  remove_correlates = c("rs34637584"),
                  conditioned_snps = "auto", # Use the lead SNP for each gene  
                  n_causal = 10, 
-                 plot_types = c("simple"), 
+                 plot_types = c("simple"), #"fancy" 
                  remove_tmps = F)
 ```
 
@@ -122,267 +124,6 @@ merged_results <- merge_finemapping_results(minimum_support=1,
 createDT(subset(merged_results, Support == 2))
 ```
 
-
-# PAINTOR
-
-## GWAS + Epigenetic Annotations
-
-```{r PAINTOR : GWAS + Epigenetic Annotations}
-PAINTOR_results <- PAINTOR(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
-                           GWAS_dataset_name="Nalls23andMe_2019",
-                           eQTL_dataset_name=NA,
-                           gene="LRRK2",
-                           n_causal=5,
-                           XGR_dataset=NA,
-                           Roadmap_chromatinMarks_search="monocytes",
-                           chromatin_state="TssA",
-                           no_annotations=F)
-createDT(PAINTOR_results)
-```
-
-## GWAS + Fairfax eQTLs + Epigenetic Annotations
-
-```{r PAINTOR : GWAS + Fairfax eQTLs + Epigenetic Annotations} 
-PAINTOR_results_FF <- PAINTOR(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
-                           GWAS_dataset_name="Nalls23andMe_2019",
-                           eQTL_dataset_name="Fairfax_2014",
-                           gene="LRRK2",
-                           n_causal=5,
-                           XGR_dataset=NA,
-                           Roadmap_chromatinMarks_search="monocytes",
-                           chromatin_state="TssA",
-                           no_annotations=F)
-createDT(PAINTOR_results_FF)
-```
-
-  
-
-## eQTL Boxplots: Fairfax
-
-```{r eQTL Boxplots: Fairfax}
-# snp_list <- subset(merged_results, Gene=="LRRK2")$SNP %>% unique()
-snp_list <- c("rs7294519", "rs11175620", "rs76904798")
-
-merged_eQTL_data <- eQTL_boxplots(snp_list,
-             eQTL_SS_paths = file.path("Data/eQTL/Fairfax_2014",
-                                       c("CD14/LRRK2/LRRK2_Fairfax_CD14.txt",
-                                         "IFN/LRRK2/LRRK2_Fairfax_IFN.txt",
-                                         "LPS2/LRRK2/LRRK2_Fairfax_LPS2.txt",
-                                         "LPS24/LRRK2/LRRK2_Fairfax_LPS24.txt")),
-             expression_paths = file.path("Data/eQTL/Fairfax_2014",
-                                          c("CD14/CD14.47231.414.b.txt",
-                                            "IFN/IFN.47231.367.b.txt",
-                                            "LPS2/LPS2.47231.261.b.txt",
-                                            "LPS24/LPS24.47231.322.b.txt")),
-             genotype_path = "Data/eQTL/Fairfax_2014/geno.subset.txt",
-             probe_path = "Data/eQTL/Fairfax_2014/gene.ILMN.map",
-             .fam_path = "Data/eQTL/Fairfax_2014/volunteers_421.fam",
-             gene = "LRRK2",
-             show_plot = T,
-             SS_annotations = F,
-             interact = F) 
-
-```
-
-
-
-## Colocalization: MESA {.tabset .tabset-fade .tabset-pills} 
-
-```{r Colocalization: Nalls23andMe_2019 + MESA, results = 'asis', fig.height=7, fig.width=10, eval=F}  
-subpops <- c("CAU","AFA","HIS")
-dataset2_pathList <- paste0("./Data/eQTL/MESA_",subpops,"/LRRK2_",subpops,"_MESA.txt")
-
-colocalize_geneList(gene_list = c("LRRK2"), 
-                    dataset1_path = "./Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt",
-                    dataset2_pathList = dataset2_pathList,
-                    dataset1_type = "cc",
-                    dataset2_type = "quant",
-                    shared_MAF = 1, 
-                    PP_threshold = .8, 
-                    save_results = T, 
-                    show_plot = T)
-
-colocalize_geneList <- function(gene_list, 
-                                dataset1_path, 
-                                dataset2_pathList, 
-                                dataset1_type="cc",
-                                dataset2_type = "quant",
-                                shared_MAF=1,
-                                PP_threshold=0.8,
-                                save_results=T,
-                                show_plot=T,
-                                chrom_col = "chr", 
-                                position_col = "pos_snps", 
-                                snp_col="snps",
-                                pval_col="pvalue", 
-                                effect_col="beta", 
-                                gene_col="gene_name",
-                                stderr_col = "calculate",  
-                                tstat_col = "statistic"){
-  for(g in gene_list){
-    cat('\n')
-    cat("###", g, "\n") 
-    for(d2 in dataset2_pathList){
-      comparison_name <- paste0(basename(dataset1_path),".vs.",basename(d2))  
-      subset_DT <- extract_SNP_subset(gene = gene, 
-                    top_SNPs = top_SNPs, 
-                    fullSS_path = fullSS_path,
-                    subset_path  =  subset_path,
-                    force_new_subset = force_new_subset,
-                    
-                    chrom_col = chrom_col, 
-                    position_col = position_col, 
-                    snp_col = snp_col,
-                    pval_col = pval_col, 
-                    effect_col = effect_col, 
-                    stderr_col = stderr_col,
-                    gene_col = gene_col, 
-                    tstat_col = tstat_col,
-                    MAF_col = MAF_col,
-                    freq_col = freq_col,
-                    A1_col = A1_col,
-                    A2_col = A2_col,
-                    
-                    bp_distance = bp_distance,
-                    superpopulation = superpopulation,  
-                    min_POS = min_POS, 
-                    max_POS = max_POS, 
-                    file_sep = file_sep, 
-                    query_by = query_by,
-                    probe_path = probe_path
-                    ) 
-      
-      coloc_DT <- COLOC(
-          gene = g,
-          dataset1_path = dataset1_path, 
-          dataset2_path = d2,
-          dataset1_type = dataset1_type,
-          dataset2_type = dataset2_type,
-          shared_MAF = shared_MAF,
-          PP_threshold = PP_threshold, 
-          save_results = save_results,
-          show_plot = show_plot, 
-          )
-      coloc_DT <- cbind(Comparison = comparison_name)
-      coloc_results[[dataset_name]]
-    } 
-  cat("\n")
-  } 
-  return(coloc_results %>% data.table::rbindlist())
-}
-
-
-```
-
-## Colocalization: Fairfax {.tabset .tabset-fade .tabset-pills} 
-
-### Summarize
-
-```{r Colocalization: Nalls23andMe_2019 + Fairfax} 
-gather_ff_data <- function(gene_snp_df){
-  gene_list <- unique(gene_snp_df$Gene)
-  # Loop through genes
-  ff_summary <- lapply(gene_list, function(gene, gene_snp_df.=gene_snp_df){
-    printer("+ Gathering Fairfax eQTLS for LRRK2")
-    bp <- subset(gene_snp_df., Gene==gene)$POS[1]
-    # Loop through eQTL conditions
-    dat <- lapply(c("CD14","IFN","LPS2","LPS24"), function(condition, bp.=bp, gene.=gene){
-      printer("+",condition)
-      ff <- data.table::fread(file.path("./Data/eQTL/Fairfax_2014",condition,gene.,
-                                        paste0(gene.,"_Fairfax_",condition,".txt")), sep="\t") %>% 
-        subset(POS==bp.) %>% 
-        data.table::as.data.table() %>% 
-        tibble::add_column(Condition=condition, .before =1) %>% 
-        dplyr::rename(PROBE_ID=gene)
-      return(ff)
-  }) %>% data.table::rbindlist() 
-    return(dat %>% tibble::add_column(Gene=gene, .before =1))
-}) %>% data.table::rbindlist() 
-  return(ff_summary)
-}
-
-gene_snp_df <- subset(merged_results, Gene=="LRRK2" & Support==2, 
-                      select = c("Gene","SNP","CHR","POS"))  %>% unique()
-createDT(gather_ff_data(gene_snp_df)) 
-```
-
-
-
-
-
-# Fine-mapping eQTLs
-
-- AFR = AFA = African  
-- AMR = Ad Mixed American  
-- EAS = East Asian  
-- EUR = CAU = European  
-- SAS = South Asian  
-- HIS = Hispanic
-
-## MESA {.tabset .tabset-fade .tabset-pills}
-
-```{r eQTL: MESA - AFA, results = 'asis', fig.height=8, fig.width=7, eval=F}
-gene_list <- c("LRRK2") 
-subpops <- c("CAU","AFA","HIS")  
-
-for(g in gene_list){
-  for(s in subpops){
-  dataset_name <- paste0("MESA_",s)
-  finemap_results[[dataset_name]] <- finemap_gene_list( 
-                                                top_SNPs = Nalls_top_SNPs, 
-                                                gene_list=c("LRRK2"),  
-                                                superpopulation = s, 
-                                                dataset_name = dataset_name, 
-                                                finemap_method = c("SUSIE"),#c("SUSIE","ABF","FINEMAP"),
-                                                force_new_LD = T,
-                                                force_new_finemap = T, 
-                                                force_new_subset = T, 
-                                                dataset_type = "eQTL",
-                                                query_by = "fullSS", 
-                                                file_sep = "\t",
-                   # fullSS_path = Directory_info(dataset_name, "fullSumStats"),
-                   fullSS_path = paste0("./Data/eQTL/MESA_",s,"/",g,"_MESA_",s,".txt"),
-                   subset_path = "auto",
-                   chrom_col = "chr", position_col = "pos_snps", snp_col="snps",
-                   pval_col="pvalue", effect_col="beta", gene_col="gene_name", 
-                   stderr_col = "calculate",  tstat_col = "statistic",
-                   n_causal = 5,   
-                   download_reference = T,
-                   remove_tmps = F) 
-  }  
-} 
- 
-```
-
-
-
-## Fairfax (2014) {.tabset .tabset-fade .tabset-pills}
-
-+ Use the Nalls et al. (2019) LRRK2 locus to query for SNPs in the eQTL data.  
-+ SS Files are SPACE-delimited (not tab-delimited)
-```{r Fairfax, results = 'asis', fig.height=8, fig.width=7, eval=F} 
-
-# +++++++++++++++ CD14 Stimulation +++++++++++++++ #
-dataset_name <- "Fairfax_2014_CD14"
-allResults[[dataset_name]] <- finemap_gene_list( gene_list=c("LRRK2"),  
-                                                superpopulation = "CAU",
-                                                dataset_name = dataset_name, 
-                                                dataset_type = "eQTL",
-                                                top_SNPs = Nalls_top_SNPs, 
-                                                query_by = "probes",
-                                                probe_path = "./Data/eQTL/gene.ILMN.map",
-                   file_sep = " ",                            
-                   # fullSS_path = Directory_info(Data_dirs, dataset_name, "fullSumStats"),
-                   fullSS_path = "./Data/eQTL/Fairfax_2014_CD14/LRRK2_Fairfax_CD14.txt",
-                   subset_path = "auto",
-                   chrom_col = "CHR", position_col = "POS", snp_col="SNP",
-                   pval_col="p-value", effect_col="beta", gene_col="gene", 
-                   stderr_col = "calculate",  tstat_col = "t-stat",
-                   vcf_folder = vcf_folder, n_causal = 1, 
-                   force_new_subset = force_new_subset,
-                   LD_block = T)
-
-```
 
 # Session Information
 
