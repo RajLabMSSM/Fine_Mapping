@@ -40,7 +40,8 @@ Currently implemented:
 ### [FINEMAP](http://www.christianbenner.com)  
 ### [ABF](https://cran.r-project.org/web/packages/coloc/vignettes/vignette.html)
 ### [GCTA-COJO](https://cnsgenomics.com/software/gcta/#COJO)
-### [PAINTOR](https://github.com/gkichaev/PAINTOR_V3.0) 
+### [PAINTOR](https://github.com/gkichaev/PAINTOR_V3.0)  
+### [fGWAS](https://github.com/joepickrell/fgwas)  
 ### [coloc](https://cran.r-project.org/web/packages/coloc/vignettes/vignette.html)   
 
 Planning to implement:  
