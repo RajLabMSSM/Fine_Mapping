@@ -21,4 +21,8 @@ Manuscripts/
 /echolocatoR/tools/Annotations/*.rds
 /echolocatoR/tools/Annotations/psychENCODE/DER-08a_hg19_eQTL.significant.txt
 /echolocatoR/tools/Annotations/psychENCODE/DER-10a_hg19_isoQTL.significant.txt
-echolocatoR/tools/Annotations/psychENCODE/*.txt.gz
+/echolocatoR/tools/Annotations/psychENCODE/*.txt.gz
+
+
+# Genome-wide analyses
+/Data/**/**/_genome_wide/fGWAS/Input/annotations.Nalls23andMe_2019.txt 
