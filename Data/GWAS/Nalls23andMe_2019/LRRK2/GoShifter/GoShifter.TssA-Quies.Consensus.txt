@@ -1,0 +1,5 @@
+EID	locus	overlap	score	Annotation	GROUP	ANATOMY	GR	Epigenome.Mnemonic	Standardized.Epigenome.name	Epigenome.name	TYPE	pval	mean.nSnpOverlap	allSnps	mean.enrichment	chromatin_state	GS.pval	true.overlap	Ennotation
+E124	rs7294619	1	0.847	E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	1.001	0.847152847152847	1	0.847152847152847	TssA	0.847	1	
+E029	rs7294619	1	0.95	E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	1.001	0.95004995004995	1	0.95004995004995	TssA	0.95	1	
+																		0	./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E124_Quies_subset.bed.gz
+																		0	./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E029_Quies_subset.bed.gz

@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-CD56-DS16376.hotspot.twopass.fdr0.05.merge_ln <-20 28 >48

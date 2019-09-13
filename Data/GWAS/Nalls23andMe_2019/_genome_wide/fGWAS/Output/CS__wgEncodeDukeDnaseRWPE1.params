@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-wgEncodeDukeDnaseRWPE1_ln <-81 -61 >20

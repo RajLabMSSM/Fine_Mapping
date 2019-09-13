@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-gm12878.combined.R_ln -1.52972 0.804688 3.05683

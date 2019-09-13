@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-wgEncodeDukeDnaseIshikawaTamoxifen_ln <-81 -61 4.28233

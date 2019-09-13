@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-fSkin_fibro_scalp-DS19449.hg19.hotspot.twopass.fdr0.05.merge_ln <-65 -45 2.70319

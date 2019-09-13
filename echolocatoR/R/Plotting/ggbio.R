@@ -2,6 +2,21 @@
 # ----- ggbio plots ------#
 # ----------------------- #
 
+### ALL LOCI
+ 
+ggbio.all_loci <- function(FM = merge_finemapping_results()){
+  # Convert to GRange object
+  DT <- FM %>% dplyr::mutate(SEQnames = paste0("chr",CHR)) 
+  gr.snp <- biovizBase::transformDfToGr(DT, seqnames = "SEQnames", start = "POS", end = "POS")
+  gr.snp_CHR <- biovizBase::transformDfToGr(FM, seqnames = "CHR", start = "POS", end = "POS")
+  
+  
+  snp.track <- SNP_track(gr.snp, r2 = NULL, labels_subset = c("Lead SNP", "Consensus SNP"))
+  snp.track 
+}
+
+
+### SINGLE LOCUS
 
 GR.name_filter_convert <- function(GR.final, GR.names, min_hits=1){
   names(GR.final) <- GR.names
@@ -14,12 +29,10 @@ GR.name_filter_convert <- function(GR.final, GR.names, min_hits=1){
 }
 
 
-
-
-
 SNP_track <- function(gr.snp, 
                       method = "original",
-                      labels_subset = c("Lead SNP", "Credible Set", "Consensus SNP") ){
+                      labels_subset = c("Lead SNP", "Credible Set", "Consensus SNP"), 
+                      r2=NULL){
   # Format data
   if(method!="original"){
     mcols(gr.snp)[,"PP"] <- mcols(gr.snp)[,paste0(method,".Probability")] 
@@ -54,10 +67,13 @@ SNP_track <- function(gr.snp,
   a1 <- a1 + 
     scale_color_gradient(low="blue", high="red", limits = c(0,1)) + 
     geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) + 
-    geom_hline(yintercept=cutoff, alpha=.5, linetype=2, size=.5, color="black") + 
-    stat_smooth(data=dat, aes(x=POS, y=r2*r2_multiply, fill=r2),
+    geom_hline(yintercept=cutoff, alpha=.5, linetype=2, size=.5, color="black")
+  if(is.null(r2)){
+    a1 <- a1 + stat_smooth(data=dat, aes(x=POS, y=r2*r2_multiply, fill=r2),
                 color="turquoise",  se = F, formula = y ~ x, 
-                method = 'loess', span=.1, size=.5, alpha=.5) +
+                method = 'loess', span=.1, size=.5, alpha=.5)
+  }
+  a1 <- a1 + 
     # Add diamond overtop leadSNP
     geom_point(data=leader_SNP, pch=18, fill=NA, size=4, color=leader_SNP$color) +
     # Green rings aronud Credible Set SNPs
@@ -151,10 +167,10 @@ ROADMAP_track <- function(results_path, gr.snp, limit_files=NA){
 
 ####### XGR track
 XGR_track <- function(gr.snp, 
-                      anno_data_path, 
+                      anno_data_path=file.path("echolocatoR/tools/Annotations", paste0("XGR_",lib.name,".rds")) , 
                       lib.name, 
-                      save_xgr=T){
-  anno_data_path <- file.path("echolocatoR/tools/Annotations", paste0("XGR_",lib.name,".rds")) 
+                      save_xgr=T){ 
+  library(GenomicRanges)
   if(file.exists(anno_data_path)){
     printer("")
     printer("+ Saved annotation file detected. Loading...")
@@ -190,7 +206,7 @@ save_annotations <- function(gr, anno_path, libName){
 
 
 
-############ PLOT ############
+############ PLOT ALL TRACKS TOGETHER ############
 
 ggbio_plot <- function(finemap_DT, 
                        LD_matrix,
@@ -209,7 +225,7 @@ ggbio_plot <- function(finemap_DT,
   # finemap_DT <- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt", sep="\t")
   # load("Data/GWAS/Nalls23andMe_2019/LRRK2/plink/LD_matrix.RData")
   ## To merge a GRangesList into a single GRanges object:
-  ## GR.merged <- unlist(grl)
+  # GR.merged <- unlist(grl)
   
   # Set up data 
   TRACKS_list <- NULL
@@ -238,8 +254,8 @@ ggbio_plot <- function(finemap_DT,
   }
   
   # Track 2: Genes
-  library(EnsDb.Hsapiens.v75) 
-  track.genes <- autoplot(EnsDb.Hsapiens.v75, which = gr.snp_CHR, names.expr = "gene_name")
+  # library(EnsDb.Hsapiens.v75) 
+  track.genes <- autoplot(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75, which = gr.snp_CHR, names.expr = "gene_name")
   TRACKS_list <- append(TRACKS_list, track.genes)
   names(TRACKS_list)[length(TRACKS_list)] <- "Gene Track"
   

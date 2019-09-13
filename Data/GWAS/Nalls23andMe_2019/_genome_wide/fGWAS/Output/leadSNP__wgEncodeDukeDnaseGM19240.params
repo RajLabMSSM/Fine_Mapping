@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-wgEncodeDukeDnaseGM19240_ln <-20 1 >20

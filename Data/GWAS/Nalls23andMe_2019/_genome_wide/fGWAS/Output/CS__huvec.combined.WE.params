@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-huvec.combined.WE_ln <-81 -61 >20

@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-wgEncodeUWDukeDnaseMCF7_ln <-20 -0.0957031 >20

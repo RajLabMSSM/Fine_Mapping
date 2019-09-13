@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-fKidney_renal_pelvis-DS20448.hg19.hotspot.twopass.fdr0.05.merge_ln -1.99838 2.08594 >20

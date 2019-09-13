@@ -52,7 +52,7 @@ library(ggrepel)
 library(curl) 
 library(gaston)
 library(tidyr)
-library(BiocManager)
+# library(BiocManager)
 library(biomaRt) # BiocManager::install("biomaRt") 
 
 # install_fGWAS <- function(){

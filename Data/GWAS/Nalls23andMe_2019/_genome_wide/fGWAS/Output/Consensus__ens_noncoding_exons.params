@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-ens_noncoding_exons_ln <-20 1 >20

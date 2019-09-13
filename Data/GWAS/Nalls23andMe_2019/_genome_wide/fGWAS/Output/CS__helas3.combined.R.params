@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-helas3.combined.R_ln <-20 -0.556641 2.31519

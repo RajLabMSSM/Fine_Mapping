@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-fSpinal_cord-DS18501.hg19.hotspot.twopass.fdr0.05.merge_ln <-20 0.755859 3.74636

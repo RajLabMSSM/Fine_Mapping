@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-Skin_Fibroblasts-DS18224.hg19.hotspot.twopass.fdr0.05.merge_ln <-20 -0.0761719 2.61033

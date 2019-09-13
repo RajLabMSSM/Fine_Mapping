@@ -3,6 +3,108 @@
 # %%%%%%%%%%%%%%%%% # 
 
 
+
+top_finemapped_loci <- function(dataset="./Data/GWAS/Nalls23andMe_2019",
+                                save_results=T){
+  FM_all <- merge_finemapping_results(minimum_support = 0) 
+  ALL.count <- FM_all %>%  
+    dplyr::group_by(Gene) %>% 
+    count(name = "Total.size") 
+  sigGWAS.count <- FM_all %>%  
+    subset(P<=0.05) %>%
+    dplyr::group_by(Gene) %>% 
+    count(name = "sig_GWAS.size")  
+  CS.count <- FM_all %>% 
+    subset(Support>0) %>% 
+    dplyr::group_by(Gene) %>% 
+    dplyr::summarise(CredSet.size=n(), CredSet=paste(SNP,collapse=", ")) 
+  FM_all <- data.frame(FM_all) %>% subset(Dataset==dataset)
+  prob.cols <- grep(".Probability", colnames(FM_all), value = T)
+  FM_all$PP.sum <- rowSums(FM_all[,prob.cols], na.rm = T)
+  FM_all$GWAS.Lead = ifelse(FM_all$leadSNP==T, "Y","N")
+  # FM_all <- subset(FM_all, !(Gene %in%c("ATG14","SP1","LMNB1","ATP6V0A1")) )
+  
+  # Find loci that have:
+  ## At least 1 Consensus SNP
+  ## High mean.PP.sum (summed across fine-mapped methods, and then averaged across Consensus SNPs)
+  ## The smallest number of Consensus SNPs
+  ## Large absolute Effect sizes from the GWAS 
+  
+  FM_all <- psychENCODE.QTL_overlap(FM_all, consensus_only=T)
+  FM_all$QTL.count <- rowSums(FM_all[,c("psychENCODE.isoQTL","psychENCODE.eQTL","psychENCODE.cQTL")]=="Y")
+  # Biomart Annotations
+  SNP.info <- biomart_snp_info(snp_list = unique(FM_all$SNP)) 
+  SNP.info.collapse <- SNP.info %>% 
+    dplyr::rename(SNP=refsnp_id) %>% 
+    dplyr::select(SNP, consequence_type_tv, reg_consequence_types) %>% 
+    dplyr::group_by(SNP) %>% 
+    dplyr::summarise(consequence_type_tv= paste0(unique(consequence_type_tv), collapse = "/"),
+                     reg_consequence_types= paste0(unique(reg_consequence_types), collapse = "/") ) %>% 
+    dplyr::mutate(consequence_type_tv=gsub(", ,|NA, ", "",consequence_type_tv),
+                  reg_consequence_types=gsub(", ,|NA, ", "",reg_consequence_types)) 
+  FM_biomart <- data.table:::merge.data.table(FM_all, 
+                                              SNP.info.collapse, 
+                                              by = "SNP")
+  
+  top_loci <- FM_biomart %>% 
+    subset(Consensus_SNP==T) %>%
+    dplyr::group_by(Gene) %>% 
+    dplyr::summarise(SUSIE.PPs = paste(round(SUSIE.Probability,3), collapse=", "),
+                     FINEMAP.PPs = paste(round(FINEMAP.Probability,3), collapse=", "),
+                     PP.mean.sum = round(mean(PP.sum, na.rm=T),3), 
+                     Effect.mean=mean(abs(Effect)),
+                     GWAS.Lead = paste(GWAS.Lead,collapse=", "),
+                     psychENCODE.isoQTL = paste(psychENCODE.isoQTL, collapse=", "),
+                     psychENCODE.eQTL = paste(psychENCODE.eQTL, collapse=", "),
+                     psychENCODE.cQTL = paste(psychENCODE.cQTL, collapse=", "),
+                     QTL.mean.count = round( mean(QTL.count), 3),
+                     seq.ontology = paste(consequence_type_tv, collapse=", "),
+                     Consensus.size=n(),   
+                     Consensus.SNPs = paste(SNP,collapse=", ")) 
+  
+  # Add size info
+  # Credible Set size
+  top_loci <- data.table:::merge.data.table(data.table::data.table(top_loci), 
+                                            data.table::data.table(CS.count), 
+                                            by="Gene")
+  # Sig GWAS size
+  top_loci <- data.table:::merge.data.table(data.table::data.table(top_loci), 
+                                            data.table::data.table(sigGWAS.count), 
+                                            by="Gene")
+  # Total size
+  top_loci <- data.table:::merge.data.table(data.table::data.table(top_loci), 
+                                            data.table::data.table(ALL.count), 
+                                            by="Gene")
+  
+  # Check whether the locus is novel according to the most recent Nalls et al (2019) PD GWAS
+  ## `Known GWAS locus within 1MB` (locus-level)***
+  ## `Locus within 250KB` (SNP-level?)
+  Nalls <- readxl::read_excel("./Data/GWAS/Nalls23andMe_2019/Nalls2019_TableS2.xlsx")
+  Nalls.novel <- (Nalls %>% dplyr::mutate(Novel.Locus=ifelse(`Known GWAS locus within 1MB`==1,"N","Y")))[c("Nearest Gene","Novel.Locus") ]%>% dplyr::rename(Gene=`Nearest Gene`) %>% unique()
+  # Nalls.novel <-Nalls.novel %>% 
+  #   group_by(Gene) %>% 
+  #   summarise_each(funs(paste(., collapse = ", ")))
+  top_loci <- data.table:::merge.data.table(data.table::data.table(top_loci), 
+                                            data.table::data.table(Nalls.novel), 
+                                            by="Gene")
+  
+  # Sort to get "best" loci
+  top_loci <- top_loci %>%  
+    arrange(desc(Novel.Locus), 
+            desc(PP.mean.sum), 
+            desc(QTL.mean.count), 
+            CredSet.size,
+            Consensus.size) # desc(Effect.mean)
+  if(save_results){
+    data.table::fwrite(top_loci, file.path(dataset,"_genome_wide/top_loci.csv"))
+  }
+  
+  return(top_loci) 
+}
+
+
+
+
 multi_finemap_results_table <- function(multi_finemap_DT, 
                                         finemap_method_list, 
                                         fancy_table=F, 
@@ -64,6 +166,7 @@ merge_finemapping_results <- function(minimum_support=1,
                                       xlsx_path="./Data/annotated_finemapping_results.xlsx",
                                       from_storage=T,
                                       haploreg_annotation=F,
+                                      regulomeDB_annotation=F,
                                       biomart_annotation=F,
                                       verbose=T){
   if(from_storage){
@@ -108,8 +211,16 @@ merge_finemapping_results <- function(minimum_support=1,
   
   # Annotate with haplorR
   if(haploreg_annotation){
-    HR_query <- haploReg(snp_list = unique(merged_results$SNP), verbose = verbose)
+    HR_query <- haploR.HaploReg(snp_list = unique(merged_results$SNP), verbose = verbose)
     merged_results <- data.table:::merge.data.table(merged_results, HR_query, 
+                                                    by.x = "SNP", 
+                                                    by.y = "rsID", 
+                                                    all = T,
+                                                    allow.cartesian=TRUE)
+  }
+  if(regulomeDB_annotation){
+    regDB_query <- haploR.regulomeDB(snp_list = unique(merged_results$SNP), verbose = verbose)
+    merged_results <- data.table:::merge.data.table(merged_results, regDB_query, 
                                                     by.x = "SNP", 
                                                     by.y = "rsID", 
                                                     all = T,
@@ -202,7 +313,7 @@ counts_summary <- function(top_SNPs, merged_results, verbose=T){
 
 # HaploR
 # https://cran.r-project.org/web/packages/haploR/vignettes/haplor-vignette.html
-haploReg <- function(snp_list, verbose=T, chunk_size=NA){
+haploR.HaploReg <- function(snp_list, verbose=T, chunk_size=NA){
   printer("+ Gathering annotation data from HaploReg...", v=verbose)
   # Break into smaller chunks
   snp_list <- unique(snp_list)
@@ -221,6 +332,25 @@ haploReg <- function(snp_list, verbose=T, chunk_size=NA){
   }) %>% data.table::rbindlist()
   
   return(HR_query)
+}
+
+haploR.regulomeDB <- function(snp_list, verbose=T, chunk_size=NA){
+  printer("+ Gathering annotation data from HaploReg...", v=verbose)
+  # Break into smaller chunks
+  snp_list <- unique(snp_list)
+  if(is.na(chunk_size)){chunk_size <- length(snp_list)}
+  chunked_list <- split(snp_list, ceiling(seq_along(snp_list)/chunk_size)) 
+  
+  rDB_query <- lapply(names(chunked_list), function(i){ 
+    printer("++ Submitting chunk",i,"/",length(chunked_list)) 
+    chunk <- chunked_list[[i]]
+    rdb_query <-  haploR::queryRegulome(query = chunk, 
+                                       timeout = 500, 
+                                       verbose = F)  
+    return(data.table::as.data.table(rdb_query))
+  }) %>% data.table::rbindlist()
+  
+  return(rDB_query)
 }
 
 
@@ -346,11 +476,11 @@ epigenetics_enrichment <- function(snp_list1,
   printer("Conducting SNP epigenomic annotation enrichment tests...")
   # Foreground
   printer("+++ SNP list 1 :")
-  HR1 <- haploReg(snp_list1)
+  HR1 <- haploR.HaploReg(snp_list1)
   summ1 <- epigenetics_summary(HR1, tissue_list = tissue_list)
   # Background
   printer("+++ SNP list 2 :")
-  HR2 <- haploReg(snp_list2)
+  HR2 <- haploR.HaploReg(snp_list2)
   summ2 <- epigenetics_summary(HR2, tissue_list = tissue_list)
   
   for(epi_var in epigenetic_variables){

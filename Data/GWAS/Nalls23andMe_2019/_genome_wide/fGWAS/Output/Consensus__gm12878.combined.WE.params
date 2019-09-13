@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-gm12878.combined.WE_ln <-20 34 >54

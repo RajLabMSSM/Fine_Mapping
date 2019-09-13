@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-fMuscle_arm-DS19295.hg19.hotspot.twopass.fdr0.05.merge_ln -3.0757 1.42578 >20

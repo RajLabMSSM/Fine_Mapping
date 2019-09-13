@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-gm12878.combined.R_ln <-65 -45 >20

@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-hTH1-DS7840.hotspot.twopass.fdr0.05.merge_ln <-20 1.49023 >20

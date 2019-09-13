@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-hepg2.combined.E_ln <-65 -45 3.51868

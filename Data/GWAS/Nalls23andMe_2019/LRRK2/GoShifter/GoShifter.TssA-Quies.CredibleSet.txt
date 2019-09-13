@@ -1,0 +1,25 @@
+EID	locus	overlap	score	Annotation	GROUP	ANATOMY	GR	Epigenome.Mnemonic	Standardized.Epigenome.name	Epigenome.name	TYPE	pval	mean.nSnpOverlap	allSnps	mean.enrichment	chromatin_state	GS.pval	true.overlap	Ennotation
+E124	rs12422278			E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E124	rs117891010			E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E124	rs76904798			E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E124	rs17466626			E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E124	rs11564266			E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E124	rs76664306			E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E124	rs144202154			E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E124	rs11175620	1	0.847	E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E124	rs17443656	1	0.705	E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E124	rs7294619	1	0.85	E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E124	rs1388597	1	0.642	E124_TssA_subset.bed.gz	ENCODE2012	BLOOD	ENCODE2012	BLD.CD14.MONO	Monocytes-CD14+ RO01746 Primary Cells	Monocytes-CD14+_RO01746	PrimaryCell	0.001	3.75624375624376	11	0.34148011988012	TssA	0.639	2	
+E029	rs12422278			E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+E029	rs117891010			E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+E029	rs76904798			E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+E029	rs17466626			E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+E029	rs11564266			E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+E029	rs76664306	1	0.844	E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+E029	rs144202154			E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+E029	rs11175620	1	0.931	E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+E029	rs17443656	1	0.773	E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+E029	rs7294619	1	0.941	E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+E029	rs1388597	1	0.703	E029_TssA_subset.bed.gz	HSC & B-cell	BLOOD	HSC_and_Bcell	BLD.CD14.PC	Primary monocytes from peripheral blood	CD14_Primary_Cells	PrimaryCell	0	4.21478521478521	11	0.383166043956044	TssA	0.41	2	
+																		0	./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E124_Quies_subset.bed.gz
+																		0	./echolocatoR/tools/Annotations/ROADMAP/Chromatin_Marks/E029_Quies_subset.bed.gz

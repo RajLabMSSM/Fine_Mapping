@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-gm12878.combined.T_ln -4.02541 -1.35547 0.869878

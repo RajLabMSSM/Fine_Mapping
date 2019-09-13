@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-huvec.combined.R_ln <-20 -2.14453 >20

@@ -18,7 +18,7 @@ Data_dirs_to_table <- function(Data_dirs, writeCSV=F){
 
 
 list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
-  root <- "~/../../../sc/orga/projects"
+  root <- "/sc/orga/projects"
   Data_dirs = list(
     # ++++++++ GWAS SUMMARY STATS ++++++++ # 
     # Nall et al. (2019) w/ 23andMe
@@ -68,7 +68,30 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
     "MESA_HIS" = list(type="eQTL",
                       topSS="Data/eQTL/MESA/HIS/HIS_eQTL_PTK2B.txt",
                       fullSS=file.path(root,"ad-omics/data/mesa/HIS_cis_eqtl_summary_statistics.txt"),
-                      reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa") 
+                      reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
+    
+    ## Fairfax eQTLs: CD14
+    "Fairfax_2014_CD14" = list(type="eQTL",
+                      topSS=NA,
+                      fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.CD14.47231.414.b.qced.f.txt"),
+                      reference="https://science.sciencemag.org/content/343/6175/1246949"), 
+    ## Fairfax eQTLs: IFN
+    "Fairfax_2014_IFN" = list(type="eQTL",
+                               topSS=NA,
+                               fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.IFN.47231.367.b.qced.f.txt"),
+                               reference="https://science.sciencemag.org/content/343/6175/1246949"),
+     
+  ## Fairfax eQTLs: IFN
+  "Fairfax_2014_LPS2" = list(type="eQTL",
+                            topSS=NA,
+                            fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS2.47231.261.b.qced.f.txt"),
+                            reference="https://science.sciencemag.org/content/343/6175/1246949"), 
+  ## Fairfax eQTLs: IFN
+  "Fairfax_2014_LPS24" = list(type="eQTL",
+                             topSS=NA,
+                             fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS24.47231.322.b.qced.f.txt"),
+                             reference="https://science.sciencemag.org/content/343/6175/1246949")    
+          
   ) 
   Data_dirs_table <- Data_dirs_to_table(Data_dirs, writeCSV)
   return(Data_dirs_table)

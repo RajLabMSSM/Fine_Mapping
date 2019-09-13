@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-helas3.combined.T_ln <-20 1 >20

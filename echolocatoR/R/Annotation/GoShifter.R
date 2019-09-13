@@ -215,7 +215,7 @@ GoShifter.check_overlap <- function(output_bed,
     row <- snpmap[i,]
     bed.sub <- subset(bed.file, (Chrom==row$Chrom) & (Start<=row$BP & End>=row$BP))
     return(bed.sub)
-  }) %>% rbindlist()  
+  }) %>% data.table::rbindlist(fill=T)  
   return(bed.overlap)
 }
 
@@ -285,7 +285,7 @@ GoShifter.run <- function(RoadMap_ref,
                                            true.overlap=0)
       }
     return(GS.stats)
-  }) %>% data.table::rbindlist() 
+  }) %>% data.table::rbindlist(fill=T) 
   printer(".")
   printer(".")
   printer(".")
@@ -343,9 +343,7 @@ GoShifter <- function(results_path,
                 "docopt.pyc",
                 "functions.pyc")) ) )
   # Term key for chromatin states
-  chromState_key <- data.table::fread(file.path(goshifter_path,
-                                                  "annotation_files",
-                                                  "ROADMAP_chromatinState_HMM.tsv"))
+  chromState_key <- data.table::fread(file.path("./echolocatoR/tools/Annotations/ROADMAP/ROADMAP_chromatinState_HMM.tsv"))
 
   # Create GoShifter folder
   # results_path="Data/GWAS/Nalls23andMe_2019/LRRK2"
@@ -386,7 +384,7 @@ GoShifter <- function(results_path,
         message("GoShifter results data.frame: ",nrow(GS_results), " rows x ", ncol(GS_results)," cols" )
       })  
       return(GS_results)
-    }) %>% data.table::rbindlist() 
+    }) %>% data.table::rbindlist(fill=T) 
   }
   
   if(save_results){ 

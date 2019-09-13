@@ -31,7 +31,7 @@ editor_options:
   chunk_output_type: inline
 --- 
 
-```{r setup, message=F, warning=F, dpi = 600, cache=F, class.output = "pre"}
+```{r setup, message=F, warning=F, dpi = 600, class.output = "pre"}
 source("echolocatoR/R/MAIN.R")
 library(dplyr)  
 library(plotly)
@@ -94,6 +94,9 @@ psychENCODE.overlap_plots(percent_df)
 
 # fGWAS
 
+- **NOTE**: There are several tools called fGWAS/FGWAS. I am using the command line tool by Joe Pickrell found [here](https://github.com/joepickrell/fgwas). Reference:  
+ + [Pickrell, Joseph K. “Joint Analysis of Functional Genomic Data and Genome-Wide Association Studies of 18 Human Traits.” American Journal of Human Genetics 94, no. 4 (2014): 559–73. https://doi.org/10.1016/j.ajhg.2014.03.004.](https://www.sciencedirect.com/science/article/pii/S0002929714001062)  
+ 
 - fGWAS is designed to take all signficant SNPs from a GWAS and test for enrichment of various functional (e.g. DNAase hit, chromatin peak), genic (e.g. synonymous, noncoding) and/or distance (e.g.) annotations.  
 - Here we use fGWAS to test for enrichment amongst three different groups of SNPs:  
   1. **lead SNPs**: The top SNP (sorted by GWAS FDR) from each locus in the original GWAS.  
@@ -104,33 +107,68 @@ psychENCODE.overlap_plots(percent_df)
 
 ## Run fGWAS
 
-```{r Run fGWAS} 
-results.DF <- fgwas(results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide",
-                    fgwas.out = file.path(results_path,"fGWAS","Output"),
-                    fgwas = "./echolocatoR/tools/fgwas-0.3.6/src/fgwas",
+- Here we use two different control SNP.Groups:  
+  1. **Selected**: In this case, our selected SNPs are the lead SNPs from the Kunkle et al. (2019).  
+  2. **Random**: A random set of SNPs equal to the number of Consensus SNPs.  
+  
+**Notes on Flags**:
+- **-onlyp**: fGWAS often returns ``WARNING: failed to converge``. The author explains why [here](https://github.com/joepickrell/fgwas/issues/4):  
+  + *If there are only a small number of GWAS hits in an annotation, fgwas sometimes fails to converge, as it "tries" to estimate the MLE of the enrichment parameter as -Inf. A simple fix is to only use the penalized likelihood (-onlyp -print).*  
+- **-cc**: For any case-control study, the ``-cc`` flag is supposed to be used. This seems to slow down the analysis a lot but yields almost identicaly results.
+- **-fine**: Conducts fine-mapping by assigned each locus a ``SEGNUMBER``.  
+- **-print**: Produces several extra output files, including SNP-level posterior probabilities.  
+
+```{r Run fGWAS, class.output = "pre"} 
+# Selected SNPS
+AD_loci <- readxl::read_excel("./Data/GWAS/Kunkle_2019/Kunkle2019_supplementary_tables.xlsx",
+                                    sheet = "Supplementary Table 8")
+Kunkle_SNPs <- unique(AD_loci$`Top Associated SNV`)
+
+# Run fGWAS
+results.DF <- fGWAS(results_path = "./Data/GWAS/Nalls23andMe_2019/_genome_wide", 
                     dataset = "./Data/GWAS/Nalls23andMe_2019",
+                    SNP.Groups = c("Consensus", "CredibleSet", "GWAS", "Selected", "Random"), 
+                    selected_SNPs = Kunkle_SNPs,
                     remove_tmps = T,
-                    force_new_fgwas = F)
+                    force_new_fgwas = F, 
+                    force_new_annot = F)
+# results.DF.random <- fGWAS(results_path = "./Data/GWAS/Nalls23andMe_2019/_genome_wide", 
+#                     dataset = "./Data/GWAS/Nalls23andMe_2019",
+#                     SNP.Groups = c("Random"),
+#                     remove_tmps = T,
+#                     force_new_fgwas = T, 
+#                     force_new_annot = F,
+#                     random.iterations = 100)
 createDT(results.DF)
 ```
 
 ## Plot fGWAS
+
+### Boxplots
 
 - Each of the enrichment test results (451 annotations x 3 SNP Groups) were grouped according to their *estimate* (i.e. their enrichment score). No tests yielded and estimate of 0:  
   + **Enriched**: ``estimate > 0``
   + **Depleted**: ``estimate < 0`` 
 - When ``interact=T``, hover to explore more information about each data point, including the annotation that the enirchment test was conducted with.  
 
-```{r fGWAS - Boxplot, results="asis"}
-bp <- fgwas.boxplot(results.DF, interact=T) 
-print(bp)
+```{r fGWAS - Boxplot}
+bp <- fGWAS.boxplot(results.DF, interact=T, show_plot = F) 
+htmltools::tagList(list(bp)) 
 ```
+
+### CI Plot  
+
+```{r fGWAS - Line Plots, fig.height=14, fig.width=10}
+cip <- fGWAS.line_plot(results.DF) 
+```
+
+### Heatmaps
 
 - Estimates are averaged by tissue here. 
 - You can also view each annotation as a separate row by selecting ``annotation_or_tissue = "annotation``.  
   + In this view, additional metadata variables can be explored on the right side columns.
 
-```{r fGWAS - Heatmaps, fig.height=11, fig.width=5, results="asis"}
+```{r fGWAS - Heatmaps, fig.height=11, fig.width=5}
 # By Tissue
 hm <- fgwas.heatmap(results.DF, annotation_or_tissue = "tissue")
 print(hm)
@@ -141,6 +179,12 @@ print(hm)
 
 
  
+
+
+
+
+
+
 
 # GoShifter
 
@@ -169,11 +213,16 @@ createDT(chrom.states.df)
 # Prepare Data
 results_path <- "./Data/GWAS/Nalls23andMe_2019/LRRK2"
 finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt")) 
+
 # Create different subsets of SNPs to test for enrichment
+snp_df.Consensus <- subset(finemap_DT, Consensus_SNP==T) 
 snp_df.CS <- subset(finemap_DT, Support>0) 
 snp_df.GWAS <- (finemap_DT %>% dplyr::arrange(P, desc(Effect)))[1:nrow(snp_df.CS),]
 snp_df.Random <- finemap_DT[sample(nrow(finemap_DT), nrow(snp_df.CS)), ]
-snp.df.list <- list("CS"=snp_df.CS, "GWAS"=snp_df.GWAS, "Random"=snp_df.Random)
+# Add dfs to list
+snp.df.list <- list("Consensus"=snp_df.Consensus,
+                    "CredibleSet"=snp_df.CS, 
+                    "GWAS"=snp_df.GWAS)#,  "Random"=snp_df.Random)
 ```
 
   
@@ -184,17 +233,17 @@ GS.groups <- lapply(names(snp.df.list), function(group){
   GS.RESULTS <- GoShifter(results_path = results_path,
                            snp_df = snp.df.list[[group]],
                            SNP.Group = group,
-                           ROADMAP_search = c("monocyte","brain"), 
+                           ROADMAP_search = "monocyte",#c("monocyte","brain"), 
                            ROADMAP_type = c("PrimaryCell","PrimaryTissue"),
                            chromatin_states = c("TssA","Quies"),#NA,
                            R2_filter = 0.8, # Include LD SNPs at rsquared >= NUM [default: 0.8]
                            overlap_threshold = 1, 
                            remove_tmps = F, 
-                           force_new_goshifter = F)
+                           force_new_goshifter = F) # Pull from exisiting files
   GS.RESULTS$SNP.Group <- group
   return(GS.RESULTS)
-}) %>% data.table::rbindlist()
-createDT(head(GS.groups))
+}) %>% data.table::rbindlist(fill=T) 
+createDT(GS.groups)
 ```
 
 ```{r GoShifter - Histograms}
@@ -205,6 +254,6 @@ hst <- GoShifter.histograms_SNPgroups(GS.groups)
 
 ```{r GoShifter - Heatmap, results="asis"}
 hm <- GoShifter.heatmap(GS.groups)
-print(hm)
+htmltools::tagList(list(hm))
 ```
 

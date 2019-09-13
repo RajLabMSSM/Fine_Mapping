@@ -1,2 +1,0 @@
-parameter CI_lo estimate CI_hi
-fHeart-DS16018.hotspot.twopass.fdr0.05.merge_ln -1.28067 1.89844 >20
