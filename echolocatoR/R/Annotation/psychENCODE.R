@@ -31,7 +31,7 @@ psychENCODE.download_summary_stats <- function(
       printer("              ",basename(URL))
       dat <- data.table::fread(URL)
       data.table::fwrite(dat,  output.path)
-      gzip(output.path)
+      R.utils::gzip(output.path)
     }
   }
 }
@@ -285,8 +285,10 @@ ENSG_to_HGNC <- function(QTL, reference_genome="grch37"){
  
 
 psychENCODE.QTL_overlap <- function(FM_all=merge_finemapping_results(minimum_support = 0),
-                                    consensus_only=T){
-  root <- "./echolocatoR/tools/Annotations/psychENCODE"
+                                    consensus_only=T,
+                                    local_files=T){
+  root <- ifelse(local_files, "./echolocatoR/tools/Annotations/psychENCODE",
+    "/sc/orga/projects/ad-omics/data/psychENCODE")
   ASSAY_files <- file.path(root,
                            c("DER-08a_hg19_eQTL.significant.txt.gz",
                              "DER-09_hg19_cQTL.significant.txt.gz",
