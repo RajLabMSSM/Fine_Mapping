@@ -168,7 +168,9 @@ merge_finemapping_results <- function(minimum_support=1,
                                       haploreg_annotation=F,
                                       regulomeDB_annotation=F,
                                       biomart_annotation=F,
-                                      verbose=T){
+                                      verbose=T,
+                                      dataset="./Data/GWAS/Nalls23andMe_2019"#NA
+                                      ){
   if(from_storage){
     printer("+ Gathering all fine-mapping results from storage...", v=verbose)
     # Find all multi-finemap_results files
@@ -183,7 +185,8 @@ merge_finemapping_results <- function(minimum_support=1,
         gene <- basename(gd)
         dirname(gd) 
         printer("+ Importing results...",gene, v=verbose)
-        multi_data <- data.table::fread(file.path(gd,"Multi-finemap/Multi-finemap_results.txt"), sep="\t")
+        multi_data <- data.table::fread(file.path(gd,"Multi-finemap/Multi-finemap_results.txt"), 
+                                        nThread = 4)
         multi_data <- cbind(data.table::data.table(Dataset=dn, Gene=gene), multi_data)
         return(multi_data)
       }) %>% data.table::rbindlist(fill=TRUE) # Bind genes
@@ -240,6 +243,9 @@ merge_finemapping_results <- function(minimum_support=1,
     openxlsx::write.xlsx(merged_results, xlsx_path)
   } 
   # createDT_html(merged_results) %>% print()
+  if(!is.na(dataset)){
+    merged_results <- subset(merged_results, Dataset==dataset)
+  }
   return(merged_results)
 }
 
