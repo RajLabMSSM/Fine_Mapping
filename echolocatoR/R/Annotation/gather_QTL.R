@@ -9,17 +9,67 @@
 # - 
 
 
-# Gather all Fine-mapping results
-FM_all <- merge_finemapping_results(minimum_support = 0, 
-                                    include_leadSNPs = T, 
-                                    dataset = "./Data/GWAS/Nalls23andMe_2019")
 
+psychENCODE.QTL_overlap <- function(FM_all=merge_finemapping_results(minimum_support = 0),
+                                    consensus_only=T,
+                                    local_files=T,
+                                    force_new_subset=F){
+  root <- ifelse(local_files, 
+                 "./Data/QTL/psychENCODE/",
+                 "/sc/orga/projects/ad-omics/data/psychENCODE")
+  ASSAY_files <- file.path(root,
+                           c("DER-08a_hg19_eQTL.significant.txt.gz",
+                             "DER-09_hg19_cQTL.significant.txt.gz",
+                             "DER-10a_hg19_isoQTL.significant.txt.gz",
+                             "INT-16_HiC_EP_linkages_cross_assembly.csv.gz"))
+  ASSAY_files = setNames(ASSAY_files, nm = c("eQTL","cQTL","isoQTL","HiC"))
+  
+  if(consensus_only){
+    FM_all <- subset(FM_all, Consensus_SNP==T)
+  }
+  # Add SNP_id column
+  FM_all <- FM_all %>% 
+    dplyr::mutate(SNP_id=paste0(CHR,":",POS)) %>% 
+    data.table::data.table()
+  
+  for(assay in  c("eQTL","cQTL","isoQTL")){
+    printer("psychENCODE:: Checking for overlap with",assay)
+    output_path <- file.path(dirname(ASSAY_files[[assay]]),paste0("psychENCODE.",assay,".finemap.txt"))
+    
+    if(file.exists(output_path) & force_new_subset==F){
+      printer("psychENCODE:: Importing pre-existing file.")
+      QTL.sub <- data.table::fread(output_path)
+    } else {
+      QTL <- data.table::fread(ASSAY_files[[assay]], nThread = 4)
+      # Subset QTL data
+      QTL.sub <- subset(QTL, SNP_id %in% FM_all$SNP_id)
+      # QTLs have can multiple probes per SNP location. 
+      ## Pick only the best one (lowest FDR and highest Effect) keep each row as a unique genomic position:
+      QTL.sub <- subset(QTL.sub, select=c("SNP_id","regression_slope","FDR")) %>% 
+        dplyr::group_by(SNP_id) %>%
+        arrange(FDR, desc(regression_slope)) %>% 
+        dplyr::slice(1) %>% 
+        data.table::data.table()
+      # Select and rename columns
+      QTL.sub <-  QTL.sub %>%  
+        `colnames<-`(c("SNP_id",
+                       paste0("psychENCODE.",assay,".Effect"),
+                       paste0("psychENCODE.",assay,".FDR"))) %>% unique() %>% 
+        data.table::data.table()
+      github_output <- file.path("./Data/QTL/psychENCODE",assay,paste0("psychENCODE.",assay,".finemap.txt"))
+      dir.create(dirname(github_output), showWarnings = F, recursive = T)
+      data.table::fwrite(QTL.sub, github_output, sep="\t", nThread = 4)
+    }
+    
+    FM_all <- data.table:::merge.data.table(FM_all,
+                                            QTL.sub,
+                                            by = "SNP_id",
+                                            all.x = T, allow.cartesian = T)
+    # dat.merge[paste0("psychENCODE.",assay)] <- ifelse(subset(dat.merge, select=paste0("psychENCODE.",assay,".FDR")) <= 0.05, "Y","N")
+  }
+  return(FM_all)
+}
 
-# psychENCODE: "eQTL","cQTL","isoQTL"
-FM_all <- psychENCODE.QTL_overlap(FM_all=FM_all, 
-                                  consensus_only=F, 
-                                  local_files = F, 
-                                  force_new_subset = T)
 
 
 # Fairfax: eQTL
@@ -30,7 +80,7 @@ Fairfax.QTL_overlap <- function(FM_all, conditions=c("CD14","IFN","LPS2","LPS24"
     printer("+ Processing:",dataset)
     data_dirs <-list_Data_dirs(writeCSV = F)
     file_path <- subset(data_dirs, Dataset==dataset)$fullSumStats
-    output_path <- file.path("./Data/eQTL/Fairfax_2014",condition,paste0(dataset,".finemap.txt"))
+    output_path <- file.path("./Data/QTL/Fairfax_2014",condition,paste0(dataset,".finemap.txt"))
     dir.create(dirname(output_path),showWarnings = F, recursive = T)
     if(!file.exists(output_path)){
       system(paste0("grep -E '", paste(unique(FM_all$SNP_id), collapse="|"),"' " ,file_path," > ",output_path))
@@ -40,7 +90,7 @@ Fairfax.QTL_overlap <- function(FM_all, conditions=c("CD14","IFN","LPS2","LPS24"
                              col.names = colnames(data.table::fread(file_path, nrow=0)), 
                              nThread = 4)#file_path
     ## Fix the header
-    data.table::fwrite(dat, output_path)
+    data.table::fwrite(dat, output_path,sep = "\t", nThread = 4)
     dat <- subset(dat, SNP %in% FM_all$SNP_id)
     # Take only the top QTL per SNP location
     ## Rename columns
@@ -57,5 +107,21 @@ Fairfax.QTL_overlap <- function(FM_all, conditions=c("CD14","IFN","LPS2","LPS24"
  return(FM_all) 
 }
 
-FM_all <- Fairfax.QTL_overlap(FM_all)
+
+
+####----------- Gather QTL Overlap -----------####
+
+# Gather all Fine-mapping results
+FM_all <- merge_finemapping_results(minimum_support = 0, 
+                                    include_leadSNPs = T, 
+                                    dataset = "./Data/GWAS/Nalls23andMe_2019")
+# psychENCODE: "eQTL","cQTL","isoQTL"
+FM_all <- psychENCODE.QTL_overlap(FM_all=FM_all, 
+                                  consensus_only=F, 
+                                  local_files = T, 
+                                  force_new_subset = T)
+# Fairfax eQTL
+FM_all <- Fairfax.QTL_overlap(FM_all, )
+
+
 
