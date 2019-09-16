@@ -2,20 +2,29 @@
 
 
 ################## QTL Data ################## 
-# - psychENCODE
-# - Fairfax
-# - MESA
-# - Cardiogenics
-# - 
+# V- psychENCODE 
+# V- Fairfax
+#  - MESA
+#  - Cardiogenics
+#  - ImmVar
+#  - STARNET
+#  - GTEx
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> d832a3f42935b381dafc8800aa6af42762b78e31
 psychENCODE.QTL_overlap <- function(FM_all=merge_finemapping_results(minimum_support = 0),
                                     consensus_only=T,
                                     local_files=T,
                                     force_new_subset=F){
+<<<<<<< HEAD
   root <- ifelse(local_files, 
                  "./Data/QTL/psychENCODE/",
+=======
+  root <- ifelse(local_files, "./echolocatoR/tools/Annotations/psychENCODE",
+>>>>>>> d832a3f42935b381dafc8800aa6af42762b78e31
                  "/sc/orga/projects/ad-omics/data/psychENCODE")
   ASSAY_files <- file.path(root,
                            c("DER-08a_hg19_eQTL.significant.txt.gz",
@@ -56,9 +65,15 @@ psychENCODE.QTL_overlap <- function(FM_all=merge_finemapping_results(minimum_sup
                        paste0("psychENCODE.",assay,".Effect"),
                        paste0("psychENCODE.",assay,".FDR"))) %>% unique() %>% 
         data.table::data.table()
+<<<<<<< HEAD
       github_output <- file.path("./Data/QTL/psychENCODE",assay,paste0("psychENCODE.",assay,".finemap.txt"))
       dir.create(dirname(github_output), showWarnings = F, recursive = T)
       data.table::fwrite(QTL.sub, github_output, sep="\t", nThread = 4)
+=======
+      github_output <- file.path("./Data/eQTL/psychENCODE",assay,paste0("psychENCODE.",assay,".finemap.txt"))
+      dir.create(dirname(github_output), showWarnings = F, recursive = T)
+      data.table::fwrite(QTL.sub, github_output)
+>>>>>>> d832a3f42935b381dafc8800aa6af42762b78e31
     }
     
     FM_all <- data.table:::merge.data.table(FM_all,
@@ -69,7 +84,10 @@ psychENCODE.QTL_overlap <- function(FM_all=merge_finemapping_results(minimum_sup
   }
   return(FM_all)
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> d832a3f42935b381dafc8800aa6af42762b78e31
 
 
 # Fairfax: eQTL
@@ -89,8 +107,13 @@ Fairfax.QTL_overlap <- function(FM_all, conditions=c("CD14","IFN","LPS2","LPS24"
     dat <- data.table::fread(output_path, 
                              col.names = colnames(data.table::fread(file_path, nrow=0)), 
                              nThread = 4)#file_path
+<<<<<<< HEAD
     ## Fix the header
     data.table::fwrite(dat, output_path,sep = "\t", nThread = 4)
+=======
+    ## Write after fixing the header
+    data.table::fwrite(dat, output_path)
+>>>>>>> d832a3f42935b381dafc8800aa6af42762b78e31
     dat <- subset(dat, SNP %in% FM_all$SNP_id)
     # Take only the top QTL per SNP location
     ## Rename columns
@@ -109,11 +132,16 @@ Fairfax.QTL_overlap <- function(FM_all, conditions=c("CD14","IFN","LPS2","LPS24"
 
 
 
+<<<<<<< HEAD
 ####----------- Gather QTL Overlap -----------####
+=======
+#~~~~~~~~~~~~~~~~~~~~~~~~~ Gather! ~~~~~~~~~~~~~~~~~~~~~~~~~# 
+>>>>>>> d832a3f42935b381dafc8800aa6af42762b78e31
 
 # Gather all Fine-mapping results
 FM_all <- merge_finemapping_results(minimum_support = 0, 
                                     include_leadSNPs = T, 
+<<<<<<< HEAD
                                     dataset = "./Data/GWAS/Nalls23andMe_2019")
 # psychENCODE: "eQTL","cQTL","isoQTL"
 FM_all <- psychENCODE.QTL_overlap(FM_all=FM_all, 
@@ -122,6 +150,22 @@ FM_all <- psychENCODE.QTL_overlap(FM_all=FM_all,
                                   force_new_subset = T)
 # Fairfax eQTL
 FM_all <- Fairfax.QTL_overlap(FM_all, )
+
+
+=======
+                                    dataset = "./Data/GWAS/Nalls23andMe_2019",
+                                    xlsx_path = F)
+
+################################
+# psychENCODE eQTL, cQTL, isoQTL
+FM_all <- psychENCODE.QTL_overlap(FM_all=FM_all, 
+                                  consensus_only=F, 
+                                  local_files = F, 
+                                  force_new_subset = T)
+#############################################
+# Fairfax eQTL: Naive?, CD14, IFN, LPS2, LPS24
+FM_all <- Fairfax.QTL_overlap(FM_all)
+>>>>>>> d832a3f42935b381dafc8800aa6af42762b78e31
 
 
 
