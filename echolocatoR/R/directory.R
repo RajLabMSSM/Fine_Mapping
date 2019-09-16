@@ -101,7 +101,7 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
   "Cardiogenics_monocytes" = list(type="QTL",
                                     topSS=NA,
                                     fullSS=file.path(root,"ad-omics/data/cardiogenics/Cardiogenics/Monocites.REPORT.fdr-0.5.tab"),
-                                    reference="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240"),  
+                                    reference="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240")  
           
   ) 
   Data_dirs_table <- Data_dirs_to_table(Data_dirs, writeCSV)
