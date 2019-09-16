@@ -90,7 +90,18 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
   "Fairfax_2014_LPS24" = list(type="QTL",
                              topSS=NA,
                              fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS24.47231.322.b.qced.f.txt"),
-                             reference="https://science.sciencemag.org/content/343/6175/1246949")    
+                             reference="https://science.sciencemag.org/content/343/6175/1246949"),   
+  
+  ## Cardiogenics: Macrophages
+  "Cardiogenics_macrophages" = list(type="QTL",
+                              topSS=NA,
+                              fullSS=file.path(root,"ad-omics/data/cardiogenics/Cardiogenics/Macrophages.REPORT.fdr-0.5.tab"),
+                              reference="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240"),
+  ## Cardiogenics: Monocytes
+  "Cardiogenics_monocytes" = list(type="QTL",
+                                    topSS=NA,
+                                    fullSS=file.path(root,"ad-omics/data/cardiogenics/Cardiogenics/Monocites.REPORT.fdr-0.5.tab"),
+                                    reference="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240"),  
           
   ) 
   Data_dirs_table <- Data_dirs_to_table(Data_dirs, writeCSV)

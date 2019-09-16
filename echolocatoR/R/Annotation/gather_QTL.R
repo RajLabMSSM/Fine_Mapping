@@ -136,6 +136,7 @@ MESA.QTL_overlap <- function(FM_all, force_new_subset=F){
                                nThread = 4)#file_path
       dat <- subset(dat, snps %in% FM_all$SNP)
       ## Overwrite subset w/ fixed header (and smaller size)
+      dir.create(dirname(output_path), recursive = T, showWarnings = F)
       data.table::fwrite(dat, output_path, sep = "\t", col.names = T)
       R.utils::gzip(output_path_txt, overwrite=T, remove=T)
     }  
@@ -156,7 +157,39 @@ MESA.QTL_overlap <- function(FM_all, force_new_subset=F){
 }
 
 
-
+Cardiogenics.QTL_overlap <- function(FM_all, force_new_subset=F, cis_only=T){
+  for (celltype in c("macrophages","monocytes")){
+    printer("Cardiogenics:: Processing",celltype,"data...")
+    dataset <- paste0("Cardiogenics_",celltype)
+    output_path <- file.path("./Data/QTL/Cardiogenics",celltype,paste0(dataset,".finemap.txt"))
+    if(file.exists(output_path) & force_new_subset==F){
+      print("Cardiogenics:: Pre-existing file detected. Importing...")
+      dat.sub <- data.table::fread(output_path, nThread = 4)
+    } else{ 
+        server_path <- Directory_info(paste0("Cardiogenics_",celltype), "fullSumStats")
+        dir.create(dirname(output_path), recursive = T, showWarnings = F)
+        DAT <- data.table::fread(server_path,  nThread = 4)
+        dat.sub <- subset(DAT, SNPID %in% unique(FM_all$SNP))
+        data.table::fwrite(dat.sub, output_path, sep="\t", nThread = 4)
+    }
+    
+    if(cis_only){dat.sub <- subset(dat.sub, relativePosition=="cis")}
+    dat.sub <- dplyr::select(dat.sub, SNPID, beta, FDR, reporterID) %>% 
+                dplyr::group_by(SNPID) %>%
+                arrange(FDR, desc(beta)) %>% 
+                dplyr::slice(1) %>% 
+                `colnames<-`(c("SNP", 
+                               paste0(dataset,".Effect"), 
+                               paste0(dataset,".FDR"), 
+                               paste0(dataset,".probe") )) %>%
+                data.table::data.table()
+    
+    FM_all <- data.table:::merge.data.table(FM_all, dat.sub, 
+                                            by="SNP", 
+                                            all.x = T) 
+  }
+  return(FM_all)
+}
 
 
 ####----------- Gather QTL Overlap -----------####
@@ -165,16 +198,21 @@ MESA.QTL_overlap <- function(FM_all, force_new_subset=F){
 FM_all <- merge_finemapping_results(minimum_support = 0, 
                                     include_leadSNPs = T, 
                                     dataset = "./Data/GWAS/Nalls23andMe_2019")
-# psychENCODE: "eQTL","cQTL","isoQTL"
+
+# psychENCODE eQTL, cQTL, isoQTL, HiC: DLPFC
 FM_merge <- psychENCODE.QTL_overlap(FM_all=FM_all, 
                                     consensus_only = F, 
                                     local_files = T, 
                                     force_new_subset = F)
-# Fairfax eQTL
+# Fairfax eQTL: monocytes
 FM_merge <- Fairfax.QTL_overlap(FM_merge)
-
-# MESA eQTL
+# MESA eQTL: monocytes
 FM_merge <- MESA.QTL_overlap(FM_merge, force_new_subset = F) 
+# Cardiogenics eQTL: macrophages, monocytes
+FM_merge <- Cardiogenics.QTL_overlap(FM_merge, force_new_subset = F, cis_only = T)
+
+
+
 
 
 
