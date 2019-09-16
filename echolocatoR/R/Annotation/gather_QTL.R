@@ -114,37 +114,43 @@ Fairfax.QTL_overlap <- function(FM_all, conditions=c("CD14","IFN","LPS2","LPS24"
 }
 
 
-MESA.QTL_overlap <- function(FM_all){ 
+MESA.QTL_overlap <- function(FM_all, force_new_subset=F){ 
   for(pop in c("AFA","CAU","HIS")){
     printer("MESA:: Extracting",pop,"data.")
     dataset <- paste0("MESA_",pop)
     output_path <- file.path("./Data/QTL/MESA",pop,paste0(dataset,".finemap.txt.gz"))
-    if(file.exists(output_path)){
+    
+    if(file.exists(output_path) & force_new_subset==F){
       printer("MESA:: Pre-existing file detect. Importing...")
-      dat <- data.table::fread(output_path)
+      # for some reason, saved files lose their header. Have to explicitly provide them instead...
+      dat <- data.table::fread(output_path, nThread = 4, 
+                               col.names = c("snps","gene","statistic","pvalue","FDR","beta",
+                                             "chr","gene_name","start","end","gene_type","pos_snps","ref","alt"))
     } else{
       server_path <- Directory_info(paste0("MESA_",pop), "fullSumStats")
-      system(paste0("grep -E '", paste(unique(FM_all$SNP_id), collapse="|"),"' " ,server_path," > ",output_path))
+      output_path_txt <- gsub(".gz","",output_path)
+      system(paste0("grep -E '", paste(unique(FM_all$Gene), collapse="|"),"' " ,server_path," > ",output_path_txt))
       # Import data 
-      dat <- data.table::fread(output_path, 
+      dat <- data.table::fread(output_path_txt, 
                                col.names = colnames(data.table::fread(server_path, nrow=0)), 
                                nThread = 4)#file_path
-      ## Overwrite subset w/ fixed header
-      data.table::fwrite(dat, output_path, sep = "\t", nThread = 4) 
-      R.utils::gzip(output_path)
-    }
-    dat <- subset(dat, SNP %in% FM_all$SNP_id)
-    # Take only the top QTL per SNP location
-    ## Rename columns
-    dat.sub <- dplyr::select(dat, SNP, beta, FDR) %>% 
-      dplyr::group_by(SNP) %>%
-      arrange(FDR, desc(beta)) %>% 
-      dplyr::slice(1) %>% 
-      `colnames<-`(c("SNP_id", paste0(dataset,".Effect"), paste0(dataset,".FDR") )) %>%
-      data.table::data.table()
+      dat <- subset(dat, snps %in% FM_all$SNP)
+      ## Overwrite subset w/ fixed header (and smaller size)
+      data.table::fwrite(dat, output_path, sep = "\t", col.names = T)
+      R.utils::gzip(output_path_txt, overwrite=T, remove=T)
+    }  
+      # Take only the top QTL per SNP location
+      ## Rename columns
+      dat.sub <- dplyr::select(dat, snps, beta, FDR, gene_name) %>% 
+        dplyr::group_by(snps) %>%
+        arrange(FDR, desc(beta)) %>% 
+        dplyr::slice(1) %>% 
+        `colnames<-`(c("SNP", paste0(dataset,".Effect"), paste0(dataset,".FDR"), paste0("MESA.",pop,".gene") )) %>%
+        data.table::data.table()
+   
     FM_all <- data.table:::merge.data.table(FM_all, dat.sub, 
-                                            by="SNP_id", 
-                                            all.x = T, allow.cartesian = T) 
+                                            by="SNP", 
+                                            all.x = T) 
   }
   return(FM_all)
 }
@@ -161,11 +167,15 @@ FM_all <- merge_finemapping_results(minimum_support = 0,
                                     dataset = "./Data/GWAS/Nalls23andMe_2019")
 # psychENCODE: "eQTL","cQTL","isoQTL"
 FM_merge <- psychENCODE.QTL_overlap(FM_all=FM_all, 
-                                  consensus_only = F, 
-                                  local_files = T, 
-                                  force_new_subset = F)
+                                    consensus_only = F, 
+                                    local_files = T, 
+                                    force_new_subset = F)
 # Fairfax eQTL
 FM_merge <- Fairfax.QTL_overlap(FM_merge)
+
+# MESA eQTL
+FM_merge <- MESA.QTL_overlap(FM_merge, force_new_subset = F) 
+
 
 
 
