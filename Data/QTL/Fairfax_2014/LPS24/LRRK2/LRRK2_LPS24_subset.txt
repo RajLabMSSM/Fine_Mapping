@@ -1,0 +1,1 @@
+Condition	Subject_ID	CHR	POS	Gene	Effect	t-stat	P	FDR	SNP	A1	A2	Genotype	PROBE_ID	Expression

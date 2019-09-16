@@ -13,7 +13,7 @@
 # library(ggplot2)
 
 psychENCODE.download_summary_stats <- function(
-  output_dir = "./echolocatoR/tools/Annotations/psychENCODE",
+  output_dir = "./Data/QTL/psychENCODE",
   url.list = file.path("http://resource.psychencode.org/Datasets/",
                        c("Derived/QTLs/DER-08a_hg19_eQTL.significant.txt",
                          "Derived/QTLs/DER-09_hg19_cQTL.significant.txt",
@@ -86,7 +86,7 @@ summarise_SNPgroup_overlap <- function(FM_sub, ASSAY_sub, assay_type, gene){
 }
 
 psychENCODE.assay_summary <- function(){
-  root <- "./echolocatoR/tools/Annotations/psychENCODE"
+  root <- "./Data/QTL/psychENCODE"
   ASSAY_files <- file.path(root,
                          c("DER-08a_hg19_eQTL.significant.txt.gz",
                            "DER-09_hg19_cQTL.significant.txt.gz",

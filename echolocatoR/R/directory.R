@@ -55,39 +55,39 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
     
     # ++++++++ eQTL SUMMARY STATS ++++++++ #
     ## MESA eQTLs: African Americans
-    "MESA_AFA" = list(type="eQTL",
+    "MESA_AFA" = list(type="QTL",
                       topSS="Data/eQTL/MESA/AFA/AFA_eQTL_PTK2B.txt",
-                      fullSS=file.path(root,"ad-omics/data/mesa/AFA_cis_eqtl_summary_statistics.txt"), 
+                      fullSS=file.path(root,"ad-omics/data/MESA/AFA_cis_eqtl_summary_statistics.txt"), 
                       reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
     ## MESA eQTLs: Caucasians
-    "MESA_CAU" = list(type="eQTL",
+    "MESA_CAU" = list(type="QTL",
                       topSS="Data/eQTL/MESA/CAU/CAU_eQTL_PTK2B.txt",
-                      fullSS=file.path(root,"ad-omics/data/mesa/CAU_cis_eqtl_summary_statistics.txt"),
+                      fullSS=file.path(root,"ad-omics/data/MESA/CAU_cis_eqtl_summary_statistics.txt"),
                       reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
     ## MESA eQTLs: Hispanics
-    "MESA_HIS" = list(type="eQTL",
+    "MESA_HIS" = list(type="QTL",
                       topSS="Data/eQTL/MESA/HIS/HIS_eQTL_PTK2B.txt",
-                      fullSS=file.path(root,"ad-omics/data/mesa/HIS_cis_eqtl_summary_statistics.txt"),
+                      fullSS=file.path(root,"ad-omics/data/MESA/HIS_cis_eqtl_summary_statistics.txt"),
                       reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
     
     ## Fairfax eQTLs: CD14
-    "Fairfax_2014_CD14" = list(type="eQTL",
+    "Fairfax_2014_CD14" = list(type="QTL",
                       topSS=NA,
                       fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.CD14.47231.414.b.qced.f.txt"),
                       reference="https://science.sciencemag.org/content/343/6175/1246949"), 
     ## Fairfax eQTLs: IFN
-    "Fairfax_2014_IFN" = list(type="eQTL",
+    "Fairfax_2014_IFN" = list(type="QTL",
                                topSS=NA,
                                fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.IFN.47231.367.b.qced.f.txt"),
                                reference="https://science.sciencemag.org/content/343/6175/1246949"),
      
   ## Fairfax eQTLs: IFN
-  "Fairfax_2014_LPS2" = list(type="eQTL",
+  "Fairfax_2014_LPS2" = list(type="QTL",
                             topSS=NA,
                             fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS2.47231.261.b.qced.f.txt"),
                             reference="https://science.sciencemag.org/content/343/6175/1246949"), 
   ## Fairfax eQTLs: IFN
-  "Fairfax_2014_LPS24" = list(type="eQTL",
+  "Fairfax_2014_LPS24" = list(type="QTL",
                              topSS=NA,
                              fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS24.47231.322.b.qced.f.txt"),
                              reference="https://science.sciencemag.org/content/343/6175/1246949")    
