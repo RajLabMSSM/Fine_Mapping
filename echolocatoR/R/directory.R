@@ -182,10 +182,16 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
     
     # GTEx: many different single-tissue eQTLs
     ## NOTE: this is a folder (not the actual file)
-    "GTEx" = list(type="eQTL",
+    "GTEx_V7" = list(type="eQTL",
                       topSS=NA,
-                      fullSS=file.path(root,"ad-omics/data/GTEx.QTL/GTEx_Analysis_v8_eQTL"),
-                      reference="https://www.nature.com/articles/nature24277")
+                      fullSS=file.path(root,"ad-omics/data/GTEx_QTL/GTEx_Analysis_v7_eQTL_all_associations"),
+                      reference="https://www.nature.com/articles/nature24277"),
+    # GTEx: many different single-tissue eQTLs
+    ## NOTE: this is a folder (not the actual file)
+    "GTEx_V8" = list(type="eQTL",
+                  topSS=NA,
+                  fullSS=file.path(root,"ad-omics/data/GTEx_QTL/GTEx_Analysis_v8_eQTL"),
+                  reference="https://www.nature.com/articles/nature24277")
   
     
   

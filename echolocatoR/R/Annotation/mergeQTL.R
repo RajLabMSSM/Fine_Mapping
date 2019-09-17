@@ -191,31 +191,40 @@ mergeQTL.Cardiogenics <- function(FM_all, force_new_subset=F, cis_only=T){
   return(FM_all)
 }
 
-mergeQTL.GTEx <- function(FM_all, fuzzy_search=F){
-  output_dir <- "./Data/QTL/GTEx"
-  tissues_ref <- file.path(output_dir,"GTEx_tissues.txt") 
-  server_dir <- Directory_info("GTEx","fullSumStats")
-  # Identify which tissues we have eQTL data for
-  if(file.exists(tissues_ref)){
-    tissues_df <- data.table::fread(tissues_ref)
-  } else{ 
-     printer("GTEx:: Constructing reference file of available single-tissue eQTL files...")
-     all_tissues <- lapply(list.files(server_dir), function(e){strsplit(e,"[.]")[[1]][1] }) %>% unlist() %>% unique()
-     dir.create(output_dir, showWarnings = F, recursive = T)
-     tissues_df <- data.frame(tissue=all_tissues, 
-                              egene_file=list.files(server_dir, pattern = "*.egenes.*", full.names = T),
-                              signif_pairs_file=list.files(server_dir, pattern = "*.signif_variant_gene_pairs.*", full.names = T) )
-     data.table::fwrite(tissues_df, tissues_ref, sep="\t")
-  }
-  if(fuzzy_search!=F){
-    tissues_df = tissues_df[grep(fuzzy_search, tissues_df$tissue)]
-  }
-  
+
+ mergeQTL.GTEx_list_files <- function(server_path, GTEx_version, fuzzy_search=F){ 
+    printer("GTEx:: Constructing reference file of available single-tissue eQTL files...")
+    SS_files <- list.files(server_path, pattern=ifelse(GTEx_version=="GTEx_V7",".allpairs.txt.gz","*.egenes.*"), full.names = T) 
+    all_tissues <- lapply(SS_files, function(e){strsplit(basename(e),"[.]")[[1]][1] }) %>% unlist() %>% unique()
+    dir.create(output_dir, showWarnings = F, recursive = T)
+    tissues_df <- data.frame(tissue=all_tissues, sum_stats=SS_files)
+    if(fuzzy_search!=F){
+      tissues_df = tissues_df[grep(fuzzy_search, tissues_df$tissue)]
+    }
+    return(tissues_df)
+ }
+ 
+mergeQTL.GTEx_convert_genes <- function(server_path, gene_symbols){
+  system(paste0("grep "))
+  ens <- refGenome::ensemblGenome()
+  gtf <- refGenome::read.gtf(ens, filename = file.path(server_path,"gencode.v19.genes.v7.patched_contigs.gtf")) 
+}
+ 
+ 
+mergeQTL.GTEx <- function(FM_all, fuzzy_search=F, GTEx_version="GTEx_V7"){
+  server_path <- Directory_info(GTEx_version, "fullSumStats")
+  output_dir <- file.path("./Data/QTL",GTEx_version)
+  tissues_df <- mergeQTL.GTEx_list_files(server_path, GTEx_version, fuzzy_search)
   # Gather QTL data
   for(tiss in tissues_df$tissue){
-    printer("GTEx:: Processsing eQTL for",tiss)
-    dataset <- paste0("GTEx_",tiss)
-    dat <- fread(subset(tissues_df,tissue==tiss)$egene_file %>% as.character(), nThread = 4)
+    printer(GTEx_version,":: Processsing eQTL for",tiss)
+    dataset <- paste0(gsub("_",".",GTEx_version),"_",tiss)
+    # dat <- fread(subset(tissues_df, tissue==tiss)$sum_stats %>% as.character(), nThread = 4)
+    chr_pos <- paste(paste0(FM_all$CHR,"_",FM_all$POS), collapse="|")
+    server_file <- subset(tissues_df, tissue==tiss)$sum_stats %>% as.character()
+    output_path <- file.path(output_dir, paste0(dataset,".txt"))
+    system(paste0("grep -E '",chr_pos,"' ",server_path," > ",output_path))
+    
     dat.sub <- subset(dat, (rs_id_dbSNP151_GRCh38p7 %in% unique(FM_all$SNP)))
     # Subset
     # **NOTE!!**: There's a A LOOOTT of different variables in the gtex files. 
@@ -254,7 +263,7 @@ mergeQTL.merge_all <- function(){
   # Cardiogenics eQTL: macrophages, monocytes
   FM_merge <- mergeQTL.Cardiogenics(FM_merge, force_new_subset = F, cis_only = T)
   # GTEx eQTL: 49 different tissues
-  FM_merge.final <- mergeQTL.GTEx(FM_merge, fuzzy_search=F)
+  FM_merge.final <- mergeQTL.GTEx(FM_merge, fuzzy_search="Brain")
   
   ## Write file and compress
   QTL_merged_path <- file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
@@ -310,12 +319,13 @@ mergeQTL.count_overlap <- function(){
                                             variable.name = "SNP.Group", 
                                             value.name = "Proportion.Overlap")
   library(ggplot2)
-  ggplot(merged.data, aes(x=QTL.Source, y=Proportion.Overlap, fill=SNP.Group)) + 
+  ggplot(merged.data, aes(x=QTL.Source, y=Proportion.Overlap*100, fill=SNP.Group)) + 
     geom_col(position = position_dodge(preserve = "single")) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 9),
+    theme_classic() + 
+    theme(axis.text.x = element_text(angle = 55, hjust = 1, size = 9),
           plot.title = element_text(hjust = 0.5),
           plot.subtitle = element_text(hjust = 0.5)) +
-    labs(title="Proportion of Overlapping QTL")
+    labs(title="Proportion of Overlapping QTL", y="% Overlap", x="QTL Source")
    
     
 }
@@ -394,11 +404,6 @@ mergeQTL.QTL_distributions_plot <- function(){
   
 }
 
-
-
-cell <- readxl::read_excel("/sc/orga/projects/ad-omics/data/Brain_xQTL_Serve/CellSpecifictyeQTLs.xlsx", skip = 2)
-data.table::fwrite(cell, "/sc/orga/projects/ad-omics/data/Brain_xQTL_Serve/cell-specificity-eQTLs.tsv", sep="\t")
-
-
+ 
 
 

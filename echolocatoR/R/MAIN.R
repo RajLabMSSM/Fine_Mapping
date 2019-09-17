@@ -54,6 +54,7 @@ library(gaston)
 library(tidyr)
 # library(BiocManager)
 library(biomaRt) # BiocManager::install("biomaRt") 
+# library(refGenome)
 
 # install_fGWAS <- function(){
 #   devtools::install_github("wzhy2000/fGWAS/pkg")
