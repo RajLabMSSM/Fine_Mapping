@@ -267,6 +267,89 @@ merge_all_QTLs <- function(){
 
 
 
+######### PLOTS #############
+melt_FDR.QTL_overlap <- function(FM_merge){ 
+  dim(FM_merge) 
+  Effect.cols <- grep(".Effect", colnames(FM_merge), value = T)
+  FDR.cols <- grep(".FDR", colnames(FM_merge), value = T)
+  id.vars <- c("Gene","SNP","CHR","POS","P","Consensus_SNP","Support","leadSNP")
+  FM_sub <- subset(FM_merge, select=c(id.vars, FDR.cols))
+  colnames(FM_sub)[colnames(FM_sub) %in% FDR.cols] <- gsub(".FDR","",FDR.cols)
+  FM_melt <- data.table::melt.data.table(FM_sub, id.vars = id.vars, 
+                                         variable.name = "QTL.Source",
+                                         value.name = "FDR") 
+  FM_melt[is.infinite(FM_melt$FDR),"FDR"] <- NA 
+  FM_melt[FM_melt$FDR %in% c(Inf,-Inf),"FDR"] <- NA 
+  FM_melt[FM_melt$FDR==0,"FDR"] <- .Machine$double.xmin 
+  return(FM_melt)
+}
+
+plot.QTL_overlap <- function(GENE_df, SNP.Group){  
+  op <- ggplot(GENE_df, aes(x=POS, y=-log10(FDR), color=-log10(FDR))) + 
+    geom_point() + 
+    facet_grid(QTL.Source~., drop = F) + 
+    theme(strip.text.y = element_text(angle=0), 
+          strip.background = element_rect(fill="slategray1"),
+          strip.text = element_text(colour = 'black'),
+          plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5)) +  
+    labs(subtitle=paste0(SNP.Group,": Significant QTL Overlap")) + 
+    geom_hline(yintercept = -log10(0.05), linetype="dashed", alpha=.9, color="purple", size=.2) + 
+    ylim(c(0, -log10(min(GENE_df$FDR))*1.2  )) + 
+    geom_point(data = subset(GENE_df, FDR>=0.05), aes(x=POS, y=-log10(FDR)), color="gray")
+  return(op)
+}
+
+plot.QTL_distributions <- function(){
+  FM_merge <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+                                          "Nalls23andMe_2019.QTL_overlaps.txt.gz"), 
+                                nThread = 4) 
+  FM_melt <- melt_FDR.QTL_overlap(FM_merge)
+  
+  
+  plot.QTL_distributions.subset <- function(SNP.Group="Consensus_SNP", cardiogenics=F){
+    FM_melt <-  FM_melt %>% arrange(QTL.Source, FDR)
+    if(cardiogenics==F){
+      FM_melt <- subset(FM_melt, !(QTL.Source %in% c("Cardiogenics_macrophages","Cardiogenics_monocytes")))
+    }
+    
+    if(SNP.Group=="Consensus_SNP"){
+      GENE_df <- subset(FM_melt, (Consensus_SNP==T) & (FDR<0.05), drop=F) 
+    }
+    if(SNP.Group=="Credible_Set"){
+      GENE_df <- subset(FM_melt, (Support>0) & (FDR<0.05), drop=F)  
+    }
+    if(SNP.Group=="lead_SNP"){
+      GENE_df <- subset(FM_melt, (leadSNP==T) & (FDR<0.05), drop=F)  
+    } 
+    GENE_df$SNP <- factor(GENE_df$SNP, levels = unique(GENE_df$SNP), ordered = T)
+    
+    # op <- plot.QTL_overlap(GENE_df, SNP.Group = SNP.Group)
+    # print(op)
+    
+    gp <- ggplot(GENE_df , aes(x=QTL.Source, y=-log10(FDR), fill=QTL.Source, group=SNP)) + 
+      geom_col(position = position_dodge(preserve = "single"), show.legend = F, aes(group=SNP), alpha=.7) + 
+      geom_hline(yintercept = -log10(0.05), linetype="dashed", alpha=.9, color="purple", size=.2) + 
+      theme_classic() + 
+      theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 9),
+            plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5)) + 
+      labs(title=NULL, subtitle=paste0(SNP.Group, " : Significant QTL Overlap"), x=NULL) + 
+      scale_fill_discrete(drop=F) + 
+      scale_x_discrete(drop=F)  
+      # ylim(c(0,-log10( min(FM_melt$FDR, na.rm = T)) ))
+      # ylim(c(0,150))
+    # print(gp)
+    return(gp) 
+  } 
+  consensus <- plot.QTL_distributions.subset(SNP.Group = "Consensus_SNP")
+  cred.set <- plot.QTL_distributions.subset(SNP.Group = "Credible_Set")
+  lead.snp <- plot.QTL_distributions.subset(SNP.Group = "lead_SNP")
+  
+  cowplot::plot_grid(consensus, cred.set, lead.snp, ncol = 1, align = "h")
+   
+  
+}
 
 
 
