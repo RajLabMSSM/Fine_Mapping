@@ -343,7 +343,7 @@ mergeQTL.stacked_manhattan_plot <- function(GENE_df, SNP.Group){
   return(op)
 }
 
-mergQTL.QTL_distributions_plot <- function(){
+mergeQTL.QTL_distributions_plot <- function(){
   FM_merge <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
                                           "Nalls23andMe_2019.QTL_overlaps.txt.gz"), 
                                 nThread = 4) 
@@ -396,6 +396,8 @@ mergQTL.QTL_distributions_plot <- function(){
 
 
 
+cell <- readxl::read_excel("/sc/orga/projects/ad-omics/data/Brain_xQTL_Serve/CellSpecifictyeQTLs.xlsx", skip = 2)
+data.table::fwrite(cell, "/sc/orga/projects/ad-omics/data/Brain_xQTL_Serve/cell-specificity-eQTLs.tsv", sep="\t")
 
 
 

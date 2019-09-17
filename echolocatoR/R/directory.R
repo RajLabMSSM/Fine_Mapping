@@ -61,81 +61,133 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
     
     # ++++++++ eQTL SUMMARY STATS ++++++++ #
     ## MESA eQTLs: African Americans
-    "MESA_AFA" = list(type="QTL",
+    "MESA_AFA" = list(type="eQTL",
                       topSS="Data/eQTL/MESA/AFA/AFA_eQTL_PTK2B.txt",
                       fullSS=file.path(root,"ad-omics/data/MESA/AFA_cis_eqtl_summary_statistics.txt"), 
                       reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
     ## MESA eQTLs: Caucasians
-    "MESA_CAU" = list(type="QTL",
+    "MESA_CAU" = list(type="eQTL",
                       topSS="Data/eQTL/MESA/CAU/CAU_eQTL_PTK2B.txt",
                       fullSS=file.path(root,"ad-omics/data/MESA/CAU_cis_eqtl_summary_statistics.txt"),
                       reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
     ## MESA eQTLs: Hispanics
-    "MESA_HIS" = list(type="QTL",
+    "MESA_HIS" = list(type="eQTL",
                       topSS="Data/eQTL/MESA/HIS/HIS_eQTL_PTK2B.txt",
                       fullSS=file.path(root,"ad-omics/data/MESA/HIS_cis_eqtl_summary_statistics.txt"),
                       reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
     
     ## Fairfax eQTLs: CD14
-    "Fairfax_2014_CD14" = list(type="QTL",
+    "Fairfax_2014_CD14" = list(type="eQTL",
                       topSS=NA,
                       fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.CD14.47231.414.b.qced.f.txt"),
                       reference="https://science.sciencemag.org/content/343/6175/1246949"), 
     ## Fairfax eQTLs: IFN
-    "Fairfax_2014_IFN" = list(type="QTL",
+    "Fairfax_2014_IFN" = list(type="eQTL",
                                topSS=NA,
                                fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.IFN.47231.367.b.qced.f.txt"),
                                reference="https://science.sciencemag.org/content/343/6175/1246949"),
      
-  ## Fairfax eQTLs: IFN
-  "Fairfax_2014_LPS2" = list(type="QTL",
-                            topSS=NA,
-                            fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS2.47231.261.b.qced.f.txt"),
-                            reference="https://science.sciencemag.org/content/343/6175/1246949"), 
-  ## Fairfax eQTLs: IFN
-  "Fairfax_2014_LPS24" = list(type="QTL",
-                             topSS=NA,
-                             fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS24.47231.322.b.qced.f.txt"),
-                             reference="https://science.sciencemag.org/content/343/6175/1246949"),   
-  
-  ## Cardiogenics: Macrophages
-  "Cardiogenics_macrophages" = list(type="QTL",
+    ## Fairfax eQTLs: IFN
+    "Fairfax_2014_LPS2" = list(type="eQTL",
                               topSS=NA,
-                              fullSS=file.path(root,"ad-omics/data/cardiogenics/Cardiogenics/Macrophages.REPORT.fdr-0.5.tab"),
-                              reference="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240"),
-  ## Cardiogenics: Monocytes
-  "Cardiogenics_monocytes" = list(type="QTL",
-                                    topSS=NA,
-                                    fullSS=file.path(root,"ad-omics/data/cardiogenics/Cardiogenics/Monocites.REPORT.fdr-0.5.tab"),
-                                    reference="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240"),
-  
-  ## eqtlpsych (psychgen??? neeed to check)
-  "eqtlpsych" = list(type="QTL",
+                              fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS2.47231.261.b.qced.f.txt"),
+                              reference="https://science.sciencemag.org/content/343/6175/1246949"), 
+    ## Fairfax eQTLs: IFN
+    "Fairfax_2014_LPS24" = list(type="eQTL",
+                               topSS=NA,
+                               fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS24.47231.322.b.qced.f.txt"),
+                               reference="https://science.sciencemag.org/content/343/6175/1246949"),   
+    
+    ## Cardiogenics: Macrophages
+    "Cardiogenics_macrophages" = list(type="eQTL",
+                                topSS=NA,
+                                fullSS=file.path(root,"ad-omics/data/cardiogenics/Cardiogenics/Macrophages.REPORT.fdr-0.5.tab"),
+                                reference="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240"),
+    ## Cardiogenics: Monocytes
+    "Cardiogenics_monocytes" = list(type="eQTL",
+                                      topSS=NA,
+                                      fullSS=file.path(root,"ad-omics/data/cardiogenics/Cardiogenics/Monocites.REPORT.fdr-0.5.tab"),
+                                      reference="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240"),
+    
+    ## eqtlpsych (psychgen??? neeed to check)
+    "eqtlpsych" = list(type="eQTL",
+                        topSS=NA,
+                        fullSS=file.path(root,"ad-omics/data/eqtlgen/trans-eQTLs_full_20180905.txt.gz"),
+                        reference=NA),
+    
+    ## psychENCODE
+    "psychENCODE_eQTL" = list(type="eQTL",
+                               topSS=NA,
+                               fullSS=file.path(root,"ad-omics/data/psychENCODE/eQTL/DER-08a_hg19_eQTL.significant.txt.gz"),
+                               reference="http://resource.psychencode.org"),
+    ## psychENCODE
+    "psychENCODE_cQTL" = list(type="cQTL",
+                              topSS=NA,
+                              fullSS=file.path(root,"ad-omics/data/psychENCODE/cQTL/DER-09_hg19_cQTL.significant.txt.gz"),
+                              reference="http://resource.psychencode.org"),
+    ## psychENCODE
+    "psychENCODE_isoQTL" = list(type="isoQTL",
+                                topSS=NA,
+                                fullSS=file.path(root,"ad-omics/data/psychENCODE/isoQTL/DER-10a_hg19_isoQTL.significant.txt.gz"),
+                                reference="http://resource.psychencode.org"),
+    ## psychENCODE
+    "psychENCODE_tQTL" = list(type="tQTL",
+                                topSS=NA,
+                                fullSS=file.path(root,"ad-omics/data/psychENCODE/tQTL/DER-10c_hg19_tQTL.all.txt.gz"),
+                                reference="http://resource.psychencode.org"),
+    ## psychENCODE
+    "psychENCODE_fQTL" = list(type="fQTL",
+                              topSS=NA,
+                              fullSS=file.path(root,"ad-omics/data/psychENCODE/fQTL/DER-11_hg19_fQTL.significant.txt.gz"),
+                              reference="http://resource.psychencode.org"),
+    ## psychENCODE
+    "psychENCODE_HiC" = list(type="HiC",
+                              topSS=NA,
+                              fullSS=file.path(root,"ad-omics/data/psychENCODE/HiC/INT-16_HiC_EP_linkages_cross_assembly.csv.gz"),
+                              reference="http://resource.psychencode.org"),
+    
+    # (eQTL, sQTL) x (CD4, CD14) x (AFR, ASN, EUR)
+    ## Just selecting some
+    # ImmVar
+    "ImmVar_eQTL_CD4_EUR" = list(type="eQTL",
+                       topSS=NA,
+                       fullSS=file.path(root,"ad-omics/data/immvar/qtls/eur_cd4_chrALL_cis1mb_adj_spearman_pALL.out"),
+                       reference=NA),
+    # ImmVar
+    "ImmVar_eQTL_CD14_EUR" = list(type="eQTL",
+                        topSS=NA,
+                        fullSS=file.path(root,"ad-omics/data/immvar/qtls/eur_cd14_chrALL_cis1mb_adj_spearman_pALL.out"),
+                        reference=NA),
+    
+    # Brain.xQTL.Serve
+    "Brain.xQTL.Serve_eQTL" = list(type="eQTL",
+                                  topSS=NA,
+                                  fullSS=file.path(root,"ad-omics/data/Brain_xQTL_Serve/eQTL/eQTLs_all.txt.gz"),
+                                  reference="https://www.ncbi.nlm.nih.gov/pubmed/28869584"),
+    # Brain.xQTL.Serve
+    "Brain.xQTL.Serve_haQTL" = list(type="haQTL",
+                                   topSS=NA,
+                                   fullSS=file.path(root,"ad-omics/data/Brain_xQTL_Serve/haQTL/haQTLs_all.txt.gz"),
+                                   reference="https://www.ncbi.nlm.nih.gov/pubmed/28869584"),
+    # Brain.xQTL.Serve
+    "Brain.xQTL.Serve_mQTL" = list(type="mQTL",
+                                   topSS=NA,
+                                   fullSS=file.path(root,"ad-omics/data/Brain_xQTL_Serve/mQTL/mQTLs_all.txt.gz"),
+                                   reference="https://www.ncbi.nlm.nih.gov/pubmed/28869584"),
+    # Brain.xQTL.Serve
+    "Brain.xQTL.Serve_cell-specificity-eQTL" = list(type="mQTL",
+                                   topSS=NA,
+                                   fullSS=file.path(root,"ad-omics/data/Brain_xQTL_Serve/cell-specificity-eQTL.tsv"),
+                                   reference="https://www.ncbi.nlm.nih.gov/pubmed/28869584"),
+    
+    # GTEx: many different single-tissue eQTLs
+    ## NOTE: this is a folder (not the actual file)
+    "GTEx" = list(type="eQTL",
                       topSS=NA,
-                      fullSS=file.path(root,"ad-omics/data/eqtlgen/trans-eQTLs_full_20180905.txt.gz"),
-                      reference=NA),
+                      fullSS=file.path(root,"ad-omics/data/GTEx.QTL/GTEx_Analysis_v8_eQTL"),
+                      reference="https://www.nature.com/articles/nature24277")
   
-  # (eQTL, sQTL) x (CD4, CD14) x (AFR, ASN, EUR)
-  ## Just selecting some
-  # ImmVar
-  "ImmVar_eQTL_CD4_EUR" = list(type="QTL",
-                     topSS=NA,
-                     fullSS=file.path(root,"ad-omics/data/immvar/qtls/eur_cd4_chrALL_cis1mb_adj_spearman_pALL.out"),
-                     reference=NA),
-  # ImmVar
-  "ImmVar_eQTL_CD14_EUR" = list(type="QTL",
-                      topSS=NA,
-                      fullSS=file.path(root,"ad-omics/data/immvar/qtls/eur_cd14_chrALL_cis1mb_adj_spearman_pALL.out"),
-                      reference=NA),
-  
-  # GTEx: many different single-tissue eQTLs
-  ## NOTE: this is a folder (not the actual file)
-  "GTEx" = list(type="QTL",
-                    topSS=NA,
-                    fullSS=file.path(root,"ad-omics/data/GTEx_QTL/GTEx_Analysis_v8_eQTL"),
-                    reference="https://www.nature.com/articles/nature24277")
-
-  
+    
   
   
           
