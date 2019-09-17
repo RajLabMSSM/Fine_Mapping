@@ -2,6 +2,12 @@
 ####### DIRECTORY ####### 
 # %%%%%%%%%%%%%%%%% #
 
+
+view_gz_head <- function(gz_path, nrow=10){ 
+  system(paste("zcat",gz_path,"| head",nrows))
+}
+
+
 Data_dirs_to_table <- function(Data_dirs, writeCSV=F){
   df <- data.frame()
   for(n in names(Data_dirs)){
@@ -101,7 +107,37 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
   "Cardiogenics_monocytes" = list(type="QTL",
                                     topSS=NA,
                                     fullSS=file.path(root,"ad-omics/data/cardiogenics/Cardiogenics/Monocites.REPORT.fdr-0.5.tab"),
-                                    reference="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240")  
+                                    reference="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240"),
+  
+  ## eqtlpsych (psychgen??? neeed to check)
+  "eqtlpsych" = list(type="QTL",
+                      topSS=NA,
+                      fullSS=file.path(root,"ad-omics/data/eqtlgen/trans-eQTLs_full_20180905.txt.gz"),
+                      reference=NA),
+  
+  # (eQTL, sQTL) x (CD4, CD14) x (AFR, ASN, EUR)
+  ## Just selecting some
+  # ImmVar
+  "ImmVar_eQTL_CD4_EUR" = list(type="QTL",
+                     topSS=NA,
+                     fullSS=file.path(root,"ad-omics/data/immvar/qtls/eur_cd4_chrALL_cis1mb_adj_spearman_pALL.out"),
+                     reference=NA),
+  # ImmVar
+  "ImmVar_eQTL_CD14_EUR" = list(type="QTL",
+                      topSS=NA,
+                      fullSS=file.path(root,"ad-omics/data/immvar/qtls/eur_cd14_chrALL_cis1mb_adj_spearman_pALL.out"),
+                      reference=NA),
+  
+  # GTEx: many different single-tissue eQTLs
+  ## NOTE: this is a folder (not the actual file)
+  "GTEx" = list(type="QTL",
+                    topSS=NA,
+                    fullSS=file.path(root,"ad-omics/data/GTEx_QTL/GTEx_Analysis_v8_eQTL"),
+                    reference="https://www.nature.com/articles/nature24277")
+
+  
+  
+  
           
   ) 
   Data_dirs_table <- Data_dirs_to_table(Data_dirs, writeCSV)

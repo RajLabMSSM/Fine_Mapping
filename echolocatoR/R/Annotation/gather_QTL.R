@@ -191,6 +191,51 @@ Cardiogenics.QTL_overlap <- function(FM_all, force_new_subset=F, cis_only=T){
   return(FM_all)
 }
 
+GTEx.QTL_overlap <- function(FM_all, fuzzy_search=F){
+  output_dir <- "./Data/QTL/GTEx"
+  tissues_ref <- file.path(output_dir,"GTEx_tissues.txt") 
+  server_dir <- Directory_info("GTEx","fullSumStats")
+  # Identify which tissues we have eQTL data for
+  if(file.exists(tissues_ref)){
+    tissues_df <- data.table::fread(tissues_ref)
+  } else{ 
+     printer("GTEx:: Constructing reference file of available single-tissue eQTL files...")
+     all_tissues <- lapply(list.files(server_dir), function(e){strsplit(e,"[.]")[[1]][1] }) %>% unlist() %>% unique()
+     dir.create(output_dir, showWarnings = F, recursive = T)
+     tissues_df <- data.frame(tissue=all_tissues, 
+                              egene_file=list.files(server_dir, pattern = "*.egenes.*", full.names = T),
+                              signif_pairs_file=list.files(server_dir, pattern = "*.signif_variant_gene_pairs.*", full.names = T) )
+     data.table::fwrite(tissues_df, tissues_ref, sep="\t")
+  }
+  if(fuzzy_search!=F){
+    tissues_df = tissues_df[grep(fuzzy_search, tissues_df$tissue)]
+  }
+  
+  # Gather QTL data
+  for(tiss in tissues_df$tissue){
+    printer("GTEx:: Processsing eQTL for",tiss)
+    dataset <- paste0("GTEx_",tiss)
+    dat <- fread(subset(tissues_df,tissue==tiss)$egene_file %>% as.character(), nThread = 4)
+    dat.sub <- subset(dat, (rs_id_dbSNP151_GRCh38p7 %in% unique(FM_all$SNP)))
+    # Subset
+    # **NOTE!!**: There's a A LOOOTT of different variables in the gtex files. 
+    ## Need to go back and check if I'm using the right ones.
+    dat.sub <- dplyr::select(dat.sub, rs_id_dbSNP151_GRCh38p7, beta_shape1, qval, gene_name) %>% 
+      dplyr::group_by(rs_id_dbSNP151_GRCh38p7) %>%
+      arrange(qval, desc(beta_shape1)) %>% 
+      # dplyr::slice(1) %>% 
+      `colnames<-`(c("SNP", 
+                     paste0(dataset,".Effect"), 
+                     paste0(dataset,".FDR"), 
+                     paste0(dataset,".gene") )) %>%
+      data.table::data.table() 
+    FM_all <- data.table:::merge.data.table(FM_all, dat.sub, 
+                                            by="SNP", 
+                                            all.x = T)  
+  }
+ return(FM_all)
+}
+
 
 ####----------- Gather QTL Overlap -----------####
 
@@ -210,6 +255,8 @@ FM_merge <- Fairfax.QTL_overlap(FM_merge)
 FM_merge <- MESA.QTL_overlap(FM_merge, force_new_subset = F) 
 # Cardiogenics eQTL: macrophages, monocytes
 FM_merge <- Cardiogenics.QTL_overlap(FM_merge, force_new_subset = F, cis_only = T)
+# GTEx eQTL: 49 different tissues
+test <- GTEx.QTL_overlap(FM_merge)
 
 
 
