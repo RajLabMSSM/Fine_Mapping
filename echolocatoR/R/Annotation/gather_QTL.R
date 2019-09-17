@@ -2,14 +2,14 @@
 
 
 ################## QTL Data ################## 
-# - psychENCODE
-# - Fairfax
-# - MESA
-# - Cardiogenics
+# V- psychENCODE
+# V- Fairfax
+# V- MESA
+# V- Cardiogenics
 # - ROSMAP
 # - ImmVar
 # - STARNET
-# - GTEx brain
+# V- GTEx (49 tissues)
 
 
 
@@ -80,7 +80,7 @@ Fairfax.QTL_overlap <- function(FM_all, conditions=c("CD14","IFN","LPS2","LPS24"
   FM_all <- dplyr::distinct(FM_all)
   for(condition in conditions){
     dataset <- paste0("Fairfax_2014_",condition)
-    printer("+ Processing:",dataset)
+    printer("Fairfax:: Processing:",dataset)
     server_path <- Directory_info("Fairfax_2014_CD14",variable = "fullSumStats") 
     output_path <- file.path("./Data/QTL/Fairfax_2014",condition,paste0(dataset,".finemap.txt"))
     dir.create(dirname(output_path),showWarnings = F, recursive = T)
@@ -231,7 +231,7 @@ GTEx.QTL_overlap <- function(FM_all, fuzzy_search=F){
       data.table::data.table() 
     FM_all <- data.table:::merge.data.table(FM_all, dat.sub, 
                                             by="SNP", 
-                                            all.x = T)  
+                                            all.x = T, allow.cartesian = T)  
   }
  return(FM_all)
 }
@@ -239,24 +239,29 @@ GTEx.QTL_overlap <- function(FM_all, fuzzy_search=F){
 
 ####----------- Gather QTL Overlap -----------####
 
-# Gather all Fine-mapping results
-FM_all <- merge_finemapping_results(minimum_support = 0, 
-                                    include_leadSNPs = T, 
-                                    dataset = "./Data/GWAS/Nalls23andMe_2019")
-
-# psychENCODE eQTL, cQTL, isoQTL, HiC: DLPFC
-FM_merge <- psychENCODE.QTL_overlap(FM_all=FM_all, 
-                                    consensus_only = F, 
-                                    local_files = T, 
-                                    force_new_subset = F)
-# Fairfax eQTL: monocytes
-FM_merge <- Fairfax.QTL_overlap(FM_merge)
-# MESA eQTL: monocytes
-FM_merge <- MESA.QTL_overlap(FM_merge, force_new_subset = F) 
-# Cardiogenics eQTL: macrophages, monocytes
-FM_merge <- Cardiogenics.QTL_overlap(FM_merge, force_new_subset = F, cis_only = T)
-# GTEx eQTL: 49 different tissues
-test <- GTEx.QTL_overlap(FM_merge)
+merge_all_QTLs <- function(){
+  # Gather all Fine-mapping results
+  FM_all <- merge_finemapping_results(minimum_support = 0, 
+                                      include_leadSNPs = T, 
+                                      dataset = "./Data/GWAS/Nalls23andMe_2019")
+  
+  # psychENCODE eQTL, cQTL, isoQTL, HiC: DLPFC
+  FM_merge <- psychENCODE.QTL_overlap(FM_all=FM_all, consensus_only = F,  local_files = T,  force_new_subset = F)
+  # Fairfax eQTL: monocytes
+  FM_merge <- Fairfax.QTL_overlap(FM_merge)
+  # MESA eQTL: monocytes
+  FM_merge <- MESA.QTL_overlap(FM_merge, force_new_subset = F) 
+  # Cardiogenics eQTL: macrophages, monocytes
+  FM_merge <- Cardiogenics.QTL_overlap(FM_merge, force_new_subset = F, cis_only = T)
+  # GTEx eQTL: 49 different tissues
+  FM_merge.final <- GTEx.QTL_overlap(FM_merge, fuzzy_search=F)
+  
+  ## Write file and compress
+  QTL_merged_path <- file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide","Nalls23andMe_2019.QTL_overlaps.txt")
+  data.table::fwrite(FM_merge.final, QTL_merged_path, sep="\t", nThread = 4)
+  R.utils::gzip(QTL_merged_path, overwrite=T, remove=T)
+  return(FM_merge)
+}
 
 
 
