@@ -94,8 +94,6 @@ library(biomaRt) # BiocManager::install("biomaRt")
 source("./echolocatoR/R/directory.R")
 source("./echolocatoR/R/query.R")
 source("./echolocatoR/R/LD.R")
-source("./echolocatoR/R/colocalization.R")
-
 # Fine-mapping
 source("./echolocatoR/R/Finemapping/multi_finemap.R")
 source("./echolocatoR/R/Finemapping/SUSIE.R")
@@ -103,7 +101,7 @@ source("./echolocatoR/R/Finemapping/ABF.R")
 source("./echolocatoR/R/Finemapping/FINEMAP.R") 
 source("./echolocatoR/R/Finemapping/PAINTOR.R")
 source("./echolocatoR/R/Finemapping/COJO.R")
-
+source("./echolocatoR/R/Finemapping/COLOC.R")
 # Plotting
 source("./echolocatoR/R/Plotting/plot.R")
 source("./echolocatoR/R/Plotting/ggbio.R")
@@ -114,6 +112,8 @@ source("./echolocatoR/R/Annotation/GoShifter.R") # ***
 source("./echolocatoR/R/Annotation/XGR.R")
 source("./echolocatoR/R/Annotation/fGWAS.R")
 source("./echolocatoR/R/Annotation/psychENCODE.R")
+source("./echolocatoR/R/Annotation/mergeQTL.R")
+
 
 
 
