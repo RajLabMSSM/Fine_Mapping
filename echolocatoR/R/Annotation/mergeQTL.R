@@ -192,7 +192,7 @@ mergeQTL.Cardiogenics <- function(FM_all, force_new_subset=F, cis_only=T){
 }
 
 
- mergeQTL.GTEx_list_files <- function(server_path, GTEx_version, fuzzy_search=F){ 
+ mergeQTL.GTEx_list_files <- function(server_path, output_dir, GTEx_version, fuzzy_search=F){ 
     printer("GTEx:: Constructing reference file of available single-tissue eQTL files...")
     SS_files <- list.files(server_path, pattern=ifelse(GTEx_version=="GTEx_V7",".allpairs.txt.gz","*.egenes.*"), full.names = T) 
     all_tissues <- lapply(SS_files, function(e){strsplit(basename(e),"[.]")[[1]][1] }) %>% unlist() %>% unique()
@@ -214,7 +214,7 @@ mergeQTL.GTEx_convert_genes <- function(server_path, gene_symbols){
 mergeQTL.GTEx <- function(FM_all, fuzzy_search=F, GTEx_version="GTEx_V7"){
   server_path <- Directory_info(GTEx_version, "fullSumStats")
   output_dir <- file.path("./Data/QTL",GTEx_version)
-  tissues_df <- mergeQTL.GTEx_list_files(server_path, GTEx_version, fuzzy_search)
+  tissues_df <- mergeQTL.GTEx_list_files(server_path, output_dir, GTEx_version, fuzzy_search)
   # Gather QTL data
   for(tiss in tissues_df$tissue){
     printer(GTEx_version,":: Processsing eQTL for",tiss)
@@ -255,7 +255,7 @@ mergeQTL.merge_all <- function(){
                                       dataset = "./Data/GWAS/Nalls23andMe_2019")
   
   # psychENCODE eQTL, cQTL, isoQTL, HiC: DLPFC
-  FM_merge <- mergeQTL.psychENCODE(FM_all=FM_all, consensus_only = F,  local_files = T,  force_new_subset = T)
+  FM_merge <- mergeQTL.psychENCODE(FM_all=FM_all, consensus_only = F,  local_files = T,  force_new_subset = F)
   # Fairfax eQTL: monocytes
   FM_merge <- mergeQTL.Fairfax(FM_merge)
   # MESA eQTL: monocytes
@@ -287,6 +287,7 @@ mergeQTL.melt_FDR <- function(FM_merge){
   FM_melt[is.infinite(FM_melt$FDR),"FDR"] <- NA 
   FM_melt[FM_melt$FDR %in% c(Inf,-Inf),"FDR"] <- NA 
   FM_melt[FM_melt$FDR==0,"FDR"] <- .Machine$double.xmin 
+  gsub(FM_melt$QTL.Source)
   return(FM_melt)
 }
 
@@ -325,9 +326,7 @@ mergeQTL.count_overlap <- function(){
     theme(axis.text.x = element_text(angle = 55, hjust = 1, size = 9),
           plot.title = element_text(hjust = 0.5),
           plot.subtitle = element_text(hjust = 0.5)) +
-    labs(title="Proportion of Overlapping QTL", y="% Overlap", x="QTL Source")
-   
-    
+    labs(title="% Overlapping QTL", y="% Overlap", x="QTL Source")
 }
 
 
