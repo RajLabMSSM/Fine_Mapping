@@ -7,6 +7,26 @@ view_gz_head <- function(gz_path, nrow=10){
   system(paste("zcat",gz_path,"| head",nrows))
 }
 
+get_nrows <- function(large_file){
+  printer("+ Calculating the number of rows in",basename(large_file),"...")
+  if(endsWith(large_file,".gz")){
+    out <- system(paste("zcat",large_file,"| wc -l"), intern=T)
+  } else {
+    out <- system(paste("wc -l",large_file), intern=T)
+  } 
+  file_nrows <- as.numeric(strsplit(out," ")[[1]][1])
+  printer("++ File contains",file_nrows,"rows.")
+  return(file_nrows)
+}
+
+get_header <- function(large_file){
+  if(endsWith(large_file,".gz")){
+    header <- system(paste("zcat",large_file,"| head -1 -"), intern=T)
+  } else {
+    header <- system(paste("head -1",large_file), intern=T)
+  } 
+  return(header)
+}
 
 Data_dirs_to_table <- function(Data_dirs, writeCSV=F){
   df <- data.frame()
@@ -177,7 +197,7 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
     # Brain.xQTL.Serve
     "Brain.xQTL.Serve_cell-specificity-eQTL" = list(type="mQTL",
                                    topSS=NA,
-                                   fullSS=file.path(root,"ad-omics/data/Brain_xQTL_Serve/cell-specificity-eQTL.tsv"),
+                                   fullSS=file.path(root,"ad-omics/data/Brain_xQTL_Serve/cell-specificity-eQTL/cell-specificity-eQTLs.tsv.gz"),
                                    reference="https://www.ncbi.nlm.nih.gov/pubmed/28869584"),
     
     # GTEx: many different single-tissue eQTLs
@@ -190,17 +210,13 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
     ## NOTE: this is a folder (not the actual file)
     "GTEx_V8" = list(type="eQTL",
                   topSS=NA,
-                  fullSS=file.path(root,"ad-omics/data/GTEx_QTL/GTEx_Analysis_v8_eQTL"),
+                  fullSS=file.path(root,"ad-omics/data/GTEx_QTL/GTEx_Analysis_v8_eQTL_all_associations"),
                   reference="https://www.nature.com/articles/nature24277")
-  
-    
-  
-  
-          
   ) 
   Data_dirs_table <- Data_dirs_to_table(Data_dirs, writeCSV)
   return(Data_dirs_table)
 }
+
 
 
 Directory_info <- function(dataset_name, variable="topSumStats"){

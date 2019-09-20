@@ -250,10 +250,9 @@ psychENCODE.overlap_plots <- function(percent_df){
   print(cp)
 }
 
+ 
 
-
-
-ENSG_to_HGNC <- function(QTL, reference_genome="grch37"){
+psychENCODE.ENS_to_HGNC <- function(QTL, reference_genome="grch37"){
   print("+ Converting Ensembl IDs to HGNC Gene Symbols")
   # Identify and rename feature column
   feature_cols <- c("gene_id","Peak_id","transcript_id")

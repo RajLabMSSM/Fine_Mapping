@@ -1,4 +1,4 @@
- 
+
 
 
 ################## QTL Data ################## 
@@ -6,27 +6,17 @@
 # V- Fairfax
 # V- MESA
 # V- Cardiogenics
-# - ROSMAP
+# V- Brain_xQTL_Serve
 # - ImmVar
 # - STARNET
-# V- GTEx (49 tissues)
+# V- GTEx V7 & V8 (49 tissues)
 
 
 
 mergeQTL.psychENCODE <- function(FM_all=merge_finemapping_results(minimum_support = 0),
-                                    consensus_only=T,
-                                    local_files=T,
-                                    force_new_subset=F){
-  root <- ifelse(local_files, 
-                 "./Data/QTL/psychENCODE",
-                 "/sc/orga/projects/ad-omics/data/psychENCODE")
-  ASSAY_files <- file.path(root,
-                           c("DER-08a_hg19_eQTL.significant.txt.gz",
-                             "DER-09_hg19_cQTL.significant.txt.gz",
-                             "DER-10a_hg19_isoQTL.significant.txt.gz",
-                             "INT-16_HiC_EP_linkages_cross_assembly.csv.gz"))
-  ASSAY_files = setNames(ASSAY_files, nm = c("eQTL","cQTL","isoQTL","HiC"))
-  
+                                 consensus_only=T,
+                                 local_files=T,
+                                 force_new_subset=F){
   if(consensus_only){
     FM_all <- subset(FM_all, Consensus_SNP==T)
   }
@@ -35,35 +25,42 @@ mergeQTL.psychENCODE <- function(FM_all=merge_finemapping_results(minimum_suppor
     dplyr::mutate(SNP_id=paste0(CHR,":",POS)) %>% 
     data.table::data.table()
   
-  for(assay in  c("eQTL","cQTL","isoQTL")){
-    printer("psychENCODE:: Checking for overlap with",assay)
-    output_path <- file.path(dirname(ASSAY_files[[assay]]), assay, paste0("psychENCODE.",assay,".finemap.txt"))
-    
-    if(file.exists(output_path) & force_new_subset==F){
+  for(assay in  c("eQTL","cQTL","isoQTL","tQTL")){
+    printer("psychENCODE:: Checking for overlap with",assay) 
+    output_path <- file.path("./Data/QTL/psychENCODE", assay, paste0("psychENCODE.",assay,".finemap.txt"))
+    output_path_gz <- paste0(output_path,".gz")
+    if(file.exists(output_path_gz) & force_new_subset==F){
       printer("psychENCODE:: Importing pre-existing file.")
-      QTL.sub <- data.table::fread(output_path)
+      QTL.sub <- data.table::fread(output_path_gz)
     } else {
-      QTL <- data.table::fread(ASSAY_files[[assay]], nThread = 4)
+      server_file <- Directory_info(dataset_name = paste0("psychENCODE_",assay), "fullSumStats")
+      QTL <- data.table::fread(server_file, nThread = 4)
+      n_snps <- get_nrows(file.path(dirname(dirname(server_file)), "SNP_Information_Table_with_Alleles.txt"))
       # Subset QTL data
-      QTL.sub <- subset(QTL, SNP_id %in% FM_all$SNP_id)
-      # QTLs have can multiple probes per SNP location. 
-      ## Pick only the best one (lowest FDR and highest Effect) keep each row as a unique genomic position:
-      QTL.sub <- subset(QTL.sub, select=c("SNP_id","regression_slope","FDR")) %>% 
-        dplyr::group_by(SNP_id) %>%
-        arrange(FDR, desc(regression_slope)) %>% 
-        dplyr::slice(1) %>% 
-        data.table::data.table()
-      # Select and rename columns
-      QTL.sub <-  QTL.sub %>%  
-        `colnames<-`(c("SNP_id",
-                       paste0("psychENCODE_",assay,".Effect"),
-                       paste0("psychENCODE_",assay,".FDR"))) %>% unique() %>% 
-        data.table::data.table()
-      github_output <- file.path("./Data/QTL/psychENCODE",assay,paste0("psychENCODE.",assay,".finemap.txt"))
-      dir.create(dirname(github_output), showWarnings = F, recursive = T)
-      data.table::fwrite(QTL.sub, github_output, sep="\t", nThread = 4)
+      if(assay %in% c("fQTL")){QTL <- QTL %>% dplyr::rename(gene_chr=Chromosome_of_variant, 
+                                                            gene_start=Locus_of_variant,
+                                                            regression_slope=Regression_slope) %>% 
+        dplyr::mutate(FDR=p.adjust(Nominal_p_val_of_association,method = "fdr", n = n_snps),
+                      SNP_id=paste0(gsub("chr","",gene_chr),":",gene_start))}
+      QTL.sub <- QTL %>% subset(SNP_id %in% FM_all$SNP_id)
+      # Write
+      dir.create(dirname(output_path), showWarnings = F, recursive = T)
+      data.table::fwrite(QTL.sub, output_path, sep="\t", nThread = 4)
+      R.utils::gzip(output_path, overwrite=T, remove=T)
     }
-    
+    # QTLs have can multiple probes per SNP location. 
+    ## Pick only the best one (lowest FDR and highest Effect) keep each row as a unique genomic position:
+    QTL.sub <- subset(QTL.sub, select=c("SNP_id","regression_slope","FDR")) %>% 
+      dplyr::group_by(SNP_id) %>%
+      arrange(FDR, desc(regression_slope)) %>% 
+      dplyr::slice(1) %>% 
+      data.table::data.table()
+    # Select and rename columns
+    QTL.sub <-  QTL.sub %>%  
+      `colnames<-`(c("SNP_id",
+                     paste0("psychENCODE_",assay,".Effect"),
+                     paste0("psychENCODE_",assay,".FDR"))) %>% unique() %>% 
+      data.table::data.table()  
     FM_all <- data.table:::merge.data.table(FM_all,
                                             QTL.sub,
                                             by = "SNP_id",
@@ -110,7 +107,7 @@ mergeQTL.Fairfax <- function(FM_all, conditions=c("CD14","IFN","LPS2","LPS24") )
                                             by="SNP_id", 
                                             all.x = T, allow.cartesian = T) 
   } 
- return(FM_all) 
+  return(FM_all) 
 }
 
 
@@ -140,15 +137,15 @@ mergeQTL.MESA <- function(FM_all, force_new_subset=F){
       data.table::fwrite(dat, output_path, sep = "\t", col.names = T)
       R.utils::gzip(output_path_txt, overwrite=T, remove=T)
     }  
-      # Take only the top QTL per SNP location
-      ## Rename columns
-      dat.sub <- dplyr::select(dat, snps, beta, FDR, gene_name) %>% 
-        dplyr::group_by(snps) %>%
-        arrange(FDR, desc(beta)) %>% 
-        dplyr::slice(1) %>% 
-        `colnames<-`(c("SNP", paste0(dataset,".Effect"), paste0(dataset,".FDR"), paste0("MESA.",pop,".gene") )) %>%
-        data.table::data.table()
-   
+    # Take only the top QTL per SNP location
+    ## Rename columns
+    dat.sub <- dplyr::select(dat, snps, beta, FDR, gene_name) %>% 
+      dplyr::group_by(snps) %>%
+      arrange(FDR, desc(beta)) %>% 
+      dplyr::slice(1) %>% 
+      `colnames<-`(c("SNP", paste0(dataset,".Effect"), paste0(dataset,".FDR"), paste0("MESA.",pop,".gene") )) %>%
+      data.table::data.table()
+    
     FM_all <- data.table:::merge.data.table(FM_all, dat.sub, 
                                             by="SNP", 
                                             all.x = T) 
@@ -166,23 +163,23 @@ mergeQTL.Cardiogenics <- function(FM_all, force_new_subset=F, cis_only=T){
       print("Cardiogenics:: Pre-existing file detected. Importing...")
       dat.sub <- data.table::fread(output_path, nThread = 4)
     } else{ 
-        server_path <- Directory_info(paste0("Cardiogenics_",celltype), "fullSumStats")
-        dir.create(dirname(output_path), recursive = T, showWarnings = F)
-        DAT <- data.table::fread(server_path,  nThread = 4)
-        dat.sub <- subset(DAT, SNPID %in% unique(FM_all$SNP))
-        data.table::fwrite(dat.sub, output_path, sep="\t", nThread = 4)
+      server_path <- Directory_info(paste0("Cardiogenics_",celltype), "fullSumStats")
+      dir.create(dirname(output_path), recursive = T, showWarnings = F)
+      DAT <- data.table::fread(server_path,  nThread = 4)
+      dat.sub <- subset(DAT, SNPID %in% unique(FM_all$SNP))
+      data.table::fwrite(dat.sub, output_path, sep="\t", nThread = 4)
     }
     
     if(cis_only){dat.sub <- subset(dat.sub, relativePosition=="cis")}
     dat.sub <- dplyr::select(dat.sub, SNPID, beta, FDR, reporterID) %>% 
-                dplyr::group_by(SNPID) %>%
-                arrange(FDR, desc(beta)) %>% 
-                dplyr::slice(1) %>% 
-                `colnames<-`(c("SNP", 
-                               paste0(dataset,".Effect"), 
-                               paste0(dataset,".FDR"), 
-                               paste0(dataset,".probe") )) %>%
-                data.table::data.table()
+      dplyr::group_by(SNPID) %>%
+      arrange(FDR, desc(beta)) %>% 
+      dplyr::slice(1) %>% 
+      `colnames<-`(c("SNP", 
+                     paste0(dataset,".Effect"), 
+                     paste0(dataset,".FDR"), 
+                     paste0(dataset,".probe") )) %>%
+      data.table::data.table()
     
     FM_all <- data.table:::merge.data.table(FM_all, dat.sub, 
                                             by="SNP", 
@@ -192,87 +189,158 @@ mergeQTL.Cardiogenics <- function(FM_all, force_new_subset=F, cis_only=T){
 }
 
 
- mergeQTL.GTEx_list_files <- function(server_path, output_dir, GTEx_version, fuzzy_search=F){ 
-    printer("GTEx:: Constructing reference file of available single-tissue eQTL files...")
-    SS_files <- list.files(server_path, pattern=ifelse(GTEx_version=="GTEx_V7",".allpairs.txt.gz","*.egenes.*"), full.names = T) 
-    all_tissues <- lapply(SS_files, function(e){strsplit(basename(e),"[.]")[[1]][1] }) %>% unlist() %>% unique()
-    dir.create(output_dir, showWarnings = F, recursive = T)
-    tissues_df <- data.frame(tissue=all_tissues, sum_stats=SS_files)
-    if(fuzzy_search!=F){
-      tissues_df = tissues_df[grep(fuzzy_search, tissues_df$tissue)]
-    }
-    return(tissues_df)
- }
- 
-mergeQTL.GTEx_convert_genes <- function(server_path, gene_symbols){
-  system(paste0("grep "))
-  ens <- refGenome::ensemblGenome()
-  gtf <- refGenome::read.gtf(ens, filename = file.path(server_path,"gencode.v19.genes.v7.patched_contigs.gtf")) 
+mergeQTL.GTEx_list_files <- function(output_dir, server_path, GTEx_version="GTEx_V7", fuzzy_search=F){ 
+  printer("GTEx:: Constructing reference file of available single-tissue eQTL files...")
+  SS_files <- list.files(server_path, pattern=ifelse(GTEx_version=="GTEx_V7",".allpairs.txt.gz","*.egenes.*"), full.names = T) 
+  all_tissues <- lapply(SS_files, function(e){strsplit(basename(e),"[.]")[[1]][1] }) %>% unlist() %>% unique()
+  dir.create(output_dir, showWarnings = F, recursive = T)
+  tissues_df <- data.frame(tissue=all_tissues, sum_stats=SS_files)
+  if(fuzzy_search!=F){
+    tissues_df = tissues_df[grep(fuzzy_search, tissues_df$tissue),]
+  }
+  return(tissues_df)
 }
- 
- 
-mergeQTL.GTEx <- function(FM_all, fuzzy_search=F, GTEx_version="GTEx_V7"){
+
+mergeQTL.HGNC_to_ENS <- function(geneList){ 
+  print("mergeQTL:: Gathering Ensembl_gene_id mappings for HGNC symbols...")
+  info <- biomart_geneInfo(geneList = geneList)
+  geneDict <- setNames(info$ensembl_gene_id, info$hgnc_symbol)
+  converted_genes <- geneDict[geneList]
+  na_genes <-  info$hgnc_symbol[as.logical(is.na(converted_genes))]
+  printer("Could not find mappings for",length(na_genes),"genes:",paste(na_genes, collapse=", "))
+  return(converted_genes) 
+}
+
+mergeQTL.GTEx_snp_dict <- function(snp_list){
+  ref <- data.table::fread(file.path(server_path,"GTEx_Analysis_2016-01-15_v7_WholeGenomeSeq_635Ind_PASS_AB02_GQ20_HETX_MISS15_PLINKQC.lookup_table.txt.gz"), nThread = 4)
+  snp_dict <- setNames(ref$rs_id_dbSNP147_GRCh37p13, ref$variant_id)
+  return(snp_dict)
+}
+
+mergeQTL.GTEx <- function(FM_all, fuzzy_search="Brain", GTEx_version="GTEx_V7", force_new_subset=F){
   server_path <- Directory_info(GTEx_version, "fullSumStats")
   output_dir <- file.path("./Data/QTL",GTEx_version)
-  tissues_df <- mergeQTL.GTEx_list_files(server_path, output_dir, GTEx_version, fuzzy_search)
+  tissues_df <- mergeQTL.GTEx_list_files(output_dir, server_path, GTEx_version, fuzzy_search)
+  geneDict <- mergeQTL.HGNC_to_ENS(geneList = unique(FM_all$Gene))
+  ensembl_genes <- as.character(geneDict)[!is.na(geneDict)]
   # Gather QTL data
   for(tiss in tissues_df$tissue){
     printer(GTEx_version,":: Processsing eQTL for",tiss)
-    dataset <- paste0(gsub("_",".",GTEx_version),"_",tiss)
+    dataset <- paste0(GTEx_version,"_",tiss)
     # dat <- fread(subset(tissues_df, tissue==tiss)$sum_stats %>% as.character(), nThread = 4)
-    chr_pos <- paste(paste0(FM_all$CHR,"_",FM_all$POS), collapse="|")
-    server_file <- subset(tissues_df, tissue==tiss)$sum_stats %>% as.character()
-    output_path <- file.path(output_dir, paste0(dataset,".txt"))
-    system(paste0("grep -E '",chr_pos,"' ",server_path," > ",output_path))
-    
-    dat.sub <- subset(dat, (rs_id_dbSNP151_GRCh38p7 %in% unique(FM_all$SNP)))
+    # chr_pos <- paste(paste0(FM_all$CHR,"_",FM_all$POS), collapse="|")
+    output_path <- file.path(output_dir, paste0(dataset,".finemap.txt"))
+    output_path_gz <- paste0(output_path,".gz")
+    if(file.exists(output_path_gz) & force_new_subset==F){
+      dat <- data.table::fread(output_path_gz, nThread = 4)
+    } else { 
+      server_file <- subset(tissues_df, tissue==tiss)$sum_stats %>% as.character() 
+      header <- get_header(server_file)
+      fullSS_nrows <- get_nrows(server_file)#Differs for each SS file, so need to calculate for each.
+      system(paste0("zcat ",server_file," | grep -E '",paste(c(header, ensembl_genes), collapse="|"),"' > ",output_path))
+      
+      dat <- data.table::fread(output_path, nThread = 4)
+      # Rewrite with FDR included
+      dat <-  dat %>% tidyr::separate(variant_id, c('CHR', 'POS', 'A1','A2','build'), sep="_", extra="drop") %>%
+                      dplyr::mutate(FDR=p.adjust(pval_nominal, method = "fdr", n=fullSS_nrows),
+                                    CHR=as.numeric(CHR), 
+                                    POS=as.numeric(POS))
+      data.table::fwrite(dat, output_path)
+      R.utils::gzip(output_path, overwrite=T, remove=T)
+    }
     # Subset
-    # **NOTE!!**: There's a A LOOOTT of different variables in the gtex files. 
-    ## Need to go back and check if I'm using the right ones.
-    dat.sub <- dplyr::select(dat.sub, rs_id_dbSNP151_GRCh38p7, beta_shape1, qval, gene_name) %>% 
-      dplyr::group_by(rs_id_dbSNP151_GRCh38p7) %>%
-      arrange(qval, desc(beta_shape1)) %>% 
-      # dplyr::slice(1) %>% 
-      `colnames<-`(c("SNP", 
-                     paste0(dataset,".Effect"), 
+    dat.sub <- dat %>% 
+      dplyr::select(CHR, POS, FDR, slope, gene_id) %>% 
+      `colnames<-`(c("CHR","POS",
                      paste0(dataset,".FDR"), 
-                     paste0(dataset,".gene") )) %>%
+                     paste0(dataset,".Effect"), 
+                     paste0(dataset,".gene"))) %>% 
       data.table::data.table() 
     FM_all <- data.table:::merge.data.table(FM_all, dat.sub, 
-                                            by="SNP", 
+                                            by=c("CHR","POS"), 
                                             all.x = T, allow.cartesian = T)  
   }
- return(FM_all)
+  return(FM_all)
+}
+
+mergeQTL.Brain_xQTL_Serve <- function(FM_all, force_new_subset=F){
+  for(assay in c("eQTL","haQTL","mQTL","cell-specificity-eQTL")){
+    printer("Brain_xQTL_Serve:: Processing",assay,"...")
+    dataset <- paste0("Brain_xQTL_Serve_",assay) 
+    output_path <- file.path("./Data/QTL/Brain_xQTL_Serve",assay,paste0("Brain_xQTL_Serve.",assay,".finemap.txt"))
+    output_path_gz <- paste0(output_path,".gz")
+    if(file.exists(output_path_gz) & force_new_subset==F){
+      printer("+ Brain_xQTL_Serve:: Pre-existing file detected. Importing...")
+      QTL <- data.table::fread(output_path_gz)
+    } else {
+      printer("+ Brain_xQTL_Serve:: Importing and subsettting full",assay,"dataset...")
+      dir.create(dirname(output_path), showWarnings = F, recursive = T)
+      server_file <- Directory_info(paste0("Brain.xQTL.Serve_",assay), "fullSumStats")
+      header <- get_header(server_file)
+      col1 <- strsplit(header, "\t")[[1]][1]
+      
+      if(assay %in% c("haQTL","mQTL")){
+        printer("+ Brain_xQTL_Serve:: Importing large",assay,"file and subsetting via data.table...")
+        QTL <- data.table::fread(server_file, nThread = 4, select = c("SNPid","SNPchromosome","SNPpos","featureName","SpearmanRho","pValue"))
+        fullSS_nrows <- nrow(QTL)
+        QTL <- subset(QTL, SNPid %in% unique(FM_all$SNP))
+        QTL <- (QTL %>% dplyr::group_by(SNPid) %>% arrange(pValue, desc(SpearmanRho))) %>% 
+          dplyr::slice(1) %>% data.table()
+        data.table::fwrite(QTL, output_path, nThread=4, sep="\t")
+      } else {
+        fullSS_nrows <- get_nrows(server_file)
+        system(paste0("zcat ",server_file," | grep -E '",paste(c(col1, unique(FM_all$Gene)), collapse="|"),
+                    "' > ",output_path))
+      }
+      
+      # Calculate FDR
+      QTL <- data.table::fread(output_path, nThread = 4) 
+      if(assay=="cell-specificity-eQTL"){
+        QTL <- QTL %>% dplyr::rename(SNP=`SNP name`,
+                                     FDR=`FDR (specific to each cell type)`,
+                                     cell_type=`Cell type`)
+      } else { 
+        QTL$FDR <- p.adjust(QTL$pValue, method="fdr", n=fullSS_nrows) 
+        QTL <- QTL %>% dplyr::rename(SNP=SNPid)
+        } 
+      # Rewrite after adding FDR
+      data.table::fwrite(QTL, output_path, nThread = 4, sep="\t")
+      R.utils::gzip(output_path, overwrite=T, remove=T)
+    }
+    
+    # Subset
+    dat.sub <- subset(QTL, SNP %in% unique(FM_all$SNP))
+    if(assay=="cell-specificity-eQTL"){  
+      dat.sub$Effect <- NA
+      dat.sub <- (dat.sub %>%
+        dplyr::select(SNP, FDR, Effect, cell_type) %>% 
+        arrange(FDR, desc(Effect))) %>%
+        `colnames<-`(c("SNP",
+                       paste0(dataset,".FDR"), 
+                       paste0(dataset,".Effect"), 
+                       paste0(dataset,"cell_type"))) %>% 
+        data.table::data.table()
+    } else {
+      dat.sub <- (dat.sub %>%
+        dplyr::select(SNP, FDR, Effect=SpearmanRho, gene=featureName) %>% 
+        arrange(FDR, desc(Effect))) %>%
+        `colnames<-`(c("SNP",
+                       paste0(dataset,".FDR"), 
+                       paste0(dataset,".Effect"),
+                       paste0(dataset,".gene"))) %>% 
+        data.table::data.table()
+    }
+    FM_all <- data.table:::merge.data.table(FM_all, dat.sub, 
+                                            by="SNP", 
+                                            all.x = T, allow.cartesian = T)
+  }
+  return(FM_all)
 }
 
 
-####----------- Gather QTL Overlap -----------####
 
-mergeQTL.merge_all <- function(){
-  # Gather all Fine-mapping results
-  FM_all <- merge_finemapping_results(minimum_support = 0, 
-                                      include_leadSNPs = T, 
-                                      dataset = "./Data/GWAS/Nalls23andMe_2019")
-  
-  # psychENCODE eQTL, cQTL, isoQTL, HiC: DLPFC
-  FM_merge <- mergeQTL.psychENCODE(FM_all=FM_all, consensus_only = F,  local_files = T,  force_new_subset = F)
-  # Fairfax eQTL: monocytes
-  FM_merge <- mergeQTL.Fairfax(FM_merge)
-  # MESA eQTL: monocytes
-  FM_merge <- mergeQTL.MESA(FM_merge, force_new_subset = F) 
-  # Cardiogenics eQTL: macrophages, monocytes
-  FM_merge <- mergeQTL.Cardiogenics(FM_merge, force_new_subset = F, cis_only = T)
-  # GTEx eQTL: 49 different tissues
-  FM_merge.final <- mergeQTL.GTEx(FM_merge, fuzzy_search="Brain")
-  
-  ## Write file and compress
-  QTL_merged_path <- file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
-                               "Nalls23andMe_2019.QTL_overlaps.txt")
-  data.table::fwrite(FM_merge.final, QTL_merged_path, sep="\t", nThread = 4)
-  R.utils::gzip(QTL_merged_path, overwrite=T, remove=T)
-  return(FM_merge)
-}
 
+############### Post-processing ################
 
 mergeQTL.melt_FDR <- function(FM_merge){ 
   dim(FM_merge) 
@@ -287,9 +355,11 @@ mergeQTL.melt_FDR <- function(FM_merge){
   FM_melt[is.infinite(FM_melt$FDR),"FDR"] <- NA 
   FM_melt[FM_melt$FDR %in% c(Inf,-Inf),"FDR"] <- NA 
   FM_melt[FM_melt$FDR==0,"FDR"] <- .Machine$double.xmin 
-  gsub(FM_melt$QTL.Source)
   return(FM_melt)
 }
+
+####### PLOTS #######
+
 
 mergeQTL.count_overlap <- function(){
   library(dplyr)
@@ -299,9 +369,9 @@ mergeQTL.count_overlap <- function(){
   
   mergedQTL.get_count <- function(SNP.subset){
     count.df <- subset(SNP.subset, (FDR<0.05), drop=F) %>% 
-                      dplyr::group_by(QTL.Source, .drop=F) %>% 
-                      tally(sort = F) %>% 
-                      arrange(QTL.Source)
+      dplyr::group_by(QTL.Source, .drop=F) %>% 
+      tally(sort = F) %>% 
+      arrange(QTL.Source)
     count.df$all.SNPs <- nrow(SNP.subset)
     count.df$Proportion <- count.df$n / count.df$all.SNPs
     return(count.df)
@@ -310,15 +380,15 @@ mergeQTL.count_overlap <- function(){
   consensus <- mergedQTL.get_count(subset(FM_melt, (Consensus_SNP==T)))
   cred.set <- mergedQTL.get_count(subset(FM_melt, (Support>0)))
   leadSNP <- mergedQTL.get_count(subset(FM_melt, (leadSNP==T)))
-   
+  
   
   merged.data <- data.table::data.table(QTL.Source = consensus$QTL.Source,
                                         Consensus = consensus$Proportion,
                                         Credible.Set = cred.set$Proportion,
                                         GWAS.lead.SNP = leadSNP$Proportion) %>% 
-                data.table::melt.data.table(id.vars = "QTL.Source", 
-                                            variable.name = "SNP.Group", 
-                                            value.name = "Proportion.Overlap")
+    data.table::melt.data.table(id.vars = "QTL.Source", 
+                                variable.name = "SNP.Group", 
+                                value.name = "Proportion.Overlap")
   library(ggplot2)
   ggplot(merged.data, aes(x=QTL.Source, y=Proportion.Overlap*100, fill=SNP.Group)) + 
     geom_col(position = position_dodge(preserve = "single")) +
@@ -326,15 +396,11 @@ mergeQTL.count_overlap <- function(){
     theme(axis.text.x = element_text(angle = 55, hjust = 1, size = 9),
           plot.title = element_text(hjust = 0.5),
           plot.subtitle = element_text(hjust = 0.5)) +
-    labs(title="% Overlapping QTL", y="% Overlap", x="QTL Source")
+    labs(title="Proportion of Overlapping QTL", y="% Overlap", x="QTL Source")
+  
+  
 }
-
-
-
-
-
-######### PLOTS #############
-
+ 
 
 mergeQTL.stacked_manhattan_plot <- function(GENE_df, SNP.Group){  
   op <- ggplot(GENE_df, aes(x=POS, y=-log10(FDR), color=-log10(FDR))) + 
@@ -403,6 +469,47 @@ mergeQTL.QTL_distributions_plot <- function(){
   
 }
 
- 
 
+
+
+##################################################
+
+####----------- Gather QTL Overlap -----------####
+
+##################################################
+
+
+mergeQTL <- function(dataset = "./Data/GWAS/Nalls23andMe_2019"){
+  # Gather all Fine-mapping results
+  FM_all <- merge_finemapping_results(minimum_support = 0, 
+                                      include_leadSNPs = T, 
+                                      dataset = "./Data/GWAS/Nalls23andMe_2019")
+  
+  # psychENCODE eQTL, cQTL, isoQTL, tQTL, fQTL, HiC: DLPFC
+  FM_merge <- mergeQTL.psychENCODE(FM_all=FM_all, consensus_only = F,  local_files = T,  force_new_subset = F)
+  # Fairfax eQTL: monocytes
+  FM_merge <- mergeQTL.Fairfax(FM_merge)
+  # MESA eQTL: monocytes in AFA, CAU, HIS
+  FM_merge <- mergeQTL.MESA(FM_merge, force_new_subset = F) 
+  # Cardiogenics eQTL: macrophages, monocytes
+  FM_merge <- mergeQTL.Cardiogenics(FM_merge, force_new_subset = F, cis_only = T)
+  # Brain_xQTL_Serve
+  FM_merge <- mergeQTL.Brain_xQTL_Serve(FM_merge, force_new_subset = F)
+  ## Write file and compress
+  QTL_merged_path <- file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+                               "Nalls23andMe_2019.QTL_overlaps.txt")
+  data.table::fwrite(FM_merge, QTL_merged_path, sep="\t", nThread = 4)
+  R.utils::gzip(QTL_merged_path, overwrite=T, remove=T)
+  
+  
+  #-------------------------------#
+  # GTEx eQTL: 49 different tissues
+  FM_GTEx <- mergeQTL.GTEx(FM_all, fuzzy_search="Brain", GTEx_version = "GTEx_V7", force_new_subset = F)
+  QTL_merged_path.GTEx <- file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+                               "Nalls23andMe_2019.GTEx_QTL_overlaps.txt")
+  data.table::fwrite(FM_GTEx, QTL_merged_path.GTEx, sep="\t", nThread = 4)
+  R.utils::gzip(QTL_merged_path.GTEx, overwrite=T, remove=T)
+  
+  return(FM_merge)
+}
 
