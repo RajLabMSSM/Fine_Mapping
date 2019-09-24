@@ -127,7 +127,7 @@ Kunkle_SNPs <- unique(AD_loci$`Top Associated SNV`)
 # Run fGWAS
 results.DF <- fGWAS(results_path = "./Data/GWAS/Nalls23andMe_2019/_genome_wide", 
                     dataset = "./Data/GWAS/Nalls23andMe_2019",
-                    SNP.Groups = c("Consensus", "CredibleSet", "GWAS", "Selected", "Random"), 
+                    SNP.Groups = c("Consensus", "CredibleSet", "GWAS.lead", "Selected", "Random"), 
                     selected_SNPs = Kunkle_SNPs,
                     remove_tmps = T,
                     force_new_fgwas = F, 

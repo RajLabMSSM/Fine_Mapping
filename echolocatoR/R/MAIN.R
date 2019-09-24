@@ -103,6 +103,8 @@ source("./echolocatoR/R/Finemapping/FINEMAP.R")
 source("./echolocatoR/R/Finemapping/PAINTOR.R")
 source("./echolocatoR/R/Finemapping/COJO.R")
 source("./echolocatoR/R/Finemapping/COLOC.R")
+source("./echolocatoR/R/Finemapping/fGWAS.R")
+
 # Plotting
 source("./echolocatoR/R/Plotting/plot.R")
 source("./echolocatoR/R/Plotting/ggbio.R")
@@ -111,7 +113,6 @@ source("./echolocatoR/R/Plotting/QTL_boxplots.R")
 source("./echolocatoR/R/Annotation/annotate.R")
 source("./echolocatoR/R/Annotation/GoShifter.R") # ***
 source("./echolocatoR/R/Annotation/XGR.R")
-source("./echolocatoR/R/Annotation/fGWAS.R")
 source("./echolocatoR/R/Annotation/psychENCODE.R")
 source("./echolocatoR/R/Annotation/mergeQTL.R")
 

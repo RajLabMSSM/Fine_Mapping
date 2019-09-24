@@ -169,12 +169,12 @@ merge_finemapping_results <- function(minimum_support=1,
                                       regulomeDB_annotation=F,
                                       biomart_annotation=F,
                                       verbose=T,
-                                      dataset="./Data/GWAS/Nalls23andMe_2019"#NA
-                                      ){
+                                      dataset="./Data/GWAS"#NA
+                                      ){ 
   if(from_storage){
     printer("+ Gathering all fine-mapping results from storage...", v=verbose)
     # Find all multi-finemap_results files
-    multi_dirs <- list.files("./Data/GWAS", pattern = "Multi-finemap_results.txt", 
+    multi_dirs <- list.files(dataset, pattern = "Multi-finemap_results.txt", 
                              recursive = T, full.names = T)
     dataset_names <- dirname(dirname(dirname(multi_dirs))) %>% unique() 
     # Loop through each GENE
@@ -242,10 +242,7 @@ merge_finemapping_results <- function(minimum_support=1,
     # data.table::fwrite(merged_results, file = csv_path, quote = F, sep = ",")
     openxlsx::write.xlsx(merged_results, xlsx_path)
   } 
-  # createDT_html(merged_results) %>% print()
-  if(!is.na(dataset)){
-    merged_results <- subset(merged_results, Dataset==dataset)
-  }
+  # createDT_html(merged_results) %>% print() 
   return(merged_results)
 }
 
