@@ -7,7 +7,7 @@
 # V- MESA
 # V- Cardiogenics
 # V- Brain_xQTL_Serve
-# - ImmVar
+# - ROSMAP + CommmonMind (larget than Brain_xQTL_Serve)
 # - STARNET
 # V- GTEx V7 & V8 (49 tissues)
 
@@ -156,7 +156,7 @@ mergeQTL.Fairfax_extract_MAF <- function(dat,
 
 
 # Fairfax: eQTL
-## Need: MAF, SampleSize, A1, A2
+## All fields complete for coloc!
 mergeQTL.Fairfax <- function(FM_all, CONDITIONS=c("CD14","IFN","LPS2","LPS24"), force_new_subset=F){
   FM_all <- mergeQTL.add_SNP_id(FM_all)
   for(condition in CONDITIONS){
@@ -225,7 +225,7 @@ mergeQTL.Fairfax <- function(FM_all, CONDITIONS=c("CD14","IFN","LPS2","LPS24"), 
 
 
 # MESA
-## Need: SampleSize, MAF
+## Need: MAF
 mergeQTL.MESA <- function(FM_all, force_new_subset=F, POPULATIONS=c("AFA","CAU","HIS")){ 
   FM_all <- mergeQTL.add_SNP_id(FM_all)
   sample_size.dict <- list(AFA=233, CAU=578, HIS=352)
@@ -705,9 +705,7 @@ mergeQTL.merge_handler <- function(FM_all, qtl_file){
     if(grepl("Cardiogenics",qtl_name)){
       celltype <- strsplit(qtl_name,"_")[[1]][2]
       FM_merge <- mergeQTL.Cardiogenics(FM_all, CELLTYPES = celltype) 
-    }
-    
-    FM_merge <- mergeQTL.flip_alleles(FM_merge)
+    } 
     return(FM_merge)
 }
 
