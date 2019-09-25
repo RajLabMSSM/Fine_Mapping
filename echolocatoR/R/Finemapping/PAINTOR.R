@@ -18,9 +18,10 @@ zscore <- function(vec){
 
 Zscore.get_mean_and_sd <- function(fullSS="./Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt",
                                    Effect_col="beta",
-                                   use_saved="./Data/GWAS/Nalls23andMe_2019/z.info.RDS"){
-  if(use_saved!=F){
-    z.info <- readRDS(use_saved) 
+                                   use_saved=T,
+                                   output_path="./Data/GWAS/Nalls23andMe_2019/z.info.RDS"){
+  if(use_saved){
+    z.info <- readRDS(output_path) 
   } else { 
     sample_x <- data.table::fread(fullSS, nThread = 4, select=c(Effect_col))
     sample.mean <- mean(sample_x$beta, na.rm = T)
@@ -62,7 +63,8 @@ PAINTOR.create_locusFile <- function(results_path,
   GWAS_path <- file.path(results_path,"Multi-finemap/Multi-finemap_results.txt") 
   z.info.gwas <- Zscore.get_mean_and_sd(fullSS="./Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt",
                                         Effect_col="beta", 
-                                        use_saved="./Data/GWAS/Nalls23andMe_2019/z.info.RDS")
+                                        use_saved=T,
+                                        output_path="./Data/GWAS/Nalls23andMe_2019/z.info.RDS")
   # Get the party started using the GWAS file
   merged_DT <- data.table::fread(GWAS_path, select = c("CHR","POS","SNP","Effect")) %>%
     dplyr::rename(CHR=CHR,
@@ -73,6 +75,10 @@ PAINTOR.create_locusFile <- function(results_path,
                   ZSCORE.P1=Zscore(x = ZSCORE.P1, z.info = z.info.gwas))
 
   if(!is.na(QTL_dataset_name)){
+    z.info.gwas <- Zscore.get_mean_and_sd(fullSS=Directory_info(dataset_name = QTL_dataset_name, variable = "fullSumStats"),
+                                          Effect_col="beta", 
+                                          use_saved=T,
+                                          output_path="./Data/QTL/Fairfax_2014/CD14/z.info.RDS")
     # Merge QTL data together
     merged_DT <- mergeQTL.merge_handler(FM_all = merged_DT, qtl_file = QTL_dataset_name)
     merged_DT <- dplyr::mutate(merged_DT, QTL.Effect)
