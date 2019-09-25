@@ -12,15 +12,34 @@ createDT <- function(DF, caption="", scrollY=400){
 }
 
 subset_genotype_data <- function(snp_list, 
-                                 genotype_path = "volunteer_421.impute2.dosage"){  
+                                 genotype_path = "/sc/orga/projects/ad-omics/data/fairfax/volunteer_421.impute2.dosage", sep=" "){  
   # NOTE: "volunteer_421.impute2.dosage" is the file you want to subset from! 
+  printer("Extracting subset of SNPs from",genotype_path)
+    if(endsWith(genotype_path,".gz")){
+      printer("Unzipping with zcat first...")
+      cmd <- paste0("zcat ",genotype_path," | grep -E '",paste0(snp_list %>% unique(), collapse="|"),"'") 
+    }
    cmd <- paste0("grep -E '",paste0(snp_list %>% unique(), collapse="|"),"' ", genotype_path)
    geno <- data.table::fread(text = system(cmd, intern = T),
-                               sep = " ", header = F) 
+                               sep = sep, header = F) 
   return(geno)
 }
 
-
+## Get probe IDs for gene 
+probes_mapping <- function(probe_path.="./Data/QTL/Fairfax_2014/gene.ILMN.map", gene_list){
+  printer("++ Extracting probe info")
+  cmd <- paste0("grep -E '", paste0(gene_list, collapse="|"),"' ",probe_path.)
+  col_names <- data.table::fread(probe_path., sep="\t", nrows = 0) %>% colnames()
+  probe_map <- data.table::fread(text = system(cmd, intern = T), 
+                                 sep = "\t", header = F, col.names = col_names)
+  if(dim(probe_map)[1]==0){
+    stop("Could not identify gene in the probe mapping file: ",paste(gene_list, collapse=", "))
+  }
+  # Subset just to make sure you didn't accidentally grep other genes
+  probe_map <- subset(probe_map, GENE %in% gene_list)
+  return(probe_map)
+}
+ 
 eQTL_boxplots <- function(snp_list,
                          eQTL_SS_paths = file.path("Data/eQTL/Fairfax_2014",
                                                    c("CD14/LRRK2/LRRK2_Fairfax_CD14.txt",
@@ -44,20 +63,7 @@ eQTL_boxplots <- function(snp_list,
   printer <- function(..., v=T){if(v){print(paste(...))}}
   
   # Expression
-  ## Get probe IDs for gene 
-  probes_mapping <- function(probe_path., gene_list){
-    printer("++ Extracting probe info")
-    cmd <- paste0("grep -E '", paste0(gene_list, collapse="|"),"' ",probe_path.)
-    col_names <- data.table::fread(probe_path., sep="\t", nrows = 0) %>% colnames()
-    probe_map <- data.table::fread(text = system(cmd, intern = T), 
-                                   sep = "\t", header = F, col.names = col_names)
-    if(dim(probe_map)[1]==0){
-      stop("Could not identify gene in the probe mapping file: ",paste(gene_list, collapse=", "))
-    }
-    # Subset just to make sure you didn't accidentally grep other genes
-    probe_map <- subset(probe_map, GENE %in% gene_list)
-    return(probe_map)
-  }
+  
   ## Subset expression data
   get_expression_data <- function(expression_paths, gene., probe_path){
     printer("")

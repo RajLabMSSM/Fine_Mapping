@@ -20,8 +20,18 @@ mergeQTL.add_SNP_id <- function(FM_all){
 }
 
 
+mergeQTL.psychENCODE_SNPinfo <- function(QTL.sub, 
+                                         SNPinfo_path="/sc/orga/projects/ad-omics/data/psychENCODE/SNP_Information_Table_with_Alleles.txt.gz"){
+  printer("+ mergeQTL: Merging external SNP info...")
+  SNPinfo <- data.table::fread(SNPinfo_path, nThread = 4)
+  SNPinfo.sub <- subset(SNPinfo, PEC_id %in% QTL.sub$SNP_id, select=c("PEC_id","Rsid","REF","ALT"))
+  snp_merge <- data.table:::merge.data.table(QTL.sub, SNPinfo.sub, 
+                                             by.x = "SNP_id", by.y = "PEC_id", all.x = T)
+  return(snp_merge)
+}
+
 # psychENCODE
-## Need: SampleSize, MAF, A1, A2
+## Need: StdErr, MAF
 mergeQTL.psychENCODE <- function(FM_all=merge_finemapping_results(minimum_support = 0), 
                                  local_files=T,
                                  force_new_subset=F,
@@ -40,7 +50,7 @@ mergeQTL.psychENCODE <- function(FM_all=merge_finemapping_results(minimum_suppor
     } else {
       server_file <- Directory_info(dataset_name = paste0("psychENCODE_",assay), "fullSumStats")
       QTL <- data.table::fread(server_file, nThread = 4)
-      n_snps <- get_nrows(file.path(dirname(dirname(server_file)), "SNP_Information_Table_with_Alleles.txt"))
+      fullSS_nrow <- get_nrows(server_file)
       # Subset QTL data
       if(assay %in% c("fQTL")){QTL <- QTL %>% dplyr::rename(gene_chr=Chromosome_of_variant, 
                                                             gene_start=Locus_of_variant,
@@ -48,6 +58,8 @@ mergeQTL.psychENCODE <- function(FM_all=merge_finemapping_results(minimum_suppor
         dplyr::mutate(FDR=p.adjust(Nominal_p_val_of_association,method = "fdr", n = n_snps),
                       SNP_id=paste0(gsub("chr","",gene_chr),":",gene_start))}
       QTL.sub <- QTL %>% subset(SNP_id %in% FM_all$SNP_id)
+      QTL.sub <- mergeQTL.psychENCODE_SNPinfo(QTL.sub) 
+                                               
       # Write
       dir.create(dirname(output_path), showWarnings = F, recursive = T)
       data.table::fwrite(QTL.sub, output_path, sep="\t", nThread = 4)
@@ -64,70 +76,140 @@ mergeQTL.psychENCODE <- function(FM_all=merge_finemapping_results(minimum_suppor
       data.table::data.table()
     # Select and rename columns
     QTL.sub <-  (QTL.sub %>%  
-      dplyr::mutate(SNP_id,
+      dplyr::mutate(SNP=Rsid,
                     QTL.Effect=regression_slope,
                     QTL.StdErr=NA,
                     QTL.P=nominal_pval,
                     QTL.FDR=FDR,
                     QTL.MAF=NA, 
-                    QTL.A1=NA,
-                    QTL.A2=NA,
-                    QTL.SampleSize=NA,
+                    QTL.A1=REF,
+                    QTL.A2=ALT,
+                    QTL.SampleSize=1866, #Assuming same size for each (not sure if true)
                     QTL.Gene=gene_id) %>%
-      dplyr::select(SNP_id, QTL.Effect, QTL.StdErr, QTL.P, QTL.FDR, QTL.MAF, QTL.A1, QTL.A2, QTL.SampleSize, QTL.Gene) %>%
+      dplyr::select(SNP, QTL.Effect, QTL.StdErr, QTL.P, QTL.FDR, QTL.MAF, QTL.A1, QTL.A2, QTL.SampleSize, QTL.Gene) %>%
       arrange(QTL.FDR, desc(QTL.Effect)) ) %>% 
       data.table::data.table()  
     FM_all <- data.table:::merge.data.table(FM_all,
-                                              QTL.sub,
-                                              by = "SNP_id",
-                                              all.x = T, allow.cartesian = T)
+                                            QTL.sub,
+                                            by = "SNP",
+                                            all.x = T, allow.cartesian = T)
   }
   return(FM_all)
 }
 
+  
+
+mergeQTL.Fairfax_probemap <- function(gene_list, probe_path.="./Data/QTL/Fairfax_2014/gene.ILMN.map"){
+  printer("++ Extracting probe info")
+  cmd <- paste0("grep -E '", paste0(gene_list, collapse="|"),"' ",probe_path.)
+  col_names <- data.table::fread(probe_path., sep="\t", nrows = 0) %>% colnames()
+  probe_map <- data.table::fread(text = system(cmd, intern = T), 
+                                 sep = "\t", header = F, col.names = col_names)
+  if(dim(probe_map)[1]==0){
+    stop("Could not identify gene in the probe mapping file: ",paste(gene_list, collapse=", "))
+  }
+  # Subset just to make sure you didn't accidentally grep other genes
+  probe_map <- subset(probe_map, GENE %in% gene_list)
+  probe_map <- setNames(probe_map$GENE, probe_map$PROBE_ID) 
+  return(probe_map)
+}
+
+mergeQTL.Fairfax_extract_SNPinfo <- function(genotype_path="/sc/orga/projects/ad-omics/data/fairfax/volunteer_421.impute2.dosage",
+                                             rsid.key_path="/sc/orga/projects/ad-omics/data/fairfax/rsid.key.tsv.gz"){
+  ### Extract SNP, CHR, and POS from first several cols of Fairfax genotype file
+  printer("mergeQTL::Fairfax: Extracting RSID, CHR, POS, REF and ALT from:",basename(genotype_path))
+  if(file.exists(rsid.key_path)){
+    printer("+ mergeQTL::Fairfax: Pre-existing file detected. Importing...") 
+  } else {
+    system(paste0("awk -F ' ' 'BEGIN { print \"RSID\tCHR\tPOS\tREF\tALT\" }; { print $2\"\t\"$1\"\t\"$3\"\t\"$4\"\t\"$5 }' ", genotype_path," | gzip > ",rsid.key_path))
+    printer("+ mergeQTL::Fairfax: File saved to ==>", rsid.key_path)
+  } 
+  rsid.key <- data.table::fread(rsid.key_path, nThread = 4)
+  return(rsid.key)
+}
+
+mergeQTL.Fairfax_extract_MAF <- function(dat, 
+                                         MAF_dir=file.path("/sc/orga/projects/ad-omics/data/fairfax/",
+                                                           "imputation/imputation-hrc","MAF")){
+  #NOTE!: There still a lot of mismatched alleles. Need to figure out how to fix.
+  dat <- dat %>% tidyr::separate(SNP_id, c('CHR', 'POS'), sep=":", extra="drop", remove=F)
+  printer("mergeQTL::Fairfax: Merging with imputation files to get REF(0), ALT(1) and MAF...")
+  merged.DAT <- lapply(unique(dat$CHR), function(chr){
+    printer("mergeQTL::Fairfax: Chrom",chr)
+    dat.chr = subset(dat, CHR==chr)
+    MAF_path <- file.path(MAF_dir,paste0("chr",chr,".info"))
+    # MAF_path <- file.path(MAF_dir,paste0("chr",chr,".filtered.tab"))
+    maf.info <- data.table::fread(MAF_path, nThread = 4)
+    maf.info <- maf.info %>% dplyr::rename(SNP_id=SNP)
+    merge.dat <- data.table:::merge.data.table(dat.chr, 
+                                  maf.info[,c("SNP_id","REF(0)","ALT(1)","MAF")], 
+                                  by="SNP_id", all.x = T)
+    # Check if these are the same ref/alt in the other Fairfax files
+    ref_bool <- merge.dat$REF!=merge.dat$`REF(0)`
+    alt_bool <- merge.dat$ALT!=merge.dat$`ALT(1)`
+    printer(" +", sum(ref_bool, na.rm = T), "REF allleles did not match.")
+    printer(" +", sum(alt_bool, na.rm = T), "ALT allleles did not match.")
+    return(merge.dat)
+  }) %>% data.table::rbindlist(fill=T)
+  return(merged.DAT)
+}
 
 
 # Fairfax: eQTL
 ## Need: MAF, SampleSize, A1, A2
-mergeQTL.Fairfax <- function(FM_all, CONDITIONS=c("CD14","IFN","LPS2","LPS24")){
+mergeQTL.Fairfax <- function(FM_all, CONDITIONS=c("CD14","IFN","LPS2","LPS24"), force_new_subset=F){
   FM_all <- mergeQTL.add_SNP_id(FM_all)
   for(condition in CONDITIONS){
     dataset <- paste0("Fairfax_2014_",condition)
-    printer("Fairfax:: Processing:",dataset)
-    server_path <- Directory_info("Fairfax_2014_CD14",variable = "fullSumStats") 
+    printer("mergeQTL::Fairfax:: Processing:",dataset)
+    server_path <- Directory_info(paste0("Fairfax_2014_", condition),variable = "fullSumStats") 
     output_path <- file.path("./Data/QTL/Fairfax_2014",condition,paste0(dataset,".finemap.txt"))
     output_path_gz <- paste0(output_path,".gz")
     dir.create(dirname(output_path), showWarnings = F, recursive = T)
     
-    if(file.exists(output_path_gz)){
+    if(file.exists(output_path_gz)& force_new_subset==F){
+      printer("+ mergeQTL::Fairfax: Pre-existing file detected. Importing",output_path_gz,"...")
       dat <- data.table::fread(output_path_gz, nThread = 4)
     } else { 
-      system(paste0("grep -E '", paste(unique(FM_all$SNP_id), collapse="|"),"' " ,server_path," > ",output_path))
-      # Import data 
-      dat <- data.table::fread(output_path, 
-                               col.names = colnames(data.table::fread(server_path, nrow=0)), 
-                               nThread = 4)#file_path
-      ## Overwrite subset w/ fixed header
+      probe_map <- mergeQTL.Fairfax_probemap(gene_list = unique(FM_all$Gene), probe_path.="./Data/QTL/Fairfax_2014/gene.ILMN.map")
+      header <- get_header(server_path)
+      printer("+ mergeQTL::Fairfax: Subsetting full summary stats file...")
+      system(paste0("grep -E '", paste(c(header, unique(names(probe_map))), collapse="|"),"' " ,server_path," > ",output_path))
+      
+      # Import data
+      dat <- data.table::fread(output_path, nThread = 4)
+      
+      ## Rename vars
+      dat <- dplyr::rename(dat, SNP_id=SNP, probe=gene)
+      dat$QTL.Gene <- probe_map[dat$probe] 
+      ## Add SNP col
+      rsid.key <- mergeQTL.Fairfax_extract_SNPinfo()
+      rsid.key <- rsid.key %>% dplyr::mutate(SNP_id=paste0(CHR,":",POS))
+      ### Extract SNPs from FM_all
+      dat <- data.table:::merge.data.table(dat, rsid.key[,c("RSID","REF","ALT","SNP_id")], 
+                                                  by="SNP_id", all.x = T)
+      ### Extract MAF from imputation files
+      merged.dat <- mergeQTL.Fairfax_extract_MAF(dat)
+      dat <- merged.dat
+      ## Overwrite merged subset
       data.table::fwrite(dat, output_path, sep = "\t", nThread = 4) 
       R.utils::gzip(output_path, overwrite=T)
     }  
-    
-    dat$StdErr <- dat$beta / dat$`t-stat`
-    dat.sub <- subset(dat, SNP %in% FM_all$SNP_id)
-   
+    dat$StdErr <- dat$beta / dat$`t-stat` 
+    dat.sub <- subset(dat, SNP_id %in% FM_all$SNP_id) 
     # Take only the top QTL per SNP location
     ## Rename columns
     dat.sub <- (dplyr::mutate(dat.sub, 
-                             SNP_id=SNP,
+                             SNP_id,
                              QTL.Effect=beta, 
                              QTL.StdErr=StdErr,
                              QTL.P=`p-value`,
                              QTL.FDR=FDR, 
-                             QTL.MAF=NA, 
-                             QTL.A1=NA,
-                             QTL.A2=NA,
-                             QTL.SampleSize=NA,
-                             QTL.Gene=NA) %>% 
+                             QTL.MAF=MAF, 
+                             QTL.A1=`REF(0)`,
+                             QTL.A2=`ALT(1)`,
+                             QTL.SampleSize=432,
+                             QTL.Gene=QTL.Gene) %>% 
       dplyr::select(SNP_id, QTL.Effect, QTL.StdErr, QTL.P, QTL.FDR, QTL.MAF, QTL.A1, QTL.A2, QTL.SampleSize, QTL.Gene) %>%
       dplyr::group_by(SNP_id) %>%
       arrange(QTL.FDR, desc(QTL.Effect)) )%>% 
@@ -136,6 +218,7 @@ mergeQTL.Fairfax <- function(FM_all, CONDITIONS=c("CD14","IFN","LPS2","LPS24")){
     FM_all <- data.table:::merge.data.table(FM_all, dat.sub, 
                                               by="SNP_id", 
                                               all.x = T, allow.cartesian = T)
+    
   } 
   return(FM_all) 
 }
@@ -145,6 +228,7 @@ mergeQTL.Fairfax <- function(FM_all, CONDITIONS=c("CD14","IFN","LPS2","LPS24")){
 ## Need: SampleSize, MAF
 mergeQTL.MESA <- function(FM_all, force_new_subset=F, POPULATIONS=c("AFA","CAU","HIS")){ 
   FM_all <- mergeQTL.add_SNP_id(FM_all)
+  sample_size.dict <- list(AFA=233, CAU=578, HIS=352)
   for(pop in POPULATIONS){
     printer("MESA:: Extracting",pop,"data.")
     dataset <- paste0("MESA_",pop)
@@ -184,7 +268,7 @@ mergeQTL.MESA <- function(FM_all, force_new_subset=F, POPULATIONS=c("AFA","CAU",
                              QTL.MAF=NA,
                              QTL.A1=ref,
                              QTL.A2=alt,
-                             QTL.SampleSize=NA,
+                             QTL.SampleSize=sample_size.dict[[pop]],
                              QTL.Gene=gene_name) %>% 
       dplyr::select(SNP, QTL.Effect, QTL.StdErr, QTL.P, QTL.FDR, QTL.MAF, QTL.A1, QTL.A2, QTL.SampleSize, QTL.Gene) %>%
       dplyr::group_by(SNP) %>%
@@ -235,7 +319,7 @@ mergeQTL.Cardiogenics <- function(FM_all,
                              QTL.MAF=NA, 
                              QTL.A1=NA,
                              QTL.A2=NA,
-                             QTL.SampleSize=n.samples,  
+                             QTL.SampleSize=n.samples, # 758 individuals
                              QTL.Gene=reporterID) %>% 
       dplyr::select(SNP, QTL.Effect, QTL.StdErr, QTL.P, QTL.FDR, QTL.MAF, QTL.A1, QTL.A2, QTL.SampleSize, QTL.Gene) %>%
       dplyr::group_by(SNP) %>%
@@ -632,11 +716,12 @@ mergeQTL <- function(dataset = "./Data/GWAS/Nalls23andMe_2019"){
   FM_all <- merge_finemapping_results(minimum_support = 0, 
                                       include_leadSNPs = T, 
                                       dataset = "./Data/GWAS/Nalls23andMe_2019")
+  FM_orig <- FM_all
   
   # psychENCODE eQTL, cQTL, isoQTL, tQTL, fQTL, HiC: DLPFC
-  FM_merge <- mergeQTL.psychENCODE(FM_all=FM_all, consensus_only = F,  local_files = T,  force_new_subset = F)
+  FM_merge <- mergeQTL.psychENCODE(FM_all=FM_all, local_files = T,  force_new_subset = T)
   # Fairfax eQTL: monocytes
-  FM_merge <- mergeQTL.Fairfax(FM_merge)
+  FM_merge <- mergeQTL.Fairfax(FM_all, force_new_subset = F)
   # MESA eQTL: monocytes in AFA, CAU, HIS
   FM_merge <- mergeQTL.MESA(FM_merge, force_new_subset = F) 
   # Cardiogenics eQTL: macrophages, monocytes
@@ -644,7 +729,7 @@ mergeQTL <- function(dataset = "./Data/GWAS/Nalls23andMe_2019"){
   # Brain_xQTL_Serve
   FM_merge <- mergeQTL.Brain_xQTL_Serve(FM_merge, force_new_subset = F)
   ## Write file and compress
-  QTL_merged_path <- file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+  QTL_merged_path <- file.path(dataset,"_genome_wide",
                                "Nalls23andMe_2019.QTL_overlaps.txt")
   data.table::fwrite(FM_merge, QTL_merged_path, sep="\t", nThread = 4)
   R.utils::gzip(QTL_merged_path, overwrite=T, remove=T)
