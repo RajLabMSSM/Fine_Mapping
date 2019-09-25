@@ -309,10 +309,14 @@ COLOC.iterate_QTL <- function(GTEx_version="GTEx_V7",
     printer("") 
     message(dataset.qtl.name)
     FM_merge <- mergeQTL.merge_handler(FM_all = FM_all, qtl_file = qtl_file)
+    ## WARNING: DON'T try to allele flip. Coloc does this for you.
     # FM_merge <- mergeQTL.flip_alleles(FM_merge) # NOTE!: Allele flipping makes a BIG difference.
-    # Create measures adjusted by Posterior Probabilities from fine-mapping
-    FM_merge$mean.PP <- rowMeans(subset(FM_merge, select=grep(".Probability",colnames(FM_merge))))
-    FM_merge$Adjusted.Effect <- FM_merge$Effect * FM_merge$mean.PP
+   
+    ## WARNING: Probably not valid to apply PP in this way since the model isn't intended to handle this. 
+    ## Instead, use something like PAINTOR that takes SNP-level PPs.
+    ## Create measures adjusted by Posterior Probabilities from fine-mapping
+    # FM_merge$mean.PP <- rowMeans(subset(FM_merge, select=grep(".Probability",colnames(FM_merge))))
+    # FM_merge$Adjusted.Effect <- FM_merge$Effect * FM_merge$mean.PP
     
     coloc_dt <- lapply(unique(FM_merge$Gene), function(gene){
           printer("+COLOC::",gene) 
@@ -331,7 +335,7 @@ COLOC.iterate_QTL <- function(GTEx_version="GTEx_V7",
           if(nrow(FM_gene)>0){
             # GWAS
             dataset.gwas <- list(pvalues = FM_gene$P, 
-                                 beta = FM_gene$Effect ,
+                                 beta = FM_gene$Effect,
                                  varbeta = FM_gene$StdErr^2, # MUST be squared
                                  snp = FM_gene$SNP,
                                  
@@ -341,16 +345,21 @@ COLOC.iterate_QTL <- function(GTEx_version="GTEx_V7",
                                  type = "cc")
             # QTL
             if(all(is.na(FM_gene$QTL.MAF))){FM_gene$QTL.MAF <- FM_gene$MAF; printer("+ COLOC:: No QTL.MAF given. Using GWAS.MAF instead.")} 
+            FM_gene$QTL.MAF <- FM_gene$MAF ##############111111111111111
             dataset.qtl <- list(pvalues = FM_gene$QTL.P, 
                                 beta = FM_gene$QTL.Effect,
                                 varbeta = FM_gene$QTL.StdErr^2, # MUST be squared
                                 snp = FM_gene$SNP,
                                 
                                 N = max(FM_gene$QTL.SampleSize), # [optional]
-                                # s = NA, # use overall proportions
+                                # s = NA, # Not used for quant studies
+                                #sdY = ,# [optional] for a quantitative trait, the population standard deviation of the trait. if not given, it can be estimated from the vectors of varbeta and MAF
                                 MAF = FM_gene$QTL.MAF, # [required]
                                 type = "quant")
             
+          # If regression coefficients and variances are available, it calculates Bayes factors for association at each SNP.           
+          ## If only p values are available, it uses an approximation that depends on the SNP's MAF and ignores any uncertainty 
+          ## in imputation. Regression coefficients should be used if available.
             coloc.res <- coloc::coloc.abf(dataset1 = dataset.gwas,
                                           dataset2 = dataset.qtl)
             COLOC.report_summary(coloc.res, PP_threshold = .8) 
@@ -375,9 +384,9 @@ COLOC.iterate_QTL <- function(GTEx_version="GTEx_V7",
   if(save_results){
     coloc_path <- file.path(dataset.gwas.name,"_genome_wide","COLOC")
     dir.create(coloc_path, recursive = T, showWarnings = F)
-    data.table::fwrite(COLOC_DT, file.path(coloc_path,"COLOC_results_flip-gwasEffect.txt"), sep="\t")
+    data.table::fwrite(COLOC_DT, file.path(coloc_path,"COLOC_results_noFlip-gwasEffect.txt"), sep="\t")
   } 
-  COLOC.PP4_plot(COLOC_DT, PP_threshold = .8)
+  COLOC.PP4_plot(COLOC_DT, PP_threshold = .95)
   return(COLOC_DT)
 }
 

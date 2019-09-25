@@ -139,7 +139,7 @@ merge_SS.EXP.GENO <- function(SS_data, geno_data, exp_data){
 
 
 ##### Merge all eQTL files together into one file (for the selected SNPs) #####
-merge_eQTL_data <- function(snp_list,
+merge_QTL_data <- function(snp_list,
                             eQTL_SS_paths = file.path("Data/eQTL/Fairfax_2014",
                                                       c("CD14/LRRK2/LRRK2_Fairfax_CD14.txt",
                                                         "IFN/LRRK2/LRRK2_Fairfax_IFN.txt",
@@ -211,7 +211,7 @@ eQTL_boxplots <- function(snp_list,
   # Helper function
   printer <- function(..., v=T){if(v){print(paste(...))}}
   
-  SS_geno_exp <- merge_eQTL_data(snp_list=snp_list,
+  SS_geno_exp <- merge_QTL_data(snp_list=snp_list,
                                  eQTL_SS_paths=eQTL_SS_paths,
                                  expression_paths=expression_paths,
                                  genotype_path=genotype_path,

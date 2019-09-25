@@ -16,10 +16,39 @@ zscore <- function(vec){
 }
 
 
+Zscore.get_mean_and_sd <- function(fullSS="./Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt",
+                                   Effect_col="beta",
+                                   use_saved="./Data/GWAS/Nalls23andMe_2019/z.info.RDS"){
+  if(use_saved!=F){
+    z.info <- readRDS(use_saved) 
+  } else { 
+    sample_x <- data.table::fread(fullSS, nThread = 4, select=c(Effect_col))
+    sample.mean <- mean(sample_x$beta, na.rm = T)
+    sample.stdv <- sd(sample_x$beta)
+    z.info <- list(file.name=fullSS,
+                   colname=Effect_col,
+                   sample.mean=sample.mean, 
+                   sample.stdv=sample.stdv,
+                   sample.min=min(sample_x$beta),
+                   sample.max=max(sample_x$beta)) 
+    saveRDS(z.info, file = file.path(dirname(fullSS),"z.info.RDS") )
+  } 
+  return(z.info)
+}
+
+
+Zscore <- function(x, z.info){ 
+  # Need to use the mean and standard deviation of the FULL dataset (i.e. all beta fomr the full summary stats file)
+  sample.stdv <- z.info$sample.stdv
+  sample.mean <- z.info$sample.mean 
+  z <- (x - sample.mean) / sample.stdv 
+  return(z)
+}
+
 PAINTOR.create_locusFile <- function(results_path,
                              PT_results_path,
                              GWAS_dataset_name="Nalls23andMe_2019",
-                             eQTL_dataset_name="Fairfax_2014",
+                             QTL_dataset_name="Fairfax_2014",
                              gene,
                              locus){
   printer("++ Creating Locus File...")
@@ -30,7 +59,10 @@ PAINTOR.create_locusFile <- function(results_path,
   # the phenotype onto the SNP.
 
   # Import GWAS data 
-  GWAS_path <- file.path(results_path,"Multi-finemap/Multi-finemap_results.txt")
+  GWAS_path <- file.path(results_path,"Multi-finemap/Multi-finemap_results.txt") 
+  z.info.gwas <- Zscore.get_mean_and_sd(fullSS="./Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt",
+                                        Effect_col="beta", 
+                                        use_saved="./Data/GWAS/Nalls23andMe_2019/z.info.RDS")
   # Get the party started using the GWAS file
   merged_DT <- data.table::fread(GWAS_path, select = c("CHR","POS","SNP","Effect")) %>%
     dplyr::rename(CHR=CHR,
@@ -38,40 +70,21 @@ PAINTOR.create_locusFile <- function(results_path,
                   RSID=SNP,
                   ZSCORE.P1=Effect) %>% unique() %>%
     dplyr::mutate(CHR=paste0("chr",CHR), 
-                  ZSCORE.P1=zscore(ZSCORE.P1))
+                  ZSCORE.P1=Zscore(x = ZSCORE.P1, z.info = z.info.gwas))
 
-  if(!is.na(eQTL_dataset_name)){
-    # Merge eQTL data together
-    if(eQTL_dataset_name=="Fairfax_2014"){
-      merged_eQTLs <- merge_eQTL_data(snp_list = unique(merged_DT$RSID),
-                                      eQTL_SS_paths = file.path("Data/eQTL/Fairfax_2014",
-                                                                c("CD14/LRRK2/LRRK2_Fairfax_CD14.txt",
-                                                                  "IFN/LRRK2/LRRK2_Fairfax_IFN.txt",
-                                                                  "LPS2/LRRK2/LRRK2_Fairfax_LPS2.txt",
-                                                                  "LPS24/LRRK2/LRRK2_Fairfax_LPS24.txt")),
-                                      expression_paths = file.path("Data/eQTL/Fairfax_2014",
-                                                                   c("CD14/CD14.47231.414.b.txt",
-                                                                     "IFN/IFN.47231.367.b.txt",
-                                                                     "LPS2/LPS2.47231.261.b.txt",
-                                                                     "LPS24/LPS24.47231.322.b.txt")),
-                                      ## IMPORTANT: Use the genotype subset that includes all the LRRK2 variants
-                                      ### Gathered from minerva using grep
-                                      genotype_path = "Data/eQTL/Fairfax_2014/LRRK2.geno.txt",
-                                      subset_genotype_file = F,
-                                      probe_path = "Data/eQTL/Fairfax_2014/gene.ILMN.map",
-                                      .fam_path = "Data/eQTL/Fairfax_2014/volunteers_421.fam",
-                                      gene = gene,
-                                      save_merged = F)
-    }
-    # Iterate over eQTL condtions and merge with GWAS file
-    eQTL_conditions <-  file.path("./Data/eQTL",eQTL_dataset_name) %>%
+  if(!is.na(QTL_dataset_name)){
+    # Merge QTL data together
+    merged_DT <- mergeQTL.merge_handler(FM_all = merged_DT, qtl_file = QTL_dataset_name)
+    merged_DT <- dplyr::mutate(merged_DT, QTL.Effect)
+    # Iterate over QTL condtions and merge with GWAS file
+    QTL_conditions <-  file.path("./Data/QTL",QTL_dataset_name) %>%
       list.dirs(recursive = F) %>%
       basename()
-    eQTL_conditions <- eQTL_conditions[!eQTL_conditions=="merged_results"]
+    QTL_conditions <- QTL_conditions[!QTL_conditions=="merged_results"]
     
-    for(i in 1:length(eQTL_conditions) ){
-      condition <- eQTL_conditions[i]
-      DT <- subset(merged_eQTLs, Condition==condition, c("SNP","Effect")) %>%
+    for(i in 1:length(QTL_conditions) ){
+      condition <- QTL_conditions[i]
+      DT <- subset(merged_QTLs, Condition==condition, c("SNP","Effect")) %>%
         unique() %>% dplyr::mutate(Effect = zscore(Effect))
       # DT <- import_table(file_paths[i])[,c("RSID","ZSCORE")]
       colnames(DT) <- c("RSID", paste0("ZSCORE.P",i+1))
@@ -119,9 +132,9 @@ PAINTOR.prepare_LD <- function(results_path,
 
 
 
-PAINTOR.locusName_handler <- function(locus=NA, gene, GWAS_dataset_name=NA, eQTL_dataset_name=NA){
+PAINTOR.locusName_handler <- function(locus=NA, gene, GWAS_dataset_name=NA, QTL_dataset_name=NA){
   if(is.na(locus)){ 
-    locus_name <- paste(gene,GWAS_dataset_name,eQTL_dataset_name, sep = ".")
+    locus_name <- paste(gene,GWAS_dataset_name,QTL_dataset_name, sep = ".")
     return(locus_name)
   } else {
     return(locus)
@@ -129,19 +142,19 @@ PAINTOR.locusName_handler <- function(locus=NA, gene, GWAS_dataset_name=NA, eQTL
 }
 
 PAINTOR.datatype_handler <- function(GWAS_dataset_name=NA, 
-                             eQTL_dataset_name=NA, 
+                             QTL_dataset_name=NA, 
                              gene){
-  if(!is.na(GWAS_dataset_name) & !is.na(eQTL_dataset_name)){
-    printer("++ PAINTOR:: GWAS and eQTL input data detected. Feeding both into PAINTOR...")
+  if(!is.na(GWAS_dataset_name) & !is.na(QTL_dataset_name)){
+    printer("++ PAINTOR:: GWAS and QTL input data detected. Feeding both into PAINTOR...")
     results_path <- file.path("./Data/GWAS",GWAS_dataset_name, gene) 
-  } else if(!is.na(GWAS_dataset_name) & is.na(eQTL_dataset_name)){
+  } else if(!is.na(GWAS_dataset_name) & is.na(QTL_dataset_name)){
       printer("++ PAINTOR:: Only GWAS input data detected. Feeding into PAINTOR...")
       results_path <- file.path("./Data/GWAS",GWAS_dataset_name, gene)
-    } else if(is.na(GWAS_dataset_name) & !is.na(eQTL_dataset_name)){
-      printer("++ PAINTOR:: Only eQTL input data detected. Feeding into PAINTOR...")
-      results_path <- file.path("./Data/eQTL",eQTL_dataset_name,"merged_results", gene)
+    } else if(is.na(GWAS_dataset_name) & !is.na(QTL_dataset_name)){
+      printer("++ PAINTOR:: Only QTL input data detected. Feeding into PAINTOR...")
+      results_path <- file.path("./Data/QTL",QTL_dataset_name,"merged_results", gene)
     } else {
-      stop("++ PAINTOR:: Neither GWAS nor eQTL data detected. Please enter at least one valid dataset.")
+      stop("++ PAINTOR:: Neither GWAS nor QTL data detected. Please enter at least one valid dataset.")
     } 
   PT_results_path <- file.path(results_path,"PAINTOR")
   dir.create(PT_results_path, showWarnings = F, recursive = T)
@@ -314,7 +327,7 @@ PAINTOR.run <- function(paintor_path,
 # ------------------------------#
 PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
                     GWAS_dataset_name=NA,
-                    eQTL_dataset_name=NA,
+                    QTL_dataset_name=NA,
                     gene,
                     locus=NA,
                     n_causal=5,
@@ -325,14 +338,14 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
   # Note: All file formats are assumed to be single space delimited.
   
   ## Quick setup
-  # chromatin_state="TssA"; paintor_path = "./echolocatoR/tools/PAINTOR_V3.0"; GWAS_dataset_name = "Nalls23andMe_2019"; eQTL_dataset_name = "Fairfax_2014";locus=NA; gene="LRRK2";  no_annotations=F;  XGR_dataset=NA; ROADMAP_search="monocyte"
+  # chromatin_state="TssA"; paintor_path = "./echolocatoR/tools/PAINTOR_V3.0"; GWAS_dataset_name = "Nalls23andMe_2019"; QTL_dataset_name = "Fairfax_2014_CD14";locus=NA; gene="LRRK2";  no_annotations=F;  XGR_dataset=NA; ROADMAP_search="monocyte"
   locus <- PAINTOR.locusName_handler(locus, 
                                      gene, 
                                      GWAS_dataset_name, 
-                                     eQTL_dataset_name)
+                                     QTL_dataset_name)
   
   PT_results_path <- PAINTOR.datatype_handler(GWAS_dataset_name=GWAS_dataset_name, 
-                                              eQTL_dataset_name=eQTL_dataset_name, 
+                                              QTL_dataset_name=QTL_dataset_name, 
                                               gene=gene)
   printer("****** Double checking PT_results_path",PT_results_path)
   results_path <- dirname(PT_results_path)
@@ -340,11 +353,11 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
 
   # 1. Locus File 
   locus_DT <- PAINTOR.create_locusFile(results_path=results_path,
-                               PT_results_path=PT_results_path,
-                               GWAS_dataset_name=GWAS_dataset_name,
-                               eQTL_dataset_name=eQTL_dataset_name,
-                               gene=gene,
-                               locus=locus) 
+                                       PT_results_path=PT_results_path,
+                                       GWAS_dataset_name=GWAS_dataset_name,
+                                       QTL_dataset_name=QTL_dataset_name,
+                                       gene=gene,
+                                       locus=locus) 
   n_datasets <- sum(grepl(colnames(locus_DT), pattern = "ZSCORE"))
 
   # 2. LD Matrix File
