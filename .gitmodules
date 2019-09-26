@@ -10,6 +10,3 @@
 [submodule "echolocatoR/tools/fGWAS"]
 	path = echolocatoR/tools/fGWAS
 	url = https://github.com/wzhy2000/fGWAS.git
-[submodule "PAINTOR_V3.0"]
-	path = PAINTOR_V3.0
-	url = ./echolocatoR/tools/PAINTOR_V3.0/
