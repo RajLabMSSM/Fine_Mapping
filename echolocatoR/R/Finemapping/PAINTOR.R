@@ -267,12 +267,14 @@ PAINTOR.prepare_annotations <- function(paintor_path="./echolocatoR/tools/PAINTO
   data.table::fwrite(list(BED_paths),
                      annotation_paths,
                      sep="\n")
-  cmd <-  paste("python",file.path(paintor_path,"PAINTOR_Utilities","AnnotateLocus.py"),
+  cmd <-  paste("python2.7",file.path(paintor_path,"PAINTOR_Utilities","AnnotateLocus.py"),
                 "--input", file.path(PT_results_path,"annotation_paths.txt"),
                 "--locus", .locus_file,
                 "--out", .annotations_file,
                 "--chr","CHR",
                 "--pos","POS")
+  chimera=T 
+  if(chimera){cmd <- paste("ml python/2.7.10 &&",cmd)}
   system(cmd)
   printer("+++ PAINTOR:: Annotation--SNP overlap summaries:")
   colSums( data.table::fread(.annotations_file))
@@ -423,7 +425,7 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
                                                                         "RoadMap_Promoter",
                                                                         "TFBS"))
     PAINTOR.prepare_annotations(paintor_path,
-                                BED_paths.gz, 
+                                BED_paths, 
                                 PT_results_path, 
                                 locus)
   }
