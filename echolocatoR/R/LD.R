@@ -15,7 +15,47 @@
 # All additional sample series except for the post-Chang et al . 2017 samples from 23andMe were imputed using the
 # __Haplotype Reference Consortium (HRC)__  on the University of Michigan imputation server under default settings
 # with Eagle v2.3 phasing based on reference panel HRC r1.1 2016"_
-
+ 
+LD.load_or_create <- function(results_path,
+                              subset_DT,
+                              gene,
+                              force_new_LD=F,
+                              LD_reference="1KG_Phase1",
+                              superpopulation="EUR",
+                              download_reference=T,
+                              min_r2=0,
+                              LD_block=F,
+                              block_size=.7,
+                              min_Dprime=F,
+                              remove_correlates=F,
+                              verbose=T){
+  LD_path <- file.path(results_path,"plink/LD_matrix.RData")
+  if(!file.exists(LD_path) | force_new_LD==T){
+    printer("+ Computing LD matrix... \n", verbose) 
+    LD_matrix <- compute_LD_matrix(results_path = results_path, 
+                                   subset_DT = subset_DT, 
+                                   gene = gene,
+                                   reference = LD_reference,
+                                   superpopulation = superpopulation, 
+                                   download_reference = download_reference,
+                                   
+                                   min_r2 = min_r2,
+                                   LD_block = LD_block,
+                                   block_size = block_size,
+                                   min_Dprime = min_Dprime,
+                                   remove_correlates = remove_correlates) 
+    # Save LD matrix 
+    # data.table::fwrite(LD_matrix, LD_path, sep="\t") 
+    printer("+ Saving LD matrix to:",LD_path, v=verbose) 
+    save(LD_matrix, file = LD_path) 
+    # write.table(LD_matrix, LD_path, sep="\t", quote = F) 
+  } else { 
+    printer("+ Previously computed LD matrix detected. Importing...",LD_path, v=verbose) 
+    # LD_matrix <- data.table::fread(LD_path, sep="\t", stringsAsFactors = F)  
+    load(LD_path)
+  } 
+  return(LD_matrix)
+}
  
 plink_file <- function(base_url="./echolocatoR/tools/plink"){
   os <- get_os()
@@ -83,9 +123,14 @@ LD_plot <- function(LD_matrix, subset_DT, span=10){
 } 
 
  
-download_vcf <- function(subset_DT, reference, vcf_folder, gene, download_reference=T){ 
+download_vcf <- function(subset_DT, 
+                         reference, 
+                         vcf_folder="./Data/Reference/1000_Genomes", 
+                         gene, 
+                         download_reference=T){ 
   ## http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
   # Download portion of vcf from 1KG website
+  subset_DT$CHR <- gsub("chr","",subset_DT$CHR)
   region <- paste(unique(subset_DT$CHR),":",min(subset_DT$POS),"-",max(subset_DT$POS), sep="")
   chrom <- unique(subset_DT$CHR)
   
@@ -122,17 +167,20 @@ download_vcf <- function(subset_DT, reference, vcf_folder, gene, download_refere
   # library(Rsamtools); #BiocManager::install("Rsamtools")
   subset_vcf <- file.path(vcf_folder, phase, paste(gene,"subset.vcf",sep="_")) 
   # Create directory if it doesn't exist
-  if(!dir.exists(dirname(dirname(subset_vcf))) ) {
+  if(!dir.exists(dirname(subset_vcf)) ) {
+    printer("+ Creating ",vcf_folder," directory.")
     dir.create(path = dirname(subset_vcf),recursive =  T, showWarnings = F)
-  }else{printer("+ Creating ",vcf_folder," directory.")} 
+  }
+  
   # Download and subset vcf if the subset doesn't exist already
   if(!file.exists(subset_vcf)){
-    tabix_cmd <- paste("tabix -fh",vcf_URL, region, ">", subset_vcf)
+    tabix_cmd <- paste("tabix -fh",vcf_URL, region, ">", gsub("\\./","",subset_vcf) )
     printer(tabix_cmd)
+    # system("ml tabix")
     system(tabix_cmd)
     vcf_name <- paste(basename(vcf_URL), ".tbi", sep="")
     file.remove(vcf_name)
-  }else{printer("+ Identified matching VCF subset file. Importing...", subset_vcf)}
+  } else {printer("+ Identified matching VCF subset file. Importing...", subset_vcf)}
   return(list(subset_vcf = subset_vcf,
               popDat = popDat))
 }

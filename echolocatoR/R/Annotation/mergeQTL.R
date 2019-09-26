@@ -14,7 +14,7 @@
 
 mergeQTL.add_SNP_id <- function(FM_all){
   FM_all <- FM_all %>% 
-    dplyr::mutate(SNP_id=paste0(CHR,":",POS)) %>% 
+    dplyr::mutate(SNP_id=paste0(gsub("chr","",CHR),":",POS)) %>% 
     data.table::data.table() 
   return(FM_all)
 }
@@ -673,6 +673,7 @@ mergeQTL.flip_alleles <- function(FM_merge){
   FM_merge[!flip_check,"QTL.Effect"] <- -FM_merge[!flip_check,"QTL.Effect"]
   return(FM_merge)
 }
+
 
 mergeQTL.merge_handler <- function(FM_all, qtl_file){
     qtl_name <- gsub(".finemap.txt.gz","",basename(qtl_file))

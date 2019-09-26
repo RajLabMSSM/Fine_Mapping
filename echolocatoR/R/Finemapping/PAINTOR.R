@@ -20,9 +20,11 @@ Zscore.get_mean_and_sd <- function(fullSS="./Data/GWAS/Nalls23andMe_2019/nallsEt
                                    Effect_col="beta",
                                    use_saved=T,
                                    output_path="./Data/GWAS/Nalls23andMe_2019/z.info.RDS"){
-  if(use_saved){
+  if(use_saved & file.exists(output_path)){
+    printer("Reading in:",output_path,"...")
     z.info <- readRDS(output_path) 
   } else { 
+    printer("Extracting mean and standard deviation from",fullSS,"...")
     sample_x <- data.table::fread(fullSS, nThread = 4, select=c(Effect_col))
     sample.mean <- mean(sample_x$beta, na.rm = T)
     sample.stdv <- sd(sample_x$beta)
@@ -32,7 +34,7 @@ Zscore.get_mean_and_sd <- function(fullSS="./Data/GWAS/Nalls23andMe_2019/nallsEt
                    sample.stdv=sample.stdv,
                    sample.min=min(sample_x$beta),
                    sample.max=max(sample_x$beta)) 
-    saveRDS(z.info, file = file.path(dirname(fullSS),"z.info.RDS") )
+    saveRDS(z.info, file = output_path )
   } 
   return(z.info)
 }
@@ -47,11 +49,12 @@ Zscore <- function(x, z.info){
 }
 
 PAINTOR.create_locusFile <- function(results_path,
-                             PT_results_path,
-                             GWAS_dataset_name="Nalls23andMe_2019",
-                             QTL_dataset_name="Fairfax_2014",
-                             gene,
-                             locus){
+                                     PT_results_path,
+                                     GWAS_dataset_name="Nalls23andMe_2019",
+                                     QTL_datasets=c("Fairfax_2014_CD14","Fairfax_2014_IFN",
+                                                    "Fairfax_2014_LPS2","Fairfax_2014_LPS24"), #NULL
+                                     gene,
+                                     locus_name){
   printer("++ Creating Locus File...")
   # The locus file should at the very minimum contain the Z-scores for all the populations,
   # though metadata on each SNP such as chromosome, position, and rsid are recommended.
@@ -66,44 +69,37 @@ PAINTOR.create_locusFile <- function(results_path,
                                         use_saved=T,
                                         output_path="./Data/GWAS/Nalls23andMe_2019/z.info.RDS")
   # Get the party started using the GWAS file
-  merged_DT <- data.table::fread(GWAS_path, select = c("CHR","POS","SNP","Effect")) %>%
-    dplyr::rename(CHR=CHR,
-                  POS=POS,
-                  RSID=SNP,
-                  ZSCORE.P1=Effect) %>% unique() %>%
+  finemap_DT <- data.table::fread(GWAS_path, nThread = 4) %>%
     dplyr::mutate(CHR=paste0("chr",CHR), 
-                  ZSCORE.P1=Zscore(x = ZSCORE.P1, z.info = z.info.gwas))
-
-  if(!is.na(QTL_dataset_name)){
-    z.info.gwas <- Zscore.get_mean_and_sd(fullSS=Directory_info(dataset_name = QTL_dataset_name, variable = "fullSumStats"),
+                  RSID=SNP,
+                  ZSCORE.P1=Zscore(x = Effect, z.info = z.info.gwas))
+  merged_DT <- finemap_DT 
+  
+  # Merge QTL data (for loop won't run if QTL_datasets=NULL)
+  for(i in 1:length(QTL_datasets)){
+     printer("PAINTOR:: Merging QTL data - ",QTL_datasets[i])
+     z.info.qtl <- Zscore.get_mean_and_sd(fullSS=Directory_info(dataset_name = QTL_datasets[i], variable = "fullSumStats"),
                                           Effect_col="beta", 
                                           use_saved=T,
-                                          output_path="./Data/QTL/Fairfax_2014/CD14/z.info.RDS")
+                                          output_path=file.path("./Data/QTL/Fairfax_2014",paste0("z.info.",QTL_datasets[i],".RDS")) )
     # Merge QTL data together
-    merged_DT <- mergeQTL.merge_handler(FM_all = merged_DT, qtl_file = QTL_dataset_name)
-    merged_DT <- dplyr::mutate(merged_DT, QTL.Effect)
-    # Iterate over QTL condtions and merge with GWAS file
-    QTL_conditions <-  file.path("./Data/QTL",QTL_dataset_name) %>%
-      list.dirs(recursive = F) %>%
-      basename()
-    QTL_conditions <- QTL_conditions[!QTL_conditions=="merged_results"]
-    
-    for(i in 1:length(QTL_conditions) ){
-      condition <- QTL_conditions[i]
-      DT <- subset(merged_QTLs, Condition==condition, c("SNP","Effect")) %>%
-        unique() %>% dplyr::mutate(Effect = zscore(Effect))
-      # DT <- import_table(file_paths[i])[,c("RSID","ZSCORE")]
-      colnames(DT) <- c("RSID", paste0("ZSCORE.P",i+1))
-      merged_DT <- data.table:::merge.data.table(merged_DT, DT,
-                                                 by = "RSID", allow.cartesian = T)
-    }
-  }
-  # Remove NAs (PAINTOR doesn't tolerate missing values)
+    merged_DT <- mergeQTL.merge_handler(FM_all = merged_DT, qtl_file = QTL_datasets[i])
+    merged_DT <- dplyr::mutate(merged_DT, 
+                               QTL.ZSCORE = Zscore(x=QTL.Effect, z.info = z.info.qtl ))
+    names(merged_DT)[names(merged_DT) == "QTL.ZSCORE"] <- paste0("ZSCORE.P",i+1)
+    QTL.cols <- grep("QTL.",colnames(merged_DT), value = T)
+    merged_DT <- dplyr::select(merged_DT, -QTL.cols)
+  } 
+  # Post-processing
+  ## Subset to only necessary columns
+  z.cols <- grep("ZSCORE.P",colnames(merged_DT), value=T)
+  merged_DT <- subset(merged_DT, select=c("RSID","CHR","POS",z.cols))
+  ## Remove NAs (PAINTOR doesn't tolerate missing values)
   merged_DT <- merged_DT[complete.cases(merged_DT),]
-  ## Save
-  .locus_file <- file.path(PT_results_path, locus)
-  data.table::fwrite(merged_DT, .locus_file,
-                     sep=" ", quote = F, na = NA) 
+  ## Save 
+  data.table::fwrite(merged_DT, 
+                     file.path(PT_results_path, locus_name),
+                     sep=" ", quote = F, na = NA, nThread = 4) 
   return(merged_DT)
 }
 
@@ -111,8 +107,9 @@ PAINTOR.create_locusFile <- function(results_path,
 
 PAINTOR.prepare_LD <- function(results_path,
                                PT_results_path,
-                               locus,
-                               locus_DT){
+                               locus_name,
+                               locus_DT, 
+                               gene){
   ### "VERY IMPORTANT!
   # Particular care must be taken when computing LD from a reference panel such the 1000 genomes.
   ## It is imperative that all the reference and alternate alleles for SNPs from which the Z-scores
@@ -120,9 +117,17 @@ PAINTOR.prepare_LD <- function(results_path,
   ## The output of PAINTOR will not be correct if there are mismatches of this type in the data.
   ##Please see wiki section 2a for instructions on how to use the LD utility provided with the software."
   printer("++ PAINTOR:: Creating LD Matrix File...")
+  finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"), nThread = 4)
+  LD_matrix <- LD.load_or_create(results_path=results_path,
+                                subset_DT=finemap_DT,
+                                gene=gene,
+                                download_reference = T,
+                                LD_reference="1KG_Phase1",
+                                superpopulation="EUR")
+  
   load(file.path(results_path,"plink/LD_matrix.RData"))
   ## Make sure SNPs are in the same order as the Locus File
-  .LD_file <- file.path(PT_results_path, paste0(locus,".ld1"))
+  .LD_file <- file.path(PT_results_path, paste0(locus_name,".ld1"))
   ld.mat <- LD_matrix[locus_DT$RSID, locus_DT$RSID] %>%
     data.table::as.data.table()
   ## Write
@@ -138,27 +143,29 @@ PAINTOR.prepare_LD <- function(results_path,
 
 
 
-PAINTOR.locusName_handler <- function(locus=NA, gene, GWAS_dataset_name=NA, QTL_dataset_name=NA){
-  if(is.na(locus)){ 
-    locus_name <- paste(gene,GWAS_dataset_name,QTL_dataset_name, sep = ".")
+PAINTOR.locusName_handler <- function(locus_name=NA, 
+                                      gene, 
+                                      GWAS_dataset_name=NA, 
+                                      QTL_datasets=NA){
+  if(is.na(locus_name)){ 
+    locus_name <- paste(gene,GWAS_dataset_name,paste(QTL_datasets,collapse = ":"), sep = ".")
     return(locus_name)
-  } else {
-    return(locus)
-  }
+  } 
+  return(locus_name)
 }
 
 PAINTOR.datatype_handler <- function(GWAS_dataset_name=NA, 
-                             QTL_dataset_name=NA, 
-                             gene){
-  if(!is.na(GWAS_dataset_name) & !is.na(QTL_dataset_name)){
+                                     QTL_datasets=NA, 
+                                     gene){
+  if(!is.na(GWAS_dataset_name) & !all(is.na(QTL_datasets))){
     printer("++ PAINTOR:: GWAS and QTL input data detected. Feeding both into PAINTOR...")
     results_path <- file.path("./Data/GWAS",GWAS_dataset_name, gene) 
-  } else if(!is.na(GWAS_dataset_name) & is.na(QTL_dataset_name)){
+  } else if(!is.na(GWAS_dataset_name) & all(is.na(QTL_datasets))){
       printer("++ PAINTOR:: Only GWAS input data detected. Feeding into PAINTOR...")
       results_path <- file.path("./Data/GWAS",GWAS_dataset_name, gene)
-    } else if(is.na(GWAS_dataset_name) & !is.na(QTL_dataset_name)){
+    } else if(is.na(GWAS_dataset_name) & !all(is.na(QTL_datasets))){
       printer("++ PAINTOR:: Only QTL input data detected. Feeding into PAINTOR...")
-      results_path <- file.path("./Data/QTL",QTL_dataset_name,"merged_results", gene)
+      results_path <- file.path("./Data/QTL",paste0(QTL_datasets,collapse=":"),"merged_results", gene)
     } else {
       stop("++ PAINTOR:: Neither GWAS nor QTL data detected. Please enter at least one valid dataset.")
     } 
@@ -171,14 +178,14 @@ PAINTOR.datatype_handler <- function(GWAS_dataset_name=NA,
 
 
 PAINTOR.download_annotations <- function(PT_results_path, 
-                                         locus,
+                                         locus_name,
                                          locus_DT,
-                                         XGR_dataset,
-                                         ROADMAP_search,
-                                         chromatin_state,
-                                         no_annotations){
+                                         XGR_dataset=NA,
+                                         ROADMAP_search=NA,
+                                         chromatin_state="TssA",
+                                         no_annotations=F){
   printer("++ PAINTOR:: Creating Annotation Matrix File...") 
-  .annotations_file <- file.path(PT_results_path, paste0(locus,".annotations.txt"))
+  .annotations_file <- file.path(PT_results_path, paste0(locus_name,".annotations.txt"))
   if(no_annotations){
     printer("+++ PAINTOR:: no_annotations=T; Prior Probability set to 1 for all SNPs.")
     data.table::fwrite(data.frame(Default_Priors = rep(1,nrow(locus_DT))),
@@ -211,21 +218,46 @@ PAINTOR.download_annotations <- function(PT_results_path,
 }
 
 
+PAINTOR.list_paintor_annotations <- function(annotations_dir=file.path("/sc/orga/projects/pd-omics/brian/PAINTOR_V3.0",
+                                                                       "Annotation_directory/Functional_Annotations")){
+  types <- basename(list.dirs(annotations_dir, recursive = F))
+  printer("PAINTOR:: Available annotations provided by PAINTOR_V3.0...")
+  for(atype in types){printer(atype)} 
+}
+
+
+PAINTOR.select_paintor_annotations <- function(annotations_dir=file.path("/sc/orga/projects/pd-omics/brian/PAINTOR_V3.0",
+                                                                         "Annotation_directory/Functional_Annotations"),
+                                               annotation_types=c("Roadmap_ChromeHMM_15state",
+                                                                  "RoadMap_Enhancers",
+                                                                  "RoadMap_Promoter",
+                                                                  "TFBS")){
+  selected_annotations <- list.files(file.path(annotations_dir, annotation_types), full.names = T)
+  printer("PAINTOR::",length(selected_annotations),"annotations pulled.")
+  return(selected_annotations)
+}
+
+
+
 PAINTOR.prepare_annotations <- function(paintor_path="./echolocatoR/tools/PAINTOR_V3.0",
-                                        BED_paths.gz,
+                                        BED_paths,
                                         PT_results_path,
-                                        locus){
-  .locus_file <- file.path(PT_results_path, locus)
-  .annotations_file <- file.path(PT_results_path, paste0(locus,".annotations.txt"))
+                                        locus_name){
+  .locus_file <- file.path(PT_results_path, locus_name)
+  .annotations_file <- file.path(PT_results_path, paste0(locus_name,".annotations.txt"))
   
   printer("++ PAINTOR:: Merging and formatting BED files using PAINTOR utility.")
   ## Use PAINTOR utility to format merge BED files
   printer("+++ PAINTOR:: Decompressing BED files.")
-  for (g in BED_paths.gz){
-    # Unzip but keep original files
-    try({gunzip(g, overwrite=T, remove=F)})
+  gz.files <- grep("*.gz",BED_paths,value = T)
+  if(length(gz.files)>0){
+     for (gz in gz.files){
+      # Unzip but keep original files
+      try({gunzip(gz, overwrite=T, remove=F)})
+    }
   }
-  BED_paths <- gsub(".gz","", BED_paths.gz) 
+ 
+  BED_paths <- gsub("*.gz","", BED_paths) 
   annotation_paths <- file.path(PT_results_path,"annotation_paths.txt")
   # Wait until the BED files are decompressed before trying to write them to a file
   while(any(!file.exists(BED_paths))){
@@ -251,16 +283,16 @@ PAINTOR.prepare_annotations <- function(paintor_path="./echolocatoR/tools/PAINTO
 
 
 PAINTOR.survey_annotation <- function(PT_results_path, 
-                                      locus="Locus1"){
-  anno <- data.table::fread(file.path(PT_results_path, paste0(locus,".annotations.txt")))
+                                      locus_name="Locus1"){
+  anno <- data.table::fread(file.path(PT_results_path, paste0(locus_name,".annotations.txt")))
   column_sums <- sort(colSums(anno), decreasing = T)
   signals <- column_sums[column_sums > 0]
   print(signals)
 }
 
 PAINTOR.process_results <- function(PT_results_path, 
-                                    locus="Locus1"){
-  results <- data.table::fread(file.path(PT_results_path, paste0(locus,".results.txt"))) %>% 
+                                    locus_name="Locus1"){
+  results <- data.table::fread(file.path(PT_results_path, paste0(locus_name,".results.txt"))) %>% 
     arrange(desc(Posterior_Prob))
   # subset(results, Posterior_Prob>0) 
   return(results)
@@ -333,9 +365,9 @@ PAINTOR.run <- function(paintor_path,
 # ------------------------------#
 PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
                     GWAS_dataset_name=NA,
-                    QTL_dataset_name=NA,
+                    QTL_datasets=NA,#c("Fairfax_2014_CD14","Fairfax_2014_IFN", "Fairfax_2014_LPS2","Fairfax_2014_LPS24")
                     gene,
-                    locus=NA,
+                    locus_name=NA,
                     n_causal=5,
                     XGR_dataset="FANTOM5_Enhancer",
                     ROADMAP_search=NA,
@@ -345,13 +377,13 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
   
   ## Quick setup
   # chromatin_state="TssA"; paintor_path = "./echolocatoR/tools/PAINTOR_V3.0"; GWAS_dataset_name = "Nalls23andMe_2019"; QTL_dataset_name = "Fairfax_2014_CD14";locus=NA; gene="LRRK2";  no_annotations=F;  XGR_dataset=NA; ROADMAP_search="monocyte"
-  locus <- PAINTOR.locusName_handler(locus, 
-                                     gene, 
-                                     GWAS_dataset_name, 
-                                     QTL_dataset_name)
+  locus_name <- PAINTOR.locusName_handler(locus_name, 
+                                          gene, 
+                                          GWAS_dataset_name, 
+                                          QTL_datasets)
   
   PT_results_path <- PAINTOR.datatype_handler(GWAS_dataset_name=GWAS_dataset_name, 
-                                              QTL_dataset_name=QTL_dataset_name, 
+                                              QTL_datasets=QTL_datasets, 
                                               gene=gene)
   printer("****** Double checking PT_results_path",PT_results_path)
   results_path <- dirname(PT_results_path)
@@ -361,26 +393,35 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
   locus_DT <- PAINTOR.create_locusFile(results_path=results_path,
                                        PT_results_path=PT_results_path,
                                        GWAS_dataset_name=GWAS_dataset_name,
-                                       QTL_dataset_name=QTL_dataset_name,
+                                       QTL_datasets=QTL_datasets,
                                        gene=gene,
-                                       locus=locus) 
+                                       locus_name=locus_name) 
   n_datasets <- sum(grepl(colnames(locus_DT), pattern = "ZSCORE"))
 
   # 2. LD Matrix File
   PAINTOR.prepare_LD(results_path,
                      PT_results_path,
-                     locus,
+                     locus_name,
                      locus_DT)
   
   # 3. Annotation Matrix File
-  BED_paths.gz <- PAINTOR.download_annotations(PT_results_path, 
-                                               locus,
-                                               locus_DT,
-                                               XGR_dataset,
-                                               ROADMAP_search,
-                                               chromatin_state,
-                                               no_annotations)
+  # BED_paths.gz <- PAINTOR.download_annotations(PT_results_path, 
+  #                                              locus,
+  #                                              locus_DT,
+  #                                              XGR_dataset,
+  #                                              ROADMAP_search,
+  #                                              chromatin_state,
+  #                                              no_annotations)
+ 
+
   if(no_annotations==F){
+    PAINTOR.list_paintor_annotations() 
+    BED_paths <- PAINTOR.select_paintor_annotations(annotations_dir=file.path("/sc/orga/projects/pd-omics/brian/PAINTOR_V3.0",
+                                                                              "Annotation_directory/Functional_Annotations"),
+                                                    annotation_types=c("Roadmap_ChromeHMM_15state",
+                                                                        "RoadMap_Enhancers",
+                                                                        "RoadMap_Promoter",
+                                                                        "TFBS"))
     PAINTOR.prepare_annotations(paintor_path,
                                 BED_paths.gz, 
                                 PT_results_path, 
@@ -389,7 +430,7 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
   
   # 4. Input File
   printer("+ PAINTOR:: Preparing input.files")
-  data.table::fwrite(list(locus), file.path(PT_results_path, "input.files"), sep="\n")
+  data.table::fwrite(list(locus_name), file.path(PT_results_path, "input.files"), sep="\n")
 
   # 5. Run PAINTOR!
   PAINTOR.run(paintor_path = paintor_path, 
@@ -398,7 +439,8 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
               n_causal = n_causal)
 
   # Summarise the results 
-  paintor.results <- PAINTOR.process_results(PT_results_path=PT_results_path, locus=locus)
+  paintor.results <- PAINTOR.process_results(PT_results_path=PT_results_path, 
+                                             locus_name=locus_name)
   return(paintor.results)
 }
 

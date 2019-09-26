@@ -453,32 +453,20 @@ finemap_pipeline <- function(gene,
    
   ### Compute LD matrix 
   message("--- Step 2: Calculate Linkage Disequilibrium ---")
-  
-  LD_path <- file.path(results_path,"plink/LD_matrix.RData")
-  if(!file.exists(LD_path) | force_new_LD==T){
-    printer("+ Computing LD matrix... \n", verbose) 
-    LD_matrix <- compute_LD_matrix(results_path = results_path, 
-                                   subset_DT = subset_DT, 
-                                   gene = gene,
-                                   reference = LD_reference,
-                                   superpopulation = superpopulation, 
-                                   download_reference = download_reference,
-                                   
-                                   min_r2 = min_r2,
-                                   LD_block = LD_block,
-                                   block_size = block_size,
-                                   min_Dprime = min_Dprime,
-                                   remove_correlates = remove_correlates) 
-    # Save LD matrix 
-    # data.table::fwrite(LD_matrix, LD_path, sep="\t") 
-    printer("+ Saving LD matrix to:",LD_path, v=verbose) 
-    save(LD_matrix, file = LD_path) 
-    # write.table(LD_matrix, LD_path, sep="\t", quote = F) 
-  } else { 
-    printer("+ Previously computed LD matrix detected. Importing...",LD_path, v=verbose) 
-    # LD_matrix <- data.table::fread(LD_path, sep="\t", stringsAsFactors = F)  
-    load(LD_path)
-  }
+  LD_matrix <- LD.load_or_create(results_path=results_path,
+                                 subset_DT=subset_DT,
+                                 gene=gene,
+                                 force_new_LD=force_new_LD,
+                                 LD_reference=LD_reference,
+                                 superpopulation=superpopulation,
+                                 download_reference=download_reference,
+                                 min_r2=min_r2,
+                                 LD_block=LD_block,
+                                 block_size=block_size,
+                                 min_Dprime=min_Dprime,
+                                 remove_correlates=remove_correlates,
+                                 verbose=verbose)
+   
   # Plot LD 
   if(plot_LD){
     try({ 
