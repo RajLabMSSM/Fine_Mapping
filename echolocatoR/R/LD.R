@@ -47,12 +47,12 @@ LD.load_or_create <- function(results_path,
     # Save LD matrix 
     # data.table::fwrite(LD_matrix, LD_path, sep="\t") 
     printer("+ Saving LD matrix to:",LD_path, v=verbose) 
-    save(LD_matrix, file = LD_path) 
+    saveRDS(LD_matrix, file = LD_path) 
     # write.table(LD_matrix, LD_path, sep="\t", quote = F) 
   } else { 
     printer("+ Previously computed LD matrix detected. Importing...",LD_path, v=verbose) 
     # LD_matrix <- data.table::fread(LD_path, sep="\t", stringsAsFactors = F)  
-    load(LD_path)
+    LD_matrix <- readRDS(LD_path)
   } 
   return(LD_matrix)
 }

@@ -10,6 +10,10 @@ https://rdrr.io/bioc/garfield/man/garfield.run.html
 
 Tutorial:
 https://www.ebi.ac.uk/birney-srv/GARFIELD/
+
+Chimera path:******* 
+/sc/orga/projects/ad-omics/wongg05/garfields
+
 """
 # Load in Chimera
 # system("ml garfield")
@@ -17,6 +21,8 @@ https://www.ebi.ac.uk/birney-srv/GARFIELD/
 library(garfield) # BiocManager::install("garfield")
 
 # garfield.run()
+ 
+
  
 # INPUT FILES
 dir.create("./Data/GWAS/Nalls23andMe_2019/_genome_wide/GARFIELD", showWarnings = F, recursive = T)

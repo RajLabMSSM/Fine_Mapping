@@ -140,8 +140,7 @@ BioCircos.SNP_Groups <- function(FM = merge_finemapping_results()
 
 
 # ======  ggbio ======== #
-ggbio.prepare_SNPgroups <- function(FM = merge_finemapping_results()
-){ 
+ggbio.prepare_SNPgroups <- function(FM = merge_finemapping_results()){ 
   DF.dat <- FM 
   DF.dat$Consensus <- FM$Consensus_SNP>0
   DF.dat$CS <- FM$Support>0
@@ -335,7 +334,12 @@ ggbio.circos <- function(gr){
     ggbio::circle(hg19sub, geom = "ideogram", cytobands=T, trackWidth=22) + 
     ggbio::circle(hg19sub, geom = "text", color="black", trackWidth=22,
                   aes(label=seqnames, size=8))
-  print(ggb)
+  print(ggb) 
+  
+  png(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide/ggbio_circos.png"), 
+      bg = "transparent", height = 1000, width=1000)
+  ggb
+  dev.off() 
   
   return(ggb)
 }

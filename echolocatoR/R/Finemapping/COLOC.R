@@ -301,14 +301,16 @@ COLOC.iterate_QTL <- function(GTEx_version="GTEx_V7",
                                       include_leadSNPs = T, 
                                       dataset = dataset.gwas.name)
   QTL_files <- list.files(path = "./Data/QTL", pattern = "*.finemap.txt.gz", recursive = T, full.names = T)
-  QTL_files <- grep(paste(c("GTEx","Fairfax", "MESA"),collapse="|"), QTL_files, value = T)
+  # QTL_files <- grep(paste(c("GTEx","Fairfax", "MESA"),collapse="|"), QTL_files, value = T)
+  QTL_files <- grep(paste(c("Fairfax"),collapse="|"), QTL_files, value = T)
  
   # qtl_file = QTL_files[28] # Need allele/MAF info: 1:4 (Brain_xQTL_Serve), 5:6 (Cardiogenics), 7:10 (Fairfax), 28:31 (psychENCODE) ##### (GTEx and MESA are good (tho MESA needs sample size))
   COLOC_DT <- lapply(QTL_files, function(qtl_file){
     dataset.qtl.name <- gsub(".finemap.txt.gz","",basename(qtl_file))
     printer("") 
-    message(dataset.qtl.name)
+    message("mergeQTL:: ", dataset.qtl.name)
     FM_merge <- mergeQTL.merge_handler(FM_all = FM_all, qtl_file = qtl_file)
+    subset(FM_merge, SNP %in% c("rs7294619","rs76904798","rs11175620")) %>% createDT()
     ## WARNING: DON'T try to allele flip. Coloc does this for you.
     # FM_merge <- mergeQTL.flip_alleles(FM_merge) # NOTE!: Allele flipping makes a BIG difference.
    
@@ -319,9 +321,9 @@ COLOC.iterate_QTL <- function(GTEx_version="GTEx_V7",
     # FM_merge$Adjusted.Effect <- FM_merge$Effect * FM_merge$mean.PP
     
     coloc_dt <- lapply(unique(FM_merge$Gene), function(gene){
-          printer("+COLOC::",gene) 
+          printer("+COLOC::",gene)  
           FM_gene <- subset(FM_merge, Gene==gene) 
-          FM_gene <- FM_gene[!is.na(FM_gene$QTL.Effect),]  
+          FM_gene <- FM_gene[!is.na(FM_gene$QTL.Effect),]
           default_results <- data.table::data.table(Locus=gene,
                                                     Dataset1=dataset.gwas.name, 
                                                     Dataset2=dataset.qtl.name, 

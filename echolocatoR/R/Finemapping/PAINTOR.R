@@ -76,19 +76,21 @@ PAINTOR.create_locusFile <- function(results_path,
   merged_DT <- finemap_DT 
   
   # Merge QTL data (for loop won't run if QTL_datasets=NULL)
-  for(i in 1:length(QTL_datasets)){
-     printer("PAINTOR:: Merging QTL data - ",QTL_datasets[i])
-     z.info.qtl <- Zscore.get_mean_and_sd(fullSS=Directory_info(dataset_name = QTL_datasets[i], variable = "fullSumStats"),
+  i=1
+  for(qtl in QTL_datasets){
+     printer("PAINTOR:: Merging QTL data - ",qtl)
+     z.info.qtl <- Zscore.get_mean_and_sd(fullSS=Directory_info(dataset_name = qtl, variable = "fullSumStats"),
                                           Effect_col="beta", 
                                           use_saved=T,
-                                          output_path=file.path("./Data/QTL/Fairfax_2014",paste0("z.info.",QTL_datasets[i],".RDS")) )
+                                          output_path=file.path("./Data/QTL/Fairfax_2014",paste0("z.info.",qtl,".RDS")) )
     # Merge QTL data together
-    merged_DT <- mergeQTL.merge_handler(FM_all = merged_DT, qtl_file = QTL_datasets[i])
+    merged_DT <- mergeQTL.merge_handler(FM_all = merged_DT, qtl_file = qtl)
     merged_DT <- dplyr::mutate(merged_DT, 
                                QTL.ZSCORE = Zscore(x=QTL.Effect, z.info = z.info.qtl ))
     names(merged_DT)[names(merged_DT) == "QTL.ZSCORE"] <- paste0("ZSCORE.P",i+1)
     QTL.cols <- grep("QTL.",colnames(merged_DT), value = T)
     merged_DT <- dplyr::select(merged_DT, -QTL.cols)
+    i = i +1
   } 
   # Post-processing
   ## Subset to only necessary columns
@@ -123,9 +125,7 @@ PAINTOR.prepare_LD <- function(results_path,
                                 gene=gene,
                                 download_reference = T,
                                 LD_reference="1KG_Phase1",
-                                superpopulation="EUR")
-  
-  load(file.path(results_path,"plink/LD_matrix.RData"))
+                                superpopulation="EUR") 
   ## Make sure SNPs are in the same order as the Locus File
   .LD_file <- file.path(PT_results_path, paste0(locus_name,".ld1"))
   ld.mat <- LD_matrix[locus_DT$RSID, locus_DT$RSID] %>%
@@ -148,7 +148,7 @@ PAINTOR.locusName_handler <- function(locus_name=NA,
                                       GWAS_dataset_name=NA, 
                                       QTL_datasets=NA){
   if(is.na(locus_name)){ 
-    locus_name <- paste(gene,GWAS_dataset_name,paste(QTL_datasets,collapse = ":"), sep = ".")
+    locus_name <- paste(gene,GWAS_dataset_name,paste(QTL_datasets,collapse = "--"), sep = ".")
     return(locus_name)
   } 
   return(locus_name)
@@ -165,7 +165,7 @@ PAINTOR.datatype_handler <- function(GWAS_dataset_name=NA,
       results_path <- file.path("./Data/GWAS",GWAS_dataset_name, gene)
     } else if(is.na(GWAS_dataset_name) & !all(is.na(QTL_datasets))){
       printer("++ PAINTOR:: Only QTL input data detected. Feeding into PAINTOR...")
-      results_path <- file.path("./Data/QTL",paste0(QTL_datasets,collapse=":"),"merged_results", gene)
+      results_path <- file.path("./Data/QTL",paste0(QTL_datasets,collapse="--"),"merged_results", gene)
     } else {
       stop("++ PAINTOR:: Neither GWAS nor QTL data detected. Please enter at least one valid dataset.")
     } 
@@ -231,10 +231,19 @@ PAINTOR.select_paintor_annotations <- function(annotations_dir=file.path("/sc/or
                                                annotation_types=c("Roadmap_ChromeHMM_15state",
                                                                   "RoadMap_Enhancers",
                                                                   "RoadMap_Promoter",
-                                                                  "TFBS")){
-  selected_annotations <- list.files(file.path(annotations_dir, annotation_types), full.names = T)
-  printer("PAINTOR::",length(selected_annotations),"annotations pulled.")
-  return(selected_annotations)
+                                                                  "TFBS"),
+                                               locally=T){
+  if(locally){
+    scp_paths <- file.path(paste0("schilb03@data4.hpc.mssm.edu:", annotations_dir), annotation_types)
+    for(path in scp_paths){
+      cmd <- paste0("scp -r ",path," ../PAINTOR_annotation/",basename(path))
+      printer(cmd)
+      # system(cmd)
+    }
+    BED_paths <- list.files("../PAINTOR_annotation", full.names = T, recursive = T)
+  } else { BED_paths <- list.files(file.path(annotations_dir, annotation_types), full.names = T) }
+  printer("PAINTOR::",length(BED_paths),"annotations pulled.")
+  return(BED_paths)
 }
 
 
@@ -242,7 +251,8 @@ PAINTOR.select_paintor_annotations <- function(annotations_dir=file.path("/sc/or
 PAINTOR.prepare_annotations <- function(paintor_path="./echolocatoR/tools/PAINTOR_V3.0",
                                         BED_paths,
                                         PT_results_path,
-                                        locus_name){
+                                        locus_name,
+                                        remove_BED=F){
   .locus_file <- file.path(PT_results_path, locus_name)
   .annotations_file <- file.path(PT_results_path, paste0(locus_name,".annotations.txt"))
   
@@ -267,19 +277,23 @@ PAINTOR.prepare_annotations <- function(paintor_path="./echolocatoR/tools/PAINTO
   data.table::fwrite(list(BED_paths),
                      annotation_paths,
                      sep="\n")
+  
+  
   cmd <-  paste("python2.7",file.path(paintor_path,"PAINTOR_Utilities","AnnotateLocus.py"),
                 "--input", file.path(PT_results_path,"annotation_paths.txt"),
                 "--locus", .locus_file,
                 "--out", .annotations_file,
                 "--chr","CHR",
                 "--pos","POS")
-  chimera=T 
+  chimera=F 
   if(chimera){cmd <- paste("ml python/2.7.10 &&",cmd)}
   system(cmd)
   printer("+++ PAINTOR:: Annotation--SNP overlap summaries:")
-  colSums( data.table::fread(.annotations_file))
-  printer("+++ PAINTOR:: Removing temporary decompressed BED files.")
-  file.remove(BED_paths)
+  colSums( data.table::fread(.annotations_file)) 
+  if(remove_BED){
+    printer("+++ PAINTOR:: Removing temporary decompressed BED files.")
+    file.remove(BED_paths)
+  } 
 }
 
 
@@ -293,11 +307,24 @@ PAINTOR.survey_annotation <- function(PT_results_path,
 }
 
 PAINTOR.process_results <- function(PT_results_path, 
-                                    locus_name="Locus1"){
-  results <- data.table::fread(file.path(PT_results_path, paste0(locus_name,".results.txt"))) %>% 
-    arrange(desc(Posterior_Prob))
-  # subset(results, Posterior_Prob>0) 
-  return(results)
+                                    locus_name="Locus1"){ 
+  paintor.results <- data.table::fread(file.path(PT_results_path, paste0(locus_name,".results.txt"))) %>% 
+    arrange(desc(Posterior_Prob)) 
+  return(paintor.results)
+}
+
+PAINTOR.merge_results <- function(finemap_DT, 
+                                  paintor.results,
+                                  PP_threshold=.5,
+                                  multi_finemap_col_name="PAINTOR"){
+  printer("PAINTOR:: Merging PAINTOR results with multi-finemap file.") 
+  merged_DT <- data.table:::merge.data.table(finemap_DT, paintor.results[,c("RSID","Posterior_Prob")],
+                                             by.x="SNP", by.y="RSID", all.x = T)  
+  PP.col.name <- paste0(multi_finemap_col_name,".Probability")
+  names(merged_DT)[names(merged_DT) == "Posterior_Prob"] <- PP.col.name
+  merged_DT[,paste0(multi_finemap_col_name,".Credible_Set")] <- ifelse(subset(merged_DT,select=PP.col.name) > PP_threshold, 1, 0) 
+  printer("PAINTOR:: Credible Set size =",sum(subset(merged_DT, select=paste0(multi_finemap_col_name,".Credible_Set")),na.rm=T))
+  return(merged_DT)
 }
 
 
@@ -365,20 +392,27 @@ PAINTOR.run <- function(paintor_path,
 # ------------------------------#
 # ----------- PAINTOR ----------#
 # ------------------------------#
-PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
+PAINTOR <- function(finemap_DT=NA,
+                    paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
                     GWAS_dataset_name=NA,
-                    QTL_datasets=NA,#c("Fairfax_2014_CD14","Fairfax_2014_IFN", "Fairfax_2014_LPS2","Fairfax_2014_LPS24")
+                    QTL_datasets=NULL,#c("Fairfax_2014_CD14","Fairfax_2014_IFN", "Fairfax_2014_LPS2","Fairfax_2014_LPS24")
                     gene,
                     locus_name=NA,
                     n_causal=5,
                     XGR_dataset="FANTOM5_Enhancer",
                     ROADMAP_search=NA,
                     chromatin_state="TssA",
-                    no_annotations=F){
+                    use_annotations=F,
+                    PP_threshold=.5,
+                    multi_finemap_col_name="PAINTOR"){
   # Note: All file formats are assumed to be single space delimited.
-  
+
   ## Quick setup
-  # chromatin_state="TssA"; paintor_path = "./echolocatoR/tools/PAINTOR_V3.0"; GWAS_dataset_name = "Nalls23andMe_2019"; QTL_dataset_name = "Fairfax_2014_CD14";locus=NA; gene="LRRK2";  no_annotations=F;  XGR_dataset=NA; ROADMAP_search="monocyte"
+  # chromatin_state="TssA"; paintor_path = "./echolocatoR/tools/PAINTOR_V3.0"; GWAS_dataset_name = "Nalls23andMe_2019"; QTL_datasets = c("Fairfax_2014_IFN","Fairfax_2014_LPS24");locus_name=NA; gene="LRRK2";  no_annotations=F;  XGR_dataset=NA; ROADMAP_search="monocyte"; n_causal=5; finemap_DT=NA; multi_finemap_col_name="PAINTOR_Fairfax";  PP_threshold=.5
+  if(is.na(GWAS_dataset_name)){
+    GWAS_dataset_name <- basename(dirname(results_path)); 
+    printer("PAINTOR:: Inferring GWAS dataset name:", GWAS_dataset_name)
+    }
   locus_name <- PAINTOR.locusName_handler(locus_name, 
                                           gene, 
                                           GWAS_dataset_name, 
@@ -389,7 +423,11 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
                                               gene=gene)
   printer("****** Double checking PT_results_path",PT_results_path)
   results_path <- dirname(PT_results_path)
-
+  if(!is.data.frame(finemap_DT)){
+    mfm_path <- file.path(results_path,"Multi-finemap/Multi-finemap_results.txt")
+    printer("PAINTOR:: No finemap_DT supplied. Retrieving from storage:",mfm_path)
+    finemap_DT <- data.table::fread(mfm_path, nThread = 4)
+  }
 
   # 1. Locus File 
   locus_DT <- PAINTOR.create_locusFile(results_path=results_path,
@@ -400,39 +438,40 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
                                        locus_name=locus_name) 
   n_datasets <- sum(grepl(colnames(locus_DT), pattern = "ZSCORE"))
 
+  
+   
   # 2. LD Matrix File
   PAINTOR.prepare_LD(results_path,
                      PT_results_path,
                      locus_name,
                      locus_DT)
   
-  # 3. Annotation Matrix File
-  # BED_paths.gz <- PAINTOR.download_annotations(PT_results_path, 
-  #                                              locus,
-  #                                              locus_DT,
-  #                                              XGR_dataset,
-  #                                              ROADMAP_search,
-  #                                              chromatin_state,
-  #                                              no_annotations)
- 
-
-  if(no_annotations==F){
-    PAINTOR.list_paintor_annotations() 
+  # 3. Annotation Matrix File 
+  if(use_annotations){
+    PAINTOR.list_paintor_annotations(annotations_dir="../PAINTOR_annotation/") 
     BED_paths <- PAINTOR.select_paintor_annotations(annotations_dir=file.path("/sc/orga/projects/pd-omics/brian/PAINTOR_V3.0",
                                                                               "Annotation_directory/Functional_Annotations"),
                                                     annotation_types=c("Roadmap_ChromeHMM_15state",
                                                                         "RoadMap_Enhancers",
                                                                         "RoadMap_Promoter",
-                                                                        "TFBS"))
-    PAINTOR.prepare_annotations(paintor_path,
-                                BED_paths, 
-                                PT_results_path, 
-                                locus)
+                                                                        "TFBS"), locally = T)
+    PAINTOR.prepare_annotations(paintor_path = paintor_path,
+                                BED_paths = BED_paths, 
+                                PT_results_path = PT_results_path, 
+                                locus_name = locus_name)
+  } else {
+    # Run with all priors set to 1
+    BED_paths <- PAINTOR.download_annotations(PT_results_path,
+                                              locus_name = locus_name,
+                                              locus_DT, 
+                                              no_annotations=T)
   }
   
   # 4. Input File
   printer("+ PAINTOR:: Preparing input.files")
-  data.table::fwrite(list(locus_name), file.path(PT_results_path, "input.files"), sep="\n")
+  data.table::fwrite(list(locus_name), 
+                     file.path(PT_results_path, "input.files"), 
+                     sep="\n")
 
   # 5. Run PAINTOR!
   PAINTOR.run(paintor_path = paintor_path, 
@@ -440,9 +479,25 @@ PAINTOR <- function(paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
               n_datasets = n_datasets, 
               n_causal = n_causal)
 
-  # Summarise the results 
+  # Summarise the results
+  # locus_name="LRRK2.Nalls23andMe_2019."; multi_finemap_col_name="PAINTOR"
+  # locus_name="LRRK2.Nalls23andMe_2019.Fairfax_2014_CD14--Fairfax_2014_IFN--Fairfax_2014_LPS2--Fairfax_2014_LPS24"; multi_finemap_col_name="PAINTOR_Fairfax"
+  
   paintor.results <- PAINTOR.process_results(PT_results_path=PT_results_path, 
                                              locus_name=locus_name)
-  return(paintor.results)
+  # Remove columns with the same name
+  ff.cols <- grep(paste0(multi_finemap_col_name,"."), colnames(finemap_DT), value = T)
+  if(length(ff.cols)>0){finemap_DT[,c(ff.cols):=NULL]} 
+  # Merge results
+  merged_DT <- PAINTOR.merge_results(finemap_DT = finemap_DT,
+                                     paintor.results = paintor.results,
+                                     PP_threshold = PP_threshold,
+                                     multi_finemap_col_name = multi_finemap_col_name)
+  
+  # Update Consensus SNP col and Summarise 
+  # merged_DT <- find_consensus_SNPs(merged_DT, support_thresh = 2)
+  # top_snps <- (finemap_DT %>% arrange(desc(Support)))[,c("SNP","Support","Consensus_SNP")] %>% head(10)
+  # data.table::fwrite(merged_DT, mfm_path, nThread = 4, sep="\t")
+  return(merged_DT)
 }
 

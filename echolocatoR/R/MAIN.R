@@ -403,7 +403,8 @@ finemap_pipeline <- function(gene,
                              plot_LD = F, 
                              verbose=T,
                              remove_tmps=T,
-                             plot_types=c("simple","fancy")
+                             plot_types=c("simple","fancy"),
+                             PAINTOR_QTL_datasets=NULL
                           ){
    # Create paths 
    results_path <- make_results_path(dataset_name, dataset_type, gene)
@@ -502,7 +503,8 @@ finemap_pipeline <- function(gene,
                                 N_cases_col = N_cases_col,
                                 N_controls_col = N_controls_col,
                                 A1_col = A1_col,
-                                A2_col = A2_col)  
+                                A2_col = A2_col,
+                                PAINTOR_QTL_datasets = PAINTOR_QTL_datasets)  
   # Step 6: COLOCALIZE
   # Step 7: Functionally Fine-map
   
@@ -524,10 +526,10 @@ finemap_pipeline <- function(gene,
                       gene = gene,
                       LD_matrix = LD_matrix,
                       results_path = results_path,
-                      method_list = finemap_methods,
+                      method_list = finemap_methods, #c("SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")
                       XGR_libnames = c("ENCODE_TFBS_ClusteredV3_CellTypes",
-                                       "ENCODE_DNaseI_ClusteredV3_CellTypes",
-                                       "Broad_Histone")) 
+                                       "ENCODE_DNaseI_ClusteredV3_CellTypes")#
+                                      ) 
   }
 
  
@@ -611,7 +613,8 @@ finemap_gene_list <- function(gene_list, fullSS_path,
                              plot_LD=F,
                              verbose=T,
                              remove_tmps=T,
-                             plot_types = c("simple","fancy")
+                             plot_types = c("simple","fancy"),
+                             PAINTOR_QTL_datasets=NULL
                              ){ 
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
@@ -671,7 +674,8 @@ finemap_gene_list <- function(gene_list, fullSS_path,
                                      conditioned_snps=lead_SNP,
                                      plot_LD=plot_LD,
                                      remove_tmps=remove_tmps,
-                                     plot_types=plot_types)  
+                                     plot_types=plot_types,
+                                     PAINTOR_QTL_datasets=PAINTOR_QTL_datasets)  
       
       # Create summary table for all genes
       printer("Generating summary table...", v=verbose)

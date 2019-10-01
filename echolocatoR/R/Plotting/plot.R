@@ -142,8 +142,15 @@ snp_plot <- function(finemap_DT,
   # }  
   
   if(method=="original"){   
+    r2_multiply = 150
     is.na(DT$Probability) <- 0
-    p <- ggplot(data = DT, aes(x=POS, y= -log10(P), label=SNP, color= r2))
+    p <- ggplot(data = DT, aes(x=POS, y= -log10(P), label=SNP, color= r2)) + 
+      geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) +
+      stat_smooth(data=DT, aes(x=POS, y=r2*r2_multiply, fill=r2),color="firebrick1", 
+                  se = F, formula = y ~ x, 
+                  method = 'loess', span=.1) + 
+      geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) + 
+      geom_hline(yintercept= -log10(5e-8), alpha=.5, linetype=2, size=.5, color="black")
 # =======
 #   if(method=="original"){
 #     DT <- finemap_DT 
@@ -152,7 +159,7 @@ snp_plot <- function(finemap_DT,
 #     
 #     p <- ggplot(data = DT, aes(x=POS, y= -log10(P), label=SNP, color= -log10(P) ))
 # >>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4:echolocatoR/R/plot.R
-    title <- paste0(gene," : Before fine-mapping")
+    title <- "GWAS"#paste0(gene," : Before fine-mapping")
     tag_SNPs <- labelSNPs <- construct_SNPs_labels(DT, lead=T, method = F, consensus = T)
     subtitle <- if(is.na(subtitle)){paste0(length(DT$SNP)," SNPs")}else{subtitle}
   } else {
@@ -164,7 +171,7 @@ snp_plot <- function(finemap_DT,
       p <- ggplot(data = DT, aes(x=POS, y= -log10(P), label=SNP, color= r2 ))  
     # Fine-mapping methods
     } else if (multi){
-      title <- paste0(gene," : After fine-mapping (",method,")") 
+      title <- method #paste0(gene," : After fine-mapping (",method,")") 
       DT <- DT %>% dplyr::rename(Probability = paste0(method,".Probability"), 
                                  Credible_Set = paste0(method,".Credible_Set")) 
       is.na(DT$Probability) <- 0 
@@ -175,25 +182,22 @@ snp_plot <- function(finemap_DT,
 #       is.na(DT$Probability) <- 0 
 #       p <- ggplot(data = DT, aes(x=POS, y=Probability, label=SNP, color= -log10(P) )) + 
 # >>>>>>> 1e2aecb9b38f6c049a9c6f1d9baed0f0d268e0b4:echolocatoR/R/plot.R
-        ylim(c(0,1.1)) 
+        ylim(c(0,1.2)) 
       subtitle <- if(is.na(subtitle)){
         paste0(length(subset(DT, Credible_Set>0)$SNP), " Candidate SNP(s)")
         }else{subtitle}
     } else {
       title <- paste0(gene," : After fine-mapping (",method,")")  
       p <- ggplot(data = DT, aes(x=POS, y=Probability,  color= r2 )) + 
-        ylim(c(0,1.1)) 
+        ylim(c(0,1.2)) 
     } 
     labelSNPs <- construct_SNPs_labels(DT, lead=T, method = T, consensus = F)
     tag_SNPs <- subset(labelSNPs, Credible_Set>0)
   }
   
-    
-  p <- p + geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) +
-    stat_smooth(data=DT, aes(x=POS, y=r2, fill=r2),color="darkgray", 
-                se = F, formula = y ~ x, 
-                method = 'loess', span=.05) + 
-    geom_point() + # alpha=.5 
+  p <- p + 
+    geom_point() + # alpha=.5  
+    scale_color_gradient(low="blue", high="red", limits = c(0,1)) + 
     # geom_segment(aes(xend=POS, yend=0, color= -log10(P)), alpha=.5) +
     geom_point(data=labelSNPs, pch=21, fill=NA, size=4, color=labelSNPs$color, stroke=1) +
     geom_point(data=subset(DT, SNP==LD_SNP), pch=18, fill=NA, size=4, color="red") + 
@@ -201,9 +205,10 @@ snp_plot <- function(finemap_DT,
     geom_label_repel(data=tag_SNPs, aes(label=SNP), 
                      color=NA, 
                      nudge_x = .5, 
+                     fill="black",
                      box.padding = .5,
                      label.size=NA, 
-                     alpha=.5, 
+                     alpha=.6, 
                      seed = 1,) +
     geom_label_repel(data=tag_SNPs, aes(label=SNP), 
                      color=tag_SNPs$color,
@@ -217,9 +222,11 @@ snp_plot <- function(finemap_DT,
          subtitle = subtitle,
          y = score_dict[[method]], 
          x = "Position",
-         color = bquote(paste(R^2," with ",.(LD_SNP) ) )) +
+         color = bquote(paste(r^2," with ",.(LD_SNP) ) )) +
+    theme_bw()+ 
     theme(plot.title = element_text(hjust = 0.5), 
-          plot.subtitle = element_text(hjust = 0.5)) +
+          plot.subtitle = element_text(hjust = 0.5),
+          rect = element_rect(fill = "transparent") ) +
     scale_x_continuous(breaks = roundBreaks) +
     scale_color_gradient(low="blue", high="red", limits = c(0,1))
   if(show_plot){print(p)} else{ return(p) }
@@ -240,37 +247,41 @@ multi_finemap_plot <- function(finemap_DT,
                                ncols=1,
                                width=500, #500,
                                height=1000 #1000
-                               ){ 
+                                 ){ 
+  # gene <- "BST1"
+  # results_path <- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
+  # finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"))
+  # load(file.path(results_path, "plink/LD_matrix.RData"))
+  # finemap_method_list=c("SUSIE","FINEMAP")
+  
   method_list <- if(original){c("original", finemap_method_list)}else{finemap_method_list} 
   
   # Assemble plots in list 
    plot_list <- lapply(method_list, function(method, 
                                             finemap_DT.=finemap_DT,
                                             LD_matrix.=LD_matrix){   
-    printer("\n Plotting...",method)
-    if(method=="COJO"){
-      p <- COJO_plot(cojo_DT = finemap_DT., 
-                results_path = results_path, 
-                show_plot = F, 
-                save_plot = T,
-                conditioned_snps = conditioned_snps)
-    } else{
-      p <- snp_plot(finemap_DT = finemap_DT., 
-                    LD_matrix = LD_matrix.,
-                    gene = gene, 
-                    method = method, 
-                    show_plot = F, 
-                    multi = T)
-    } 
-    return(p) 
+      printer("\n Plotting...",method)
+      if(method=="COJO"){
+        p <- COJO_plot(cojo_DT = finemap_DT., 
+                  results_path = results_path, 
+                  show_plot = F, 
+                  save_plot = T,
+                  conditioned_snps = conditioned_snps)
+      } else{
+        p <- snp_plot(finemap_DT = finemap_DT., 
+                      LD_matrix = LD_matrix.,
+                      gene = gene, 
+                      method = method, 
+                      show_plot = F, 
+                      multi = T)
+      } 
+      return(p) 
   }) 
-  # Multi-plot
-  ## Adjust plotting parameters
-  if(length(finemap_method_list)>3){ncols <- 2; width <- width*2}
-  
+  # Multi-plot 
   # grDevices::graphics.off() 
-  cp <- cowplot::plot_grid(plotlist = plot_list, ncol = ncols) 
-  # print(cp)
+  cp <- cowplot::plot_grid(plotlist = plot_list, 
+                           ncol = ncols)
+  print(cp)
   # plot_list <- lapply(1:3,function(e){ggplot(iris, aes(x=Sepal.Width,y=Sepal.Length))+geom_point()})
 
   # library(gridExtra)
@@ -278,14 +289,18 @@ multi_finemap_plot <- function(finemap_DT,
   # plot(cp)
    
   # Rmisc::multiplot(plotlist = plot_list, cols = ncols)
-   
+  ## Adjust plotting parameters
+  if(length(finemap_method_list)>3){ncols <- 2; width <- width*2}
+  
   # Save plot
   if(save_plot){
-    png(filename=file.path(results_path,"Multi-finemap/multi_finemap_plot.png"),width = width, height)
-    print(cp)
-    dev.off()
-    # ggplot2::ggsave(file=file.path(results_path,"Multi-finemap/multi_finemap_plot.png"),
-    #        cp, width = width, height = height)
+    # png(filename=file.path(results_path,"Multi-finemap/multi_finemap_plot.png"),
+    #     width = width, height)
+    # print(cp)
+    # dev.off()
+    ggplot2::ggsave(file=file.path(results_path,"Multi-finemap/multi_finemap_plot.png"),
+           cp, width = 5, height = 12,
+           bg = "transparent", dpi=400)
   } 
   return(cp)
 }
@@ -314,6 +329,71 @@ eQTL_barplots <- function(subset_path_list, group_list, SNP_list,
     data.table::fwrite(dt, writeCSV)
   }
 } 
+
+
+
+
+
+
+plot_mean.PP <- function(results_path, top_snps=20){ 
+  gene <- basename(results_path)
+  gene_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"),
+                               nThread = 4)
+  gene_DT <- find_consensus_SNPs(gene_DT)
+  lead.rsid <- subset(gene_DT, leadSNP==T)$SNP
+  
+  LD_matrix <- readRDS(file.path(results_path,"plink/LD_matrix.RData"))
+  # corrplot.p3 <- data.table::fread(file.path(results_path,"LDlink_1KGphase3.txt")) %>%
+  #   data.frame(row.names = 1)  %>% 
+  #   as.matrix() 
+  # corrplot.p1 <- LD_matrix[c("rs11175620","rs7294619","rs76904798"),c("rs11175620","rs7294619","rs76904798")]  
+  # 
+  # corrplot::corrplot(corrplot.p3,
+  #                    tl.col = "black",
+  #                    col = colorRampPalette(c("blue","white","red"))(200),
+  #                    addCoef.col = "white")
+  ld.dat <- data.frame(r2=LD_matrix[lead.rsid,], SNP=names(LD_matrix[lead.rsid,])) 
+  
+  gene_DT <- data.table:::merge.data.table(gene_DT, 
+                                data.table::data.table(ld.dat), 
+                                by="SNP", all.x = T)
+  
+  fulldat <- data.table::fread(file.path(results_path, "LRRK2_Nalls23andMe_2019_subset.txt"))
+  # Prepare data
+  pp.dat <- gene_DT %>% arrange(desc(mean.PP)) %>% unique() %>% head(top_snps)
+  pp.dat$SNP <- factor(pp.dat$SNP, levels = pp.dat$SNP)
+  
+  # Plot
+  ppp <- ggplot(pp.dat, aes(x=SNP, y=mean.PP, fill=r2)) + 
+    geom_col() + 
+    labs(title=gene, 
+         subtitle = "Mean Fine-mapping Posterior Probability", 
+         fill=paste0("r2 with\n",lead.rsid)) +  
+    geom_text(stat = 'identity',aes(label=SNP, hjust=-.2, vjust= -.5,   srt=45), color="green") + 
+    geom_text(data = subset(pp.dat,SNP==lead.rsid), 
+              stat = 'identity',aes(label=SNP, hjust=-.2, vjust= -.5,   srt=45),color="red") + 
+    # geom_text(data = subset(pp.dat,SNP==lead.rsid), 
+    #           stat = 'identity',aes(label=SNP, hjust=-.2, vjust= -.5,   srt=45),color="red") + 
+    geom_text(data = subset(pp.dat, Support>=2), 
+              stat = 'identity',aes(label=SNP, hjust=-.2, vjust= -.5,   srt=45),color="goldenrod2") +
+    theme_classic() + 
+    theme(axis.title.x=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5),
+          legend.position = c(0.95, 0.8),
+          rect = element_rect(fill = "transparent"),
+          panel.background = element_rect(fill = "transparent")) +
+    scale_fill_gradient(low="blue", high="red", limits = c(0,1)) + 
+    ylim(c(0,min(max(pp.dat$mean.PP)*1.5,1.1) )) + 
+    xlim(c(0,top_snps+2))
+  print(ppp)
+  
+  ggsave(filename = file.path(results_path,"Multi-finemap","mean.PP.png"), 
+         plot = ppp, dpi = 600, width=8, height=7, bg="transparent")
+  return(ppp)
+}
 
 
 
