@@ -8,23 +8,26 @@
 
 DeepSEA.subset_kunkle <- function(){
   # Summary stats
-  kunk <- data.table::fread("./Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt.gz", nThread = 4) 
-  kunk$Pvalue <- as.numeric(kunk$Pvalue)
-  kunk.sig <- subset(kunk, Pvalue < 0.05) 
-  # Locus coordinates
-  kunkle_loci <- kunkle_loci %>% 
+  # kunk <- data.table::fread("./Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt.gz", nThread = 4) 
+  kunk <- data.table::fread("/sc/orga/projects/ad-omics/data/AD_GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt", 
+                            nThread = 4) 
+  kunk$Pvalue <- as.numeric(kunk$Pvalue) 
+  kunk.sig <- subset(kunk, Pvalue<=0.05)
+  # Locus coordinates 
+  kunkle_loci <- readxl::read_excel("./Data/GWAS/Kunkle_2019/Kunkle2019_supplementary_tables.xlsx", 
+                                    sheet = "Supplementary Table 8") %>%
     dplyr::select(Locus=`Lead SNV Gene`,SNP=`Top Associated SNV`, LD_block=`LD Block (GRCh37)`) %>% 
     data.table::data.table() %>% 
     tidyr::separate(LD_block, c("CHR","Start","End"), sep=":|-")
   
   kunkle.merge <- lapply(kunkle_loci$Locus, function(locus){
     printer("Merging data for locus:",locus)
-    sub <- subset(kunkle_loci, Locus==locus)
-    kunk.sub <- subset(kunk.sig, (Position >= sub$Start) & (Position <= sub$End))
+    locus.sub <- subset(kunkle_loci, Locus==locus)
+    kunk.sub <- subset(kunk.sig, (Chromosome==locus.sub$CHR) & (Position >= locus.sub$Start) & (Position <= locus.sub$End))
     if(nrow(kunk.sub)>0){
-      kunk.sub <- cbind(Locus=sub$Locus, kunk.sub)
+      kunk.sub <- cbind(Locus=locus.sub$Locus, kunk.sub)
       return(kunk.sub)
-    }
+    } else {printer("No SNPs identified"); return(NULL)}
   }) %>% data.table::rbindlist(fill=T)
   
   # Tally before sig subset
@@ -37,69 +40,61 @@ DeepSEA.subset_kunkle <- function(){
   data.table::fwrite(kunkle.merge.sig,"./Data/GWAS/Kunkle_2019/Kunkle_Stage1_sig.txt", sep="\t")
 }
 
-DeepSEA.subset_ROSMAP <- function(){
-  
-  
-  for(locus in locus_list){
-    kunkle.sub <- subset(kunkle.merge.sig, Locus==locus)
-    coordinates <- paste0(unique(kunkle.sub$Chromosome),":",paste(kunkle.sub$Position, collapse = ","))
-    vcf_path <- file.path("~/Desktop/DeepSEA/ROSMAP_vcf",paste0(locus,".vcf"))
-    printer(vcf_path)
-    cmd <- paste("bcftools view -r",coordinates ,vcf_path)
-    printer(cmd)
-  }
-   
-  system(cmd)
-  
-}
+
 
 
 DeepSEA.vcf_subset <- function(){
   locus_list <- c("BIN1",
                  "TREM2",
-                 "NYAP1",
+                 # "NYAP1",
                  "PTK2B",
                  "SPI1",
                  "MS4A2",
                  "ABCA7",
                  "LRRK2")
-  kunkle_loci <- readxl::read_excel("~/Desktop/Fine_Mapping/Data/GWAS/Kunkle_2019/Kunkle2019_supplementary_tables.xlsx", 
+  kunkle.sig <- data.table::fread("./Data/GWAS/Kunkle_2019/Kunkle_Stage1_sig.txt")
+  kunkle_loci <- readxl::read_excel("./Data/GWAS/Kunkle_2019/Kunkle2019_supplementary_tables.xlsx", 
                      sheet = "Supplementary Table 8")
+  if(locally){
+    vcf_folder <- "~/Desktop/DeepSEA/ROSMAP_vcf"
+  } else{
+    vcf_folder <- "/sc/orga/projects/ad-omics/brian/ROSMAP"
+  }
   
   for(locus in locus_list){  
-    regions.file <- file.path("~/Desktop/DeepSEA/ROSMAP_vcf",paste0(locus,".regions.txt"))
+    printer("DeepSEA:: Preparing locus",locus,"...")
+    regions.file <- file.path(vcf_folder, paste0(locus,".regions.txt"))
     if(locus=="LRRK2"){
       finemap_DT <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt")
-      # coords <- paste0(unique(finemap_DT$CHR),":",paste(subset(finemap_DT, P<=5e-8)$POS, collapse=","))
-      coords <- paste0(unique(finemap_DT$CHR),":",subset(finemap_DT, P<=5e-8)$POS)
-      data.table::fwrite(list(coords), regions.file) 
-    }else {
-      # coords <- subset(kunkle_loci, `Lead SNV Gene`==locus )$`LD Block (GRCh37)`
-      kunkle.sub <- subset(kunkle.merge.sig, Locus==locus)
-      # coords <- paste0(unique(kunkle.sub$Chromosome),":",paste(kunkle.sub$Position, collapse = ","))
-      coords <- paste0(unique(kunkle.sub$Chromosome),":",kunkle.sub$Position) 
-      data.table::fwrite(list(coords), regions.file)
+      coords <- data.frame(CHROM=unique(finemap_DT$CHR),POS=sort(subset(finemap_DT, P<=5e-8)$POS) )
+    }else { 
+      kunkle.sub <- subset(kunkle.merge.sig, Locus==locus) 
+      coords <- data.frame(CHROM=unique(kunkle.sub$Chromosome)[1], POS=kunkle.sub$Position) 
     }
-    chr <- strsplit(coords, ':')[[1]][[1]]
-    vcf.gz <- paste0("DEJ_11898_B01_GRM_WGS_2017-05-15_",chr,".recalibrated_variants.vcf.gz")
-    locus.vcf <- paste0(locus,".vcf")
+    data.table::fwrite(coords, regions.file, sep="\t", col.names = F)
+    
+    chr <- coords$CHROM[1]
+    vcf.gz <- file.path(vcf_folder, paste0("DEJ_11898_B01_GRM_WGS_2017-05-15_",chr,".recalibrated_variants.vcf.gz"))
+    locus.vcf <- file.path(vcf_folder, paste0(locus,".vcf"))
     # Subset vcf with tabix ==> 
     ## ==> Force multiallelic sites to become biallelic ==> 
     ## filter snps with alt alleles longer than 100bp (DeepSEA's upper limit) ==>
     ## ==> Remove all but the first 5 cols  ==>
     ## ==> replace * with "'==>
 
-    ## Important: need to inlcude '-h' flag in Tabix to include the header so that bcftools can understand the file format.  
-    
-    cat("tabix",vcf.gz,"-h -R",regions.file,
-                "| bcftools norm -m-", 
-                # "| bcftools filter -e '(STRLEN(ALT[0])>=90)'",
-                  # "| bcftools query -H -f '%CHROM\\t%POS\\t%TYPE\\t%REF\\t%ALT\\n'", # Needs to be last bcftool command bc erases header
-                "| bcftools view -e '(STRLEN(REF)>100) | (STRLEN(ALT)>100)'",
-                "| cut -f1-5",
-                "| sed 's/\\*//g'",
-                "> ",locus.vcf)   
-    cat("\n")
+    ## Important: need to include '-h' flag in Tabix to include the header so that bcftools can understand the file format.  
+    cmd <- capture.output( 
+      cat("tabix",vcf.gz,"-h -R",regions.file,
+                  "| bcftools norm -m-", 
+                  # "| bcftools filter -e '(STRLEN(ALT[0])>=90)'",
+                    # "| bcftools query -H -f '%CHROM\\t%POS\\t%TYPE\\t%REF\\t%ALT\\n'", # Needs to be last bcftool command bc erases header
+                  "| bcftools view -e '(STRLEN(REF)>100) | (STRLEN(ALT)>100)'",
+                  "| cut -f1-5",
+                  "| sed 's/\\*//g'",
+                  "> ",locus.vcf)  
+    )
+    system(cmd) 
+    cat("\n\n")
   } 
    
   results_links <- list(LRRK2="http://deepsea.princeton.edu/job/analysis/results/ea111803-8f88-4299-8a0e-872d8594b854",
