@@ -140,7 +140,7 @@ BioCircos.SNP_Groups <- function(FM = merge_finemapping_results()
 
 
 # ======  ggbio ======== #
-ggbio.prepare_SNPgroups <- function(FM = merge_finemapping_results()){ 
+ggbio.prepare_SNPgroups <- function(FM = merge_finemapping_results(dataset = "./Data/GWAS/Nalls23andMe_2019")){ 
   DF.dat <- FM 
   DF.dat$Consensus <- FM$Consensus_SNP>0
   DF.dat$CS <- FM$Support>0
@@ -184,7 +184,10 @@ ggbio.prepare_SNPgroups <- function(FM = merge_finemapping_results()){
     dplyr::mutate(SeqNames=paste0("chr",CHR)) %>%  data.frame() %>%
     biovizBase::transformDfToGr(seqnames = "SeqNames", start = "POS", end = "POS")
   gr.GWAS$SNP.Group <- "GWAS"
-  gr.GWAS[is.na(gr.GWAS$Support),]$Support <- 0 
+  if(any(is.na(gr.GWAS$Support))){
+    gr.GWAS[is.na(gr.GWAS$Support),]$Support <- 0 
+  }
+  
   
   #CredSet
   gr.CS <- subset(FM, Support>0) %>% 
@@ -227,6 +230,48 @@ ggbio.prepare_SNPgroups <- function(FM = merge_finemapping_results()){
 }
 # gr <- ggbio.prepare_SNPgroups(FM)
 
+
+
+ggbio.add_fgwas_annnotations <- function(ggb, top_annot=10){
+  printer("ggbio:: Creating annotation tracks using fGWAS processed files.")
+  fgwas_annots <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/_genome_wide/fGWAS/Input/annotations.Nalls23andMe_2019.txt") 
+  fgwas_results <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/_genome_wide/fGWAS/fGWAS_summary.Nalls23andMe_2019.txt")
+  top_annot.names <- (subset(fgwas_results, SNP.Group=="Consensus") %>% 
+                        dplyr::rename(AIC="AIC:") %>% 
+                        arrange(desc(estimate), desc(AIC)))[1:top_annot,]$parameter %>%  gsub("_ln","", x=.)
+  
+  # col.sums <- colSums(fgwas_annots[,4:ncol(fgwas_annots)]) 
+  annot.cols <- top_annot.names#colnames(fgwas_annots)[4:ncol(fgwas_annots)]
+  color.list <- grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+  for(i in 1:length(annot.cols)){ 
+    printer(annot.cols[i])
+    annot.sub <- subset(fgwas_annots, select = c("chr","pos",annot.cols[i])) %>%  
+      dplyr::mutate("SeqNames" = chr) 
+    
+    # Fit line to data 
+    lm.out <- loess(data = annot.sub, 
+                    span = 0.25,
+                    formula = "`HCPEpiC-DS12447.hotspot.twopass.fdr0.05.merge` ~ pos")
+    
+    
+    annot.sub <- annot.sub[annot.sub[annot.cols[i]]==1,]
+    annot.gr <- biovizBase::transformDfToGr(annot.sub, seqnames = "SeqNames", 
+                                            start = "pos", end = "pos") 
+    gg.new <- ggbio::circle(annot.gr, 
+                            geom="rect", 
+                            label = annot.cols[i],
+                            color = color.list[i]) 
+    ggb <- ggb + gg.new
+    # ggbio::ggbio() +  gg.new
+  } 
+  return(ggb)
+}
+
+
+
+
+
+
 ggbio.circos <- function(gr){ 
   library(ggbio)
   gr <- ggbio.prepare_SNPgroups()
@@ -245,48 +290,10 @@ ggbio.circos <- function(gr){
   # data(ideoCyto, package = "biovizBase")
   # biovizBase::isIdeogram(ideoCyto$hg19)
   # ideoCyto$hg19$SeqNames <- as.character(seqnames(ideoCyto$hg19))
-  data("CRC", package  = "biovizBase")
-  head(hg19sub)
-  # autoplot(ideoCyto$hg19, layout = "circle", cytobands = TRUE) 
-  
-  
-  
-  ggbio.add_fgwas_annnotations <- function(ggb, top_annot=10){
-    printer("ggbio:: Creating annotation tracks using fGWAS processed files.")
-    fgwas_annots <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/_genome_wide/fGWAS/Input/annotations.Nalls23andMe_2019.txt") 
-    fgwas_results <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/_genome_wide/fGWAS/fGWAS_summary.Nalls23andMe_2019.txt")
-    top_annot.names <- (subset(fgwas_results, SNP.Group=="Consensus") %>% 
-                          dplyr::rename(AIC="AIC:") %>% 
-                          arrange(desc(estimate), desc(AIC)))[1:top_annot,]$parameter %>%  gsub("_ln","", x=.)
-    
-    # col.sums <- colSums(fgwas_annots[,4:ncol(fgwas_annots)]) 
-    annot.cols <- top_annot.names#colnames(fgwas_annots)[4:ncol(fgwas_annots)]
-    color.list <- grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
-    for(i in 1:length(annot.cols)){ 
-      printer(annot.cols[i])
-      annot.sub <- subset(fgwas_annots, select = c("chr","pos",annot.cols[i])) %>%  
-        dplyr::mutate("SeqNames" = chr) 
-      
-      # Fit line to data 
-      lm.out <- loess(data = annot.sub, 
-                      span = 0.25,
-                      formula = "`HCPEpiC-DS12447.hotspot.twopass.fdr0.05.merge` ~ pos")
-      
-      
-      annot.sub <- annot.sub[annot.sub[annot.cols[i]]==1,]
-      annot.gr <- biovizBase::transformDfToGr(annot.sub, seqnames = "SeqNames", 
-                                              start = "pos", end = "pos") 
-      gg.new <- ggbio::circle(annot.gr, 
-                              geom="rect", 
-                              label = annot.cols[i],
-                              color = color.list[i]) 
-      ggb <- ggb + gg.new
-      # ggbio::ggbio() +  gg.new
-    } 
-    return(ggb)
-  }
-  
-  
+  # data("CRC", package  = "biovizBase")
+  # head(hg19sub) 
+  # autoplot(ideoCyto$hg19, layout = "circle", cytobands = TRUE)
+  #  
   
   
   ggb <- ggbio::ggbio() +  
@@ -301,7 +308,7 @@ ggbio.circos <- function(gr){
                   geom = "point", color="red", alpha=alpha,
                   grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line) #, radius=10
   
-  ggb <- ggbio.add_fgwas_annnotations(ggb)
+  # ggb <- ggbio.add_fgwas_annnotations(ggb)
   
   # ggbio::circle(GRangesList(gr[["GWAS"]], gr[["Consensus"]], gr[["CS"]]) %>% unlist(),
   #               aes(color=SNP.Group, size=Size, y=Support, fill=SNP.Group, group=SNP.Group),
@@ -324,7 +331,8 @@ ggbio.circos <- function(gr){
   
   # Loci
   # circle(gr.loci, geom = "bar", color="black", aes(y=Height, label=Gene)) +
-  ggb <- ggb + ggbio::circle(gr[["loci"]], geom = "ideogram", fill="turquoise3", color="turquoise4") +  
+  ggb <- ggb +
+    ggbio::circle(gr[["loci"]], geom = "ideogram", fill="turquoise3", color="turquoise4") +  
     ggbio::circle(gr[["loci"]], geom = "bar", color="turquoise3", trackWidth=10, 
                   aes(label=Gene, y=Height)) +
     ggbio::circle(gr[["loci"]], geom = "text", color="turquoise3", trackWidth=20, 
@@ -334,8 +342,7 @@ ggbio.circos <- function(gr){
     ggbio::circle(hg19sub, geom = "ideogram", cytobands=T, trackWidth=22) + 
     ggbio::circle(hg19sub, geom = "text", color="black", trackWidth=22,
                   aes(label=seqnames, size=8))
-  print(ggb) 
-  
+  print(ggb)  
   png(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide/ggbio_circos.png"), 
       bg = "transparent", height = 1000, width=1000)
   ggb
@@ -343,6 +350,240 @@ ggbio.circos <- function(gr){
   
   return(ggb)
 }
+
+# unit. = 360/length(unique(gr.all$CHR))
+# lapply(1:length(unique(gr.all$CHR)), function(x){unit.+i*})
+# setNames(unique(gr.all$CHR), rep(1,length(unique(gr.all$CHR))))
+
+ggbio.mergeQTL <- function(FM, qtl_file="Fairfax_2014_IFN"){
+  FM_merge <- mergeQTL.merge_handler(FM_all=FM, qtl_file) 
+  FM_merge[is.na(FM_merge$QTL.FDR), "QTL.FDR"] <- 1 
+  FM_merge[is.infinite(FM_merge$QTL.FDR), "QTL.FDR"] <- 1 
+  FM_merge <- FM_merge %>% dplyr::group_by(SNP) %>% dplyr::slice(1) %>% data.table::data.table()
+  # Convert to 
+  gr.qtl <- FM_merge %>% dplyr::mutate(SeqNames=paste0("chr",CHR),
+                                       QTL.neg.log= -log10(QTL.FDR)) %>%  
+    data.frame() %>%
+    biovizBase::transformDfToGr(seqnames = "SeqNames", start = "POS", end = "POS") 
+  # gr.qtl <- subset(gr.qtl, QTL.FDR < 0.05) 
+  if(any(is.na(gr.qtl$QTL.neg.log))){ gr.qtl[is.na(gr.qtl$QTL.neg.log),]$QTL.neg.log <- 0 }
+  if(any(is.infinite(gr.qtl$QTL.neg.log))){ gr.qtl[is.infinite(gr.qtl$QTL.neg.log),]$QTL.neg.log <- 0 } 
+  return(gr.qtl)
+}
+
+brew.colors <- function(group.list, palette="Blues"){
+  suppressWarnings(
+    colors <- RColorBrewer::brewer.pal(length(group.list), palette)[1:length(group.list)]
+  )
+  named.list <- setNames(colors, group.list) 
+  return(named.list)
+}
+
+
+ggbio.line_circos <- function(){
+  space.skip <- .005  #0.015
+  rect.inter.n = 5
+  trackWidth = 5
+  # SNP grid
+  alpha <- .75
+  grid.background <-  "black"
+  grid.line <-"darkgrey"
+  grid.n <- 3
+  # Annotation grid 
+  grid.background.ann <- "black"
+  grid.line.ann <-"black"
+  grid.n.ann <- 3  
+  # QTL 
+  grid.n2 <- 1  
+  grid.background2 <- "white"
+  qtl.geom <- "rec"
+  # seqlengths(gr.all) <- rep(1, length(gr.all))
+  # "point", "line", "link", "ribbon", "rect", "bar", "segment", "hist", "scale", "heatmap", "ideogram", "text"
+  FM[is.na(FM)] <-0
+  gr.all <- FM %>% dplyr::mutate(SeqNames=paste0("chr",CHR)) %>%  
+    data.frame() %>%
+    biovizBase::transformDfToGr(seqnames = "SeqNames", start = "POS", end = "POS") 
+  gr.all$GWAS.neg.log <- -log10(gr.all$P) 
+  
+
+  color.list <- c("Consensus SNP"="goldenrod2",
+                  "Credible Set"="green",
+                  "Lead GWAS SNP"="red",
+                  "Nalls et al. (2019) GWAS -log10(P-value)"="red3",
+                  "Fine-mapped Mean PP"="green4") 
+  
+  Fairfax <- c("Fairfax_2014_CD14",
+               "Fairfax_2014_IFN",
+               "Fairfax_2014_LPS2",
+               "Fairfax_2014_LPS24")
+  color.list <- append(color.list, 
+                       brew.colors(Fairfax, palette="Oranges"))
+  
+  
+  psychENCODE <- c("psychENCODE_eQTL")
+  color.list <- append(color.list,  
+                       brew.colors(psychENCODE, palette="Greys"))
+  
+  gtex <- c("GTEx_V7_Brain_Cerebellum",
+              "GTEx_V7_Brain_Hippocampus",
+              "GTEx_V7_Brain_Putamen_basal_ganglia",
+              "GTEx_V7_Brain_Substantia_nigra")
+  color.list <- append(color.list, 
+                       brew.colors(gtex, palette="Purples"))
+  
+  xQTL <- c( "Brain_xQTL_Serve.eQTL",
+             "Brain_xQTL_Serve.haQTL")
+  color.list <- append(color.list, 
+                       brew.colors(xQTL, palette="Blues"))
+  
+  loci <- unique(gr[["loci"]]$Gene)
+  loci.subset <- loci[seq(2, length(loci), 2)] 
+  # ggb <- ggbio::ggbio(radius=2)
+  # for(qtl_file in c(xQTL, gtex, Fairfax, psychENCODE)){ 
+  #   printer(qtl_file)
+  #   gg.qtl <- ggbio.mergeQTL(FM, qtl_file=qtl_file)
+  #   ggb <- ggb +  ggbio::circle(gg.qtl, 
+  #                               aes(y=QTL.neg.log, fill=qtl_file), size=.5,
+  #                               geom = qtl.geom, color=color.list[[qtl]],  alpha=alpha,
+  #                               grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+  #                               space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)
+  # }
+  ggb <- ggbio::ggbio(radius=2) +
+    # Fairfax QTL
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="Fairfax_2014_CD14"), 
+                  aes(y=QTL.neg.log, fill="Fairfax_2014_CD14"), size=.5,
+                  geom = qtl.geom, alpha=alpha, color=color.list[["Fairfax_2014_CD14"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="Fairfax_2014_IFN"), 
+                  aes(y=QTL.neg.log, fill="Fairfax_2014_IFN"), size=.5,
+                  geom = qtl.geom,  alpha=alpha, color=color.list[["Fairfax_2014_IFN"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="Fairfax_2014_LPS2"), 
+                  aes(y=QTL.neg.log, fill="Fairfax_2014_LPS2"), size=.5,
+                  geom = qtl.geom,   alpha=alpha, color=color.list[["Fairfax_2014_LPS2"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="Fairfax_2014_LPS24"), 
+                  aes(y=QTL.neg.log, fill="Fairfax_2014_LPS24"), size=.5,
+                  geom = qtl.geom,   alpha=alpha, color=color.list[["Fairfax_2014_LPS24"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +  
+    # psychENCODE
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="psychENCODE_eQTL"), 
+                  aes(y=QTL.neg.log, fill="psychENCODE_eQTL"), size=.5,
+                  geom = qtl.geom,   alpha=alpha, color=color.list[["psychENCODE_eQTL"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    # ggbio::circle(ggbio.mergeQTL(FM, qtl_file="psychENCODE_cQTL"), aes(y=QTL.neg.log), size=.5,
+    #               geom = "hist", color="purple2", alpha=alpha,
+    #               grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line,
+    #               space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    # ggbio::circle(ggbio.mergeQTL(FM, qtl_file="psychENCODE_isoQTL"), aes(y=QTL.neg.log), size=.5,
+    #               geom = "hist", color="purple3", alpha=alpha,
+    #               grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line,
+    #               space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    # ggbio::circle(ggbio.mergeQTL(FM, qtl_file="psychENCODE_tQTL"), aes(y=QTL.neg.log), size=.5,
+    #               geom = "hist", color="purple4", alpha=alpha,
+    #               grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line,
+    #               space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    # Brain_xQTL_Serve
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="Brain_xQTL_Serve.eQTL"), 
+                  aes(y=QTL.neg.log, fill="Brain_xQTL_Serve.eQTL"), size=.5,
+                  geom = qtl.geom,   alpha=alpha, color=color.list[["Brain_xQTL_Serve.eQTL"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="Brain_xQTL_Serve.haQTL"), 
+                  aes(y=QTL.neg.log, fill="Brain_xQTL_Serve.haQTL"), size=.5,
+                  geom = qtl.geom,   alpha=alpha, color=color.list[["Brain_xQTL_Serve.haQTL"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    # ggbio::circle(ggbio.mergeQTL(FM, qtl_file="Brain_xQTL_Serve.mQTL"), aes(y=QTL.neg.log), size=.5,
+    #               geom = "point", color="cyan3", alpha=alpha,
+    #               grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line,
+    #               space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    # ggbio::circle(ggbio.mergeQTL(FM, qtl_file="Brain_xQTL_Serve.cell-specificity-eQTL"), aes(y=QTL.neg.log), size=.5,
+    #               geom = "point", color="cyan4", alpha=alpha,
+    #               grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line,
+    #               space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    # GTEx
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="GTEx_V7_Brain_Substantia_nigra"), 
+                  aes(y=QTL.neg.log, fill="GTEx_V7_Brain_Substantia_nigra"), size=.5,
+                  geom = qtl.geom,  alpha=alpha, color=color.list[["GTEx_V7_Brain_Substantia_nigra"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="GTEx_V7_Brain_Hippocampus"), 
+                  aes(y=QTL.neg.log, fill="GTEx_V7_Brain_Hippocampus"), size=.5,
+                  geom = qtl.geom,   alpha=alpha, color=color.list[["GTEx_V7_Brain_Hippocampus"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="GTEx_V7_Brain_Putamen_basal_ganglia"), 
+                  aes(y=QTL.neg.log, fill="GTEx_V7_Brain_Putamen_basal_ganglia"), size=.5,
+                  geom = qtl.geom,   alpha=alpha, color=color.list[["GTEx_V7_Brain_Putamen_basal_ganglia"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    
+    ggbio::circle(ggbio.mergeQTL(FM, qtl_file="GTEx_V7_Brain_Cerebellum"), 
+                  aes(y=QTL.neg.log, fill="GTEx_V7_Brain_Cerebellum"), size=.5,
+                  geom = qtl.geom,  alpha=alpha, color=color.list[["GTEx_V7_Brain_Cerebellum"]],
+                  grid=T, grid.background=grid.background2, grid.n=grid.n2, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth) +
+
+    # SNP Groups
+    ggbio::circle(subset(gr.all, Consensus_SNP==T), aes(y=Support, fill="Consensus SNP"), size=.5,
+                  geom = "bar",  alpha=alpha, color=color.list[["Consensus SNP"]],
+                  grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth) +
+    ggbio::circle(subset(gr.all, Support>0), aes(y=Support, fill="Credible Set"), size=.5,
+                  geom = "bar", alpha=alpha, color=color.list[["Credible Set"]],
+                  grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    ggbio::circle(subset(gr.all, leadSNP==T), aes(y=Support, fill="Lead GWAS SNP"), size=.5,
+                  geom = "bar", alpha=alpha,  color=color.list[["Lead GWAS SNP"]],
+                  grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth) + 
+    # Fine-mapping 
+    ggbio::circle(gr.all, aes(y=mean.PP, fill="Fine-mapped Mean PP"), size=.5,
+                  geom = "point", alpha=alpha, color=color.list[["Fine-mapped Mean PP"]],
+                  grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth) +
+    # # GWAS
+    ggbio::circle(gr.all, aes(y=GWAS.neg.log, fill="Nalls et al. (2019) GWAS -log10(P-value)"), size=.5,
+                  geom = "point", alpha=alpha, color=color.list[["Nalls et al. (2019) GWAS -log10(P-value)"]],
+                  grid=T, grid.background=grid.background, grid.n=grid.n, grid.line=grid.line,
+                  space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth)  +
+    # Loci
+    # ggbio::circle(gr.all, geom = "ideogram", cytobands=T, size = .5) + 
+    # ggbio::circle(gr.all, geom = "text", color="turquoise", aes(label=Gene), size=2, alpha=.7,
+    #               space.skip = space.skip, rect.inter.n = rect.inter.n, trackWidth=trackWidth) + 
+  
+    ggbio::circle(gr[["loci"]], geom = "bar", color="red", aes(label=Gene, y=5)) +
+    # ggbio::circle(subset(gr[["loci"]], Gene %in% loci.subset), geom = "text", color="red2", aes(label=Gene,  y=Height), size=5) +
+    # Chromosome
+    ggbio::circle(hg19sub, geom = "text", aes(label = seqnames), vjust = 0, size = 3)
+  
+    ggb <- ggb + scale_fill_manual(values=color.list) + scale_color_manual(values=color.list)+
+       theme(legend.key = element_rect(fill = "transparent"),
+             rect = element_rect(fill = "transparent"),
+             panel.background = element_rect(fill = "transparent"), # bg of the panel
+             plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
+             panel.border = element_blank(), 
+             panel.grid.major = element_blank(), # get rid of major grid
+             panel.grid.minor = element_blank(), # get rid of minor grid
+             legend.background = element_rect(fill = "transparent"), # get rid of legend bg
+             legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
+             ) 
+    
+    tiff()
+    tiff(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide/ggbio_circos.png"), 
+        bg = "transparent", height = 600, width=850)
+    print(ggb)
+    dev.off()
+  return(ggb)
+  }
 
 
 XGR.gather_XGR_annotations <- function(gr.all, 
@@ -454,4 +695,30 @@ OmicCircos.finemapping_circos <- function(){
 # }
 
 
+
+##################################################################
+###################### circlize ######################
+##################################################################
+# library(circlize)
+# 
+# set.seed(999)
+# n = 1000 
+# FM_gene <- subset(FM, Gene=="LRRK2")
+# df = data.frame(factors = sample(letters[1:8], n, replace = TRUE),
+#                 x = rnorm(n), y = runif(n))
+# circos.par("track.height" = 0.1)
+# circos.initialize(factors = FM_gene$CHR, x = FM_gene$POS) 
+# circos.track(factors = FM_gene$CHR, 
+#              y = FM_gene$POS,
+#              panel.fun = function(x, y) {
+#                circos.text(CELL_META$xcenter, CELL_META$cell.ylim[2] + uy(5, "mm"), 
+#                            CELL_META$sector.index)
+#                circos.axis(labels.cex = 0.6)
+#              }) 
+# col = rep(c("#FF0000", "#00FF00"), 4)
+# circos.trackPoints(FM_gene$CHR, FM_gene$POS, FM_gene$P, col = col, pch = 16, cex = 0.5)
+# circos.text(-1, 0.5, "text", sector.index = "a", track.index = 1)
+# 
+# 
+# circos.clear()
 

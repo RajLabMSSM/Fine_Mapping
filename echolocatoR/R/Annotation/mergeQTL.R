@@ -52,11 +52,13 @@ mergeQTL.psychENCODE <- function(FM_all=merge_finemapping_results(minimum_suppor
       QTL <- data.table::fread(server_file, nThread = 4)
       fullSS_nrow <- get_nrows(server_file)
       # Subset QTL data
-      if(assay %in% c("fQTL")){QTL <- QTL %>% dplyr::rename(gene_chr=Chromosome_of_variant, 
-                                                            gene_start=Locus_of_variant,
-                                                            regression_slope=Regression_slope) %>% 
+      if(assay %in% c("fQTL")){
+        QTL <- QTL %>% dplyr::rename(gene_chr=Chromosome_of_variant, 
+                                      gene_start=Locus_of_variant,
+                                      regression_slope=Regression_slope) %>% 
         dplyr::mutate(FDR=p.adjust(Nominal_p_val_of_association,method = "fdr", n = n_snps),
-                      SNP_id=paste0(gsub("chr","",gene_chr),":",gene_start))}
+                      SNP_id=paste0(gsub("chr","",gene_chr),":",gene_start))
+        }
       QTL.sub <- QTL %>% subset(SNP_id %in% FM_all$SNP_id)
       QTL.sub <- mergeQTL.psychENCODE_SNPinfo(QTL.sub) 
                                                
