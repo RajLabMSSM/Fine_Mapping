@@ -577,9 +577,11 @@ ggbio.line_circos <- function(){
              legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
              ) 
     
-    tiff()
-    tiff(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide/ggbio_circos.png"), 
-        bg = "transparent", height = 600, width=850)
+     
+    # tiff(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide/ggbio_circos_HD.tiff"), 
+    #     bg = "transparent", res=1000, width = 11, height = 8, units = 'in')
+    tiff(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide/ggbio_circos.tiff"), 
+             bg = "transparent", res=100, width = 11, height = 8, units = 'in')
     print(ggb)
     dev.off()
   return(ggb)
