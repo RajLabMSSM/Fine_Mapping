@@ -1,13 +1,30 @@
-Dataset,Type,Disease,topSumStats,fullSumStats,Reference
-Nalls23andMe_2019,GWAS,Parkinson's,Data/GWAS/Nalls23andMe_2019/Nalls2019_TableS2.xlsx,/sc/orga/projects/pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt,https://www.biorxiv.org/content/10.1101/388165v3
-Lambert_2013,GWAS,Alzheimer's,Data/GWAS/Lambert_2013/Lambert_2019_AD_GWAS.xlsx,/sc/orga/projects/ad-omics/data/AD_GWAS/Lambert_2013/IGAP_stage_1.1000G.phase3.20130502.tsv,https://www.nature.com/articles/ng.2802
-Marioni_2018,GWAS,Alzheimer's,Data/GWAS/Marioni_2018/Marioni2018_supplementary_tables.xlsm,/sc/orga/projects/ad-omics/data/AD_GWAS/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv,https://www.nature.com/articles/s41398-018-0150-6
-Posthuma_2018,GWAS,Alzheimer's,Data/GWAS/Posthuma_2018/Posthuma2018_suppTables.xlsx,/sc/orga/projects/ad-omics/data/AD_GWAS/Posthuma_2018/phase3.beta.se.hrc.txt,https://www.nature.com/articles/s41588-018-0311-9
-Kunkle_2019,GWAS,Alzheimer's,Data/GWAS/Kunkle_2019/Kunkle2019_supplementary_tables.xlsx,/sc/orga/projects/ad-omics/data/AD_GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt,https://www.nature.com/articles/s41588-019-0358-2
-MESA_AFA,eQTL,Control,NA,/sc/orga/projects/ad-omics/data/MESA/AFA_cis_eqtl_summary_statistics.txt,https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa
-MESA_CAU,eQTL,Control,NA,/sc/orga/projects/ad-omics/data/MESA/CAU_cis_eqtl_summary_statistics.txt,https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa
-MESA_HIS,eQTL,Control,NA,/sc/orga/projects/ad-omics/data/MESA/HIS_cis_eqtl_summary_statistics.txt,https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa
-Fairfax_2014_CD14,eQTL,Control,NA,/hpc/users/rajt01/ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.CD14.47231.414.b.qced.f.txt,https://science.sciencemag.org/content/343/6175/1246949
-Fairfax_2014_IFN,eQTL,Control,NA,/hpc/users/rajt01/ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.IFN.47231.367.b.qced.f.txt,https://science.sciencemag.org/content/343/6175/1246949
-Fairfax_2014_LPS2,eQTL,Control,NA,/hpc/users/rajt01/ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS2.47231.261.b.qced.f.txt,https://science.sciencemag.org/content/343/6175/1246949
-Fairfax_2014_LPS24,eQTL,Control,NA,/hpc/users/rajt01/ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS24.47231.322.b.qced.f.txt,https://science.sciencemag.org/content/343/6175/1246949
+Dataset,Type,topSumStats,fullSumStats,Reference
+Nalls23andMe_2019,Parkinson's GWAS,Data/GWAS/Nalls23andMe_2019/Nalls2019_TableS2.xlsx,/sc/orga/projects/pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt,https://www.biorxiv.org/content/10.1101/388165v3
+Lambert_2013,Alzheimer's GWAS,Data/GWAS/Lambert_2013/Lambert_2019_AD_GWAS.xlsx,/sc/orga/projects/ad-omics/data/AD_GWAS/Lambert_2013/IGAP_stage_1.1000G.phase3.20130502.tsv,https://www.nature.com/articles/ng.2802
+Marioni_2018,Alzheimer's GWAS,Data/GWAS/Marioni_2018/Marioni2018_supplementary_tables.xlsm,/sc/orga/projects/ad-omics/data/AD_GWAS/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv,https://www.nature.com/articles/s41398-018-0150-6
+Posthuma_2018,Alzheimer's GWAS,Data/GWAS/Posthuma_2018/Posthuma2018_suppTables.xlsx,/sc/orga/projects/ad-omics/data/AD_GWAS/Posthuma_2018/phase3.beta.se.hrc.txt,https://www.nature.com/articles/s41588-018-0311-9
+Kunkle_2019,Alzheimer's GWAS,Data/GWAS/Kunkle_2019/Kunkle2019_supplementary_tables.xlsx,/sc/orga/projects/ad-omics/data/AD_GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt,https://www.nature.com/articles/s41588-019-0358-2
+MESA_AFA,eQTL,Data/eQTL/MESA/AFA/AFA_eQTL_PTK2B.txt,/sc/orga/projects/ad-omics/data/MESA/AFA_cis_eqtl_summary_statistics.txt,https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa
+MESA_CAU,eQTL,Data/eQTL/MESA/CAU/CAU_eQTL_PTK2B.txt,/sc/orga/projects/ad-omics/data/MESA/CAU_cis_eqtl_summary_statistics.txt,https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa
+MESA_HIS,eQTL,Data/eQTL/MESA/HIS/HIS_eQTL_PTK2B.txt,/sc/orga/projects/ad-omics/data/MESA/HIS_cis_eqtl_summary_statistics.txt,https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa
+Fairfax_2014_CD14,eQTL,,/sc/orga/projects/ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.CD14.47231.414.b.qced.f.txt,https://science.sciencemag.org/content/343/6175/1246949
+Fairfax_2014_IFN,eQTL,,/sc/orga/projects/ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.IFN.47231.367.b.qced.f.txt,https://science.sciencemag.org/content/343/6175/1246949
+Fairfax_2014_LPS2,eQTL,,/sc/orga/projects/ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS2.47231.261.b.qced.f.txt,https://science.sciencemag.org/content/343/6175/1246949
+Fairfax_2014_LPS24,eQTL,,/sc/orga/projects/ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS24.47231.322.b.qced.f.txt,https://science.sciencemag.org/content/343/6175/1246949
+Cardiogenics_macrophages,eQTL,,/sc/orga/projects/ad-omics/data/cardiogenics/Cardiogenics/Macrophages.REPORT.fdr-0.5.tab,https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240
+Cardiogenics_monocytes,eQTL,,/sc/orga/projects/ad-omics/data/cardiogenics/Cardiogenics/Monocites.REPORT.fdr-0.5.tab,https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1003240
+eqtlpsych,eQTL,,/sc/orga/projects/ad-omics/data/eqtlgen/trans-eQTLs_full_20180905.txt.gz,
+psychENCODE_eQTL,eQTL,,/sc/orga/projects/ad-omics/data/psychENCODE/eQTL/DER-08a_hg19_eQTL.significant.txt.gz,http://resource.psychencode.org
+psychENCODE_cQTL,cQTL,,/sc/orga/projects/ad-omics/data/psychENCODE/cQTL/DER-09_hg19_cQTL.significant.txt.gz,http://resource.psychencode.org
+psychENCODE_isoQTL,isoQTL,,/sc/orga/projects/ad-omics/data/psychENCODE/isoQTL/DER-10a_hg19_isoQTL.significant.txt.gz,http://resource.psychencode.org
+psychENCODE_tQTL,tQTL,,/sc/orga/projects/ad-omics/data/psychENCODE/tQTL/DER-10c_hg19_tQTL.all.txt.gz,http://resource.psychencode.org
+psychENCODE_fQTL,fQTL,,/sc/orga/projects/ad-omics/data/psychENCODE/fQTL/DER-11_hg19_fQTL.significant.txt.gz,http://resource.psychencode.org
+psychENCODE_HiC,HiC,,/sc/orga/projects/ad-omics/data/psychENCODE/HiC/INT-16_HiC_EP_linkages_cross_assembly.csv.gz,http://resource.psychencode.org
+ImmVar_eQTL_CD4_EUR,eQTL,,/sc/orga/projects/ad-omics/data/immvar/qtls/eur_cd4_chrALL_cis1mb_adj_spearman_pALL.out,
+ImmVar_eQTL_CD14_EUR,eQTL,,/sc/orga/projects/ad-omics/data/immvar/qtls/eur_cd14_chrALL_cis1mb_adj_spearman_pALL.out,
+Brain.xQTL.Serve_eQTL,eQTL,,/sc/orga/projects/ad-omics/data/Brain_xQTL_Serve/eQTL/eQTLs_all.txt.gz,https://www.ncbi.nlm.nih.gov/pubmed/28869584
+Brain.xQTL.Serve_haQTL,haQTL,,/sc/orga/projects/ad-omics/data/Brain_xQTL_Serve/haQTL/haQTLs_all.txt.gz,https://www.ncbi.nlm.nih.gov/pubmed/28869584
+Brain.xQTL.Serve_mQTL,mQTL,,/sc/orga/projects/ad-omics/data/Brain_xQTL_Serve/mQTL/mQTLs_all.txt.gz,https://www.ncbi.nlm.nih.gov/pubmed/28869584
+Brain.xQTL.Serve_cell-specificity-eQTL,mQTL,,/sc/orga/projects/ad-omics/data/Brain_xQTL_Serve/cell-specificity-eQTL/cell-specificity-eQTLs.tsv.gz,https://www.ncbi.nlm.nih.gov/pubmed/28869584
+GTEx_V7,eQTL,,/sc/orga/projects/ad-omics/data/GTEx_QTL/GTEx_Analysis_v7_eQTL_all_associations,https://www.nature.com/articles/nature24277
+GTEx_V8,eQTL,,/sc/orga/projects/ad-omics/data/GTEx_QTL/GTEx_Analysis_v8_eQTL_all_associations,https://www.nature.com/articles/nature24277

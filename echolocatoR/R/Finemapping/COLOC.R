@@ -2,8 +2,33 @@
 ####### Colocalization ####### 
 #     %%%%%%%%%%%%%%%%%     #
 
-
 # Jansen et al. 2017: https://eqtl.onderzoek.io/index.php?page=gene_cis_details&gene=BST1
+
+#-------------------------------------------------------
+#-------------------------------------------------------
+# ECHOLOCATOR DOCUMENTATION
+# The input for coloc is a merged data.frame with the summary stats from both the GWAS and QTL, with one unique SNP per row. Those columns should be named as follows:
+#   
+#   ## Data.frame
+#   # Shared columns
+#   SNP: unique identifier for SNP that uses the same naming system for both the GWAS and QTL (e.g. rsid (preferred), or chr:position).
+# # GWAS columns
+# P: Nominal P-values from the GWAS. Technically you should be able to supply corrected P-values as well (e.g. FDR) since coloc will turn them into 
+# Effect: Effect size (beta, or odds ratio) of each SNP in the GWAS
+# StdErr: The standard error of each SNP in the GWAS (it should be non-squared since I square it in the coloc function).
+# MAF: Minor allele frequency, preferably from the study itself but you can use a reference panel (e.g. 1000 Genomes) if necessary.
+# # QTL columns
+# QTL.P: Nominal P-values from the QTL.
+# QTL.Effect: Effect size (beta, or odds ratio) of each SNP in the QTL
+# QTL.StdErr: The standard error of each SNP in the QTL (it should be non-squared since I square it in the coloc function).
+# QTL.MAF: Minor allele frequency, preferably from the study itself but you can use a reference panel (e.g. 1000 Genomes) if necessary, or even the MAF from the GWAS.
+# 
+# ## Single-value parameters
+# sample_size: In addition to this data.frame, you need to supply the sample_size for both the GWAS and QTL, respectively. Rather than one value per SNP, these will be just two values (number of subjects in the GWAS and number of subjects in the QTL). Technically, sample_size is an optional parameter for coloc but I find it actually can have a large impact on the results, so supplying an accurate number for this is still important.
+# proportion_cases: The proportion of subjects that were cases (e.g. PD). This is only necessary for GWAS, since QTL doesn't really have a case-control design.
+#-------------------------------------------------------
+#-------------------------------------------------------
+
 
 getmode <- function(v) {
   uniqv <- unique(v)
