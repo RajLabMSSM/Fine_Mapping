@@ -209,7 +209,7 @@ snp_plot <- function(finemap_DT,
                      box.padding = .5,
                      label.size=NA, 
                      alpha=.6, 
-                     seed = 1,) +
+                     seed = 1) +
     geom_label_repel(data=tag_SNPs, aes(label=SNP), 
                      color=tag_SNPs$color,
                      segment.alpha = .5, 

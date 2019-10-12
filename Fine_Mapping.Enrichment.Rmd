@@ -42,15 +42,24 @@ library(plotly)
 - First, we gather annotations from HaploReg and/or Biomart and assess the distribtuion of differenrt SNP Groups (e.g. GWAS lead SNPs, Credible Sets, Consensus SNPs).  
 
 ```{r Merge Results}
-merged_results <- merge_finemapping_results(minimum_support=1,
+FM <- merge_finemapping_results(minimum_support = 0, dataset =  "./Data/GWAS/Nalls23andMe_2019")
+(FM %>% dplyr::group_by(Gene) %>% tally())$n %>% mean()
+(subset(FM, Support>0) %>% dplyr::group_by(Gene) %>% tally())$n %>% mean()
+((FM  %>% dplyr::group_by(Gene) %>% tally())$n >0 ) %>% sum()
+
+((FM %>% dplyr::group_by(Gene) %>% dplyr::summarise(n.consensus=sum(Consensus_SNP)))$n.consensus > 0) %>% sum() / length(unique(FM$Gene))
+
+
+
+merged_results <- merge_finemapping_results(minimum_support=0,
                                             include_leadSNPs=T,
                                             xlsx_path="./Data/annotated_finemapping_results.xlsx",
                                             from_storage=T,
                                             haploreg_annotation=T,
                                             biomart_annotation=T, 
-                                            verbose = F)
-merged_results <- subset(merged_results, Dataset=="./Data/GWAS/Nalls23andMe_2019")
-createDT(subset(merged_results, Support == 2))
+                                            verbose = F, 
+                                            dataset = "./Data/GWAS/Nalls23andMe_2019") 
+createDT(subset(merged_results, Consensus_SNP==T))
 ```
 
 ## Mutation Types

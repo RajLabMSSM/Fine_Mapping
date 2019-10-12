@@ -71,6 +71,8 @@ COLOC <- function(gene,
                   # dataset2_path,
                   subset_DT1,
                   subset_DT2,
+                  dataset1_type="cc",# case-control
+                  dataset2_type="quant",
                   shared_MAF=1, 
                   dataset2_proportion_cases=5e-324, 
                   PP_threshold=0.8,
@@ -101,7 +103,7 @@ COLOC <- function(gene,
   ## NOTES: MESA and Fairfax: No sample size (SNP-level), proportion of cases, or freq/MAF info available?   
   printer("\n\n")
   coloc.res <- coloc::coloc.abf(dataset1 = dataset1,
-                                    dataset2 = dataset2)
+                                dataset2 = dataset2)
                                     # MAF = dataset1$MAF) 
  hypothesis_key <- setNames(
    c("Neither trait has a genetic association in the region.",
@@ -306,7 +308,11 @@ COLOC.report_summary <- function(coloc.res, PP_threshold=.8){
 # }
 
 
-COLOC.PP4_plot <- function(COLOC_DT, PP_threshold=.8){ 
+COLOC.PP4_plot <- function(COLOC_DT=NULL, coloc.results_path=NULL, PP_threshold=.8){
+  if(is.null(COLOC_DT)){
+    if(is.null(coloc.results_path)){coloc.results_path <- "./Data/GWAS/Nalls23andMe_2019/_genome_wide/COLOC/COLOC_results_noFlip-gwasEffect.txt"} 
+    COLOC_DT <- data.table::fread(coloc.results_path)
+  } 
   COLOC_DT$coloc <- (COLOC_DT$PP.H3.abf + COLOC_DT$PP.H4.abf >= PP_threshold) &  (COLOC_DT$PP.H4.abf/COLOC_DT$PP.H3.abf >= 2) 
   COLOC_DT <- COLOC_DT %>% dplyr::rename(QTL.Dataset=Dataset2)
   
@@ -314,8 +320,13 @@ COLOC.PP4_plot <- function(COLOC_DT, PP_threshold=.8){
     facet_grid(~Locus) + 
     geom_col(show.legend = F) + 
     coord_flip() + 
-    theme_bw()  
-  cp
+    theme_bw() + 
+    scale_y_continuous(limits = c(0,1), breaks = c(0, 1)) +
+    theme(rect = element_rect(fill = "transparent"),
+          panel.background = element_rect(fill = "transparent"))
+  print(cp)
+  ggsave(file.path(dirname(coloc.results_path),"COLOC_multiQTL.png"), 
+         plot = cp, dpi=400, width = 14, height=5, bg="transparent")
 }
 
 

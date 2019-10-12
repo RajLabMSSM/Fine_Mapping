@@ -717,6 +717,7 @@ mergeQTL <- function(dataset = "./Data/GWAS/Nalls23andMe_2019"){
   FM_all <- merge_finemapping_results(minimum_support = 0, 
                                       include_leadSNPs = T, 
                                       dataset = "./Data/GWAS/Nalls23andMe_2019")
+  
   FM_orig <- FM_all
   
   # psychENCODE eQTL, cQTL, isoQTL, tQTL, fQTL, HiC: DLPFC
