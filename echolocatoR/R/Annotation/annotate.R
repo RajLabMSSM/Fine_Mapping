@@ -3,6 +3,95 @@
 # %%%%%%%%%%%%%%%%% # 
 
 
+lead.SNP.coords <- function(){
+  annot <- readxl::read_excel("./Data/annotated_finemapping_results.xlsx")
+  annot <- find_consensus_SNPs(annot, support_thresh = 2)
+  annot[is.na(annot$mean.PP),"mean.PP"] <-0
+  
+  annot.sub <- subset(annot, leadSNP==T, select=c(Gene, SNP, CHR, POS)) %>% 
+    dplyr::rename(lead.SNP=SNP) %>% 
+    dplyr::mutate(min.POS=POS - 1e+06, max.POS=POS + 1e+06)
+  data.table::fwrite(annot.sub, "./Data/lead.SNP.coords.csv", sep=",")
+  annot[is.na(annot)] <-0
+  
+  SNPgroup.summary <- function(DF, group.name=""){
+    n.total = nrow(DF)
+    n.per.locus <- (DF %>% group_by(Gene) %>% tally())$n %>% mean() 
+    means <- DF[,c("P","Effect","mean.PP","MAF")] %>% dplyr::summarise_all(function(x){abs(mean(x, na.rm = T))})
+    means <- cbind(`SNP Group`=group.name, means, `SNPs / locus` = n.per.locus, `Total SNPs` = n.total) 
+    # Count distribution
+    mean.size.statCS <- table((statCS %>% tally())$n )
+    print(mean.size.statCS)
+    return(means)
+  }
+  
+  # All SNPs 
+  allSNPs.means <- SNPgroup.summary(annot, group.name="All GWAS")
+  # Nom sig GWAS SNPs
+  nomSigSNPs <- subset(annot, P<0.05) 
+  nomSigSNPs.means <- SNPgroup.summary(nomSigSNPs, group.name="nom. sig. GWAS")
+  # FDR sig GWAS SNPs
+  fdrSigSNPs <- subset(annot, P<5e-8) 
+  fdrSigSNPs.means <- SNPgroup.summary(fdrSigSNPs, group.name="FDR sig. GWAS")
+  
+  #CS stats
+  
+  # Lead GWAS SNPs
+  leadSNPs <- subset(annot, leadSNP) 
+  leadSNP.means <- SNPgroup.summary(leadSNPs, group.name="Lead GWAS SNP")
+  #CS stats
+  ## Statistical FM
+  statCS <- annot %>% 
+    group_by(Gene) %>% 
+    subset(SUSIE.Credible_Set>0 | FINEMAP.Credible_Set > 0| PAINTOR.Credible_Set >0)  
+  statCS.means <- SNPgroup.summary(statCS, group.name="Statistical.CS")
+  # Functional FM
+  funcCS <- annot %>% group_by(Gene) %>% subset(PAINTOR.Credible_Set>0)
+  funcCS.means <- SNPgroup.summary(funcCS, group.name="Functional.CS")
+  # Consensus stats
+  consensus <- annot %>% group_by(Gene) %>% subset(Consensus_SNP)
+  consensus.means <- SNPgroup.summary(consensus, group.name="Consensus")
+  percent.loci.w.consensus <- length(unique(consensus$Gene)) / length(unique(annot$Gene))
+  
+  # Merged
+  merged.means <- rbind(allSNPs.means, nomSigSNPs.means, fdrSigSNPs.means, leadSNP.means,statCS.means, funcCS.means, consensus.means)
+  merged.means[,-c(1:2)] <-round(merged.means[,-c(1:2)],3)
+  merged.means$P <- formatC(merged.means$P , format = "e", digits = 3)
+  data.table::fwrite(merged.means, "./Data/GWAS/Nalls23andMe_2019/_genome_wide/SNP.summary.csv")
+  
+  library(patchwork)
+  bins=150
+  x.var="Effect"
+  alpha=1
+  ggplot() + 
+    geom_histogram(data=leadSNPs, aes(x=eval(parse(text=x.var)), fill="Lead GWAS SNPs"), alpha=alpha,   fill="red", bins = bins) +  
+    labs(title = "Lead GWAS SNPs", x=x.var) +
+    theme_classic() + 
+    xlim(min(annot[[x.var]]), max(annot[[x.var]])) +
+    
+    ggplot() + 
+    geom_histogram(data = statCS, aes(x=eval(parse(text=x.var)), fill="Statistical Credible Set"), alpha=alpha,  fill="green", bins = bins) + 
+    labs(title = "Statistical Credible Set", x=x.var) +
+    theme_classic() + 
+    xlim(min(annot[[x.var]]), max(annot[[x.var]])) +
+    
+    ggplot() + 
+    geom_histogram(data = funcCS, aes(x=eval(parse(text=x.var)), fill="Functional Credible Set"), alpha=alpha,   fill="green4", bins = bins) + 
+    labs(title = "Functional Credible Set", x=x.var) +
+    theme_classic() + 
+    xlim(min(annot[[x.var]]), max(annot[[x.var]])) +
+    
+    ggplot() + 
+    geom_histogram(data = consensus, aes(x=eval(parse(text=x.var)), fill="Consensus SNPs"), alpha=alpha,  fill="goldenrod2", bins = bins) + 
+    labs(title = "Consensus SNPs", x=x.var) +
+    theme_classic() + 
+    xlim(min(annot[[x.var]]), max(annot[[x.var]])) +
+    
+    patchwork::plot_layout(ncol = 1)
+  
+  return(merged.means)
+}
+
 
 top_finemapped_loci <- function(dataset="./Data/GWAS/Nalls23andMe_2019",
                                 save_results=T){

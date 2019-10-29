@@ -323,7 +323,8 @@ dt.replace <- function(DT, target, replacement){
 }
 
 
-gene_trimmer <- function(subset_DT, trim_gene_limits, gene, min_POS, max_POS){
+gene_trimmer <- function(subset_DT, gene, trim_gene_limits=T, min_POS=NULL, max_POS=NULL){
+  printer("BiomaRt:: Trimming data to only include SNPs within gene coordinates.")
   if(trim_gene_limits){
     gene_info <- biomart_geneInfo(gene)
     gene_info_sub <- subset(gene_info, hgnc_symbol==gene)

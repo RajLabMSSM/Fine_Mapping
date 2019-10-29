@@ -1,4 +1,22 @@
 
+check.allel_direction <- function(){
+  full.dat <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt",
+                                nThread = 4)
+  top.dat <- readxl::read_excel("./Data/GWAS/Nalls23andMe_2019/Nalls2019_TableS2.xlsx") %>% 
+    data.table::data.table()
+  full.dat <- subset(full.dat, RSID %in% top.dat$SNP) 
+  
+  merged.dat <- data.table:::merge.data.table(top.dat, full.dat, by.x = "SNP", by.y = "RSID")
+  sum(merged.dat$A1==toupper(merged.dat$`Effect allele`)) / nrow(merged.dat)*100
+  sum(merged.dat$A2==toupper(merged.dat$`Other allele`)) /  nrow(merged.dat)*100
+  
+  # A1 is always the Effect allele
+  # A2 is always the Other allele
+  
+}
+
+
+
 createDT <- function(DF, caption="", scrollY=400){
   data <- DT::datatable(DF, caption=caption,
                         extensions = 'Buttons',
@@ -54,7 +72,7 @@ get_expression_data <- function(expression_paths, gene., probe_path){
     condition = basename(dirname(x))
     printer("++",condition) 
     # grep rows with the probe names
-    cmd <- paste0("grep -E '", paste0(probe_list., collapse="|"),"' ",x)
+    cmd <- paste0("gzcat ",x," | grep -E '", paste0(probe_list., collapse="|"),"'")
     col_names <- data.table::fread(x, sep="\t", header = T, nrows = 0) %>% colnames()
     exprs <- data.table::fread(text = system(cmd, intern = T), 
                                sep = "\t", header = F, col.names = col_names)
@@ -139,21 +157,22 @@ merge_SS.EXP.GENO <- function(SS_data, geno_data, exp_data){
 
 
 ##### Merge all eQTL files together into one file (for the selected SNPs) #####
+# snp_list <- c("rs7294619","rs76904798","rs11175620")
 merge_QTL_data <- function(snp_list,
-                            eQTL_SS_paths = file.path("Data/eQTL/Fairfax_2014",
+                            eQTL_SS_paths = file.path("Data/QTL/Fairfax_2014",
                                                       c("CD14/LRRK2/LRRK2_Fairfax_CD14.txt",
                                                         "IFN/LRRK2/LRRK2_Fairfax_IFN.txt",
                                                         "LPS2/LRRK2/LRRK2_Fairfax_LPS2.txt",
                                                         "LPS24/LRRK2/LRRK2_Fairfax_LPS24.txt")),
-                            expression_paths = file.path("Data/eQTL/Fairfax_2014",
-                                                         c("CD14/CD14.47231.414.b.txt",
-                                                           "IFN/IFN.47231.367.b.txt",
-                                                           "LPS2/LPS2.47231.261.b.txt",
-                                                           "LPS24/LPS24.47231.322.b.txt")),
-                            genotype_path = "Data/eQTL/Fairfax_2014/geno.subset.txt", 
+                            expression_paths = file.path("Data/QTL/Fairfax_2014",
+                                                         c("CD14/CD14.47231.414.b.txt.gz",
+                                                           "IFN/IFN.47231.367.b.txt.gz",
+                                                           "LPS2/LPS2.47231.261.b.txt.gz",
+                                                           "LPS24/LPS24.47231.322.b.txt.gz")),
+                            genotype_path = "Data/QTL/Fairfax_2014/geno.subset.txt", 
                             subset_genotype_file = F,
-                            probe_path = "Data/eQTL/Fairfax_2014/gene.ILMN.map",
-                            .fam_path = "Data/eQTL/Fairfax_2014/volunteers_421.fam",
+                            probe_path = "Data/QTL/Fairfax_2014/gene.ILMN.map",
+                            .fam_path = "Data/QTL/Fairfax_2014/volunteers_421.fam",
                             gene = "LRRK2",
                             save_merged=T){ 
   # Expression 
@@ -176,7 +195,7 @@ merge_QTL_data <- function(snp_list,
     printer("++ Splitting and writing merged files to storage...")
     for(i in 1:length(unique(SS_geno_exp$Condition))){ 
       results_path <- dirname(eQTL_SS_paths[i])
-      QTL.condition <- basename(results_path)
+      QTL.condition <- basename(dirname(results_path))
       subset_path <- get_subset_path(results_path, gene = gene, subset_path="auto")
       c_sub <- subset(SS_geno_exp, Condition==QTL.condition)
       printer("+++",subset_path)
@@ -189,20 +208,20 @@ merge_QTL_data <- function(snp_list,
 
 
 eQTL_boxplots <- function(snp_list,
-                         eQTL_SS_paths = file.path("Data/eQTL/Fairfax_2014",
+                         eQTL_SS_paths = file.path("Data/QTL/Fairfax_2014",
                                                    c("CD14/LRRK2/LRRK2_Fairfax_CD14.txt",
                                                      "IFN/LRRK2/LRRK2_Fairfax_IFN.txt",
                                                      "LPS2/LRRK2/LRRK2_Fairfax_LPS2.txt",
                                                      "LPS24/LRRK2/LRRK2_Fairfax_LPS24.txt")),
-                         expression_paths = file.path("Data/eQTL/Fairfax_2014",
-                                                      c("CD14/CD14.47231.414.b.txt",
-                                                        "IFN/IFN.47231.367.b.txt",
-                                                        "LPS2/LPS2.47231.261.b.txt",
-                                                        "LPS24/LPS24.47231.322.b.txt")),
-                         genotype_path = "Data/eQTL/Fairfax_2014/geno.subset.txt", 
+                         expression_paths = file.path("Data/QTL/Fairfax_2014",
+                                                      c("CD14/CD14.47231.414.b.txt.gz",
+                                                        "IFN/IFN.47231.367.b.txt.gz",
+                                                        "LPS2/LPS2.47231.261.b.txt.gz",
+                                                        "LPS24/LPS24.47231.322.b.txt.gz")),
+                         genotype_path = "Data/QTL/Fairfax_2014/geno.subset.txt", 
                          subset_genotype_file = F,
-                         probe_path = "Data/eQTL/Fairfax_2014/gene.ILMN.map",
-                         .fam_path = "Data/eQTL/Fairfax_2014/volunteers_421.fam",
+                         probe_path = "Data/QTL/Fairfax_2014/gene.ILMN.map",
+                         .fam_path = "Data/QTL/Fairfax_2014/volunteers_421.fam",
                          gene = "LRRK2",
                          show_plot = T,
                          SS_annotations = T,
@@ -211,6 +230,7 @@ eQTL_boxplots <- function(snp_list,
   # Helper function
   printer <- function(..., v=T){if(v){print(paste(...))}}
   
+ 
   SS_geno_exp <- merge_QTL_data(snp_list=snp_list,
                                  eQTL_SS_paths=eQTL_SS_paths,
                                  expression_paths=expression_paths,
@@ -223,29 +243,77 @@ eQTL_boxplots <- function(snp_list,
   
   if(show_plot){
     printer("")
-    printer("+ Plotting eQTLs")
-    # Get 1 effect size per Condition x SNP combination
-    d <- 4
-    labels <- subset(SS_geno_exp , select = c("CHR","POS","PROBE_ID","Condition","SNP","Effect","P","FDR")) %>%  
-      dplyr::mutate(FDR_sig = ifelse(as.numeric(FDR) < 1.34e-05, "FDR < 1.34e-05**",paste0("FDR = ", formatC(FDR, format = "e", digits = 2))),
-                    FDR_scient = paste0("FDR = ", formatC(FDR, format = "e", digits = 2), ifelse(as.numeric(FDR) < 1.34e-05, "**","") ),
-                    P_sig = ifelse(as.numeric(P) < 0.05, "P < 0.05",paste0("P = ", formatC(P, format = "e", digits = 2))),
-                    Beta = format(round(Effect,d), nsmall=d), 
-                    P = paste("P =",formatC(P, format = "e", digits = 2)),
-                    FDR = paste("FDR =",formatC(FDR, format = "e", digits = 2))
-                                ) %>% 
-      arrange(SNP, Condition) %>% 
-      unique()  
+    printer("+ Plotting eQTLs") 
+    # encode genotypes
+    SS_geno_exp <- SS_geno_exp %>%
+      mutate(genotype = case_when(Genotype == 0 ~ paste(A1,A1,sep="/"),
+                                  Genotype == 1 ~ paste(A1,A2,sep="/"),
+                                  Genotype == 2 ~ paste(A2,A2,sep="/")))
     
-    bp <- ggplot(data = SS_geno_exp, aes(x = Genotype, y = Expression, fill=SNP)) + 
-      geom_boxplot(show.legend = F) + 
-      geom_jitter(aes(alpha=.5), width =.2,  show.legend = F) +  
-      facet_grid(facets = SNP~Condition) + 
-      theme_bw()
+    expression.genotypes <- SS_geno_exp %>% 
+      dplyr::group_by(Gene, Condition, SNP, genotype, Genotype) %>%
+      dplyr::summarise_each(c(Effect, P, FDR, Expression), funs = mean) 
+    
+    
+    results_path <- "./Data/GWAS/Nalls23andMe_2019/LRRK2/"
+    finemap_DT <- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
+    finemap_DT <- subset(finemap_DT, SNP %in% unique(SS_geno_exp$SNP)) 
+    
+    # If the PD GWAS effect size is negative, flip the alleles and make the effect size positive.
+    finemap_flip <- finemap_DT %>% 
+      dplyr::mutate(Effect.flip = case_when(Effect != abs(Effect) ~ -Effect,
+                                               Effect == abs(Effect) ~ Effect),
+                        Risk.allele = case_when(Effect != abs(Effect) ~ A2,
+                                               Effect == abs(Effect) ~ A1),
+                        Non_risk.allele = case_when(Effect != abs(Effect) ~ A1,
+                                               Effect == abs(Effect) ~ A2))
+    finemap_flip <- finemap_flip[,c("SNP","Effect.flip","Risk.allele","Non_risk.allele")]
+    SS_geno_exp <- merge(SS_geno_exp, finemap_flip, by="SNP")
+    SS_geno_exp <- GWAS.QTL %>% dplyr::mutate(Risk.level = case_when(genotype == paste(Risk.allele,Risk.allele,sep="/") ~ "High",
+                                                   genotype == paste(Non_risk.allele,Risk.allele,sep="/") |
+                                                     genotype == paste(Risk.allele,Non_risk.allele,sep="/") ~ "Mid", 
+                                                   genotype == paste(Non_risk.allele,Non_risk.allele,sep="/") ~ "Low"))
+    
+    SS_geno_exp$Risk.level <- factor(SS_geno_exp$Risk.level, levels=c("High","Mid","Low"), ordered = T)
+     
+     
+      
+    # Get 1 effect size per Condition x SNP combination
+    # d <- 4
+    # labels <- subset(SS_geno_exp , select = c("CHR","POS","PROBE_ID","Condition","SNP","Effect","P","FDR")) %>%  
+    #   dplyr::mutate(FDR_sig = ifelse(as.numeric(FDR) < 1.34e-05, "FDR < 1.34e-05**",paste0("FDR = ", formatC(FDR, format = "e", digits = 2))),
+    #                 FDR_scient = paste0("FDR = ", formatC(FDR, format = "e", digits = 2), ifelse(as.numeric(FDR) < 1.34e-05, "**","") ),
+    #                 P_sig = ifelse(as.numeric(P) < 0.05, "P < 0.05",paste0("P = ", formatC(P, format = "e", digits = 2))),
+    #                 Beta = format(round(Effect,d), nsmall=d), 
+    #                 P = paste("P =",formatC(P, format = "e", digits = 2)),
+    #                 FDR = paste("FDR =",formatC(FDR, format = "e", digits = 2))
+    #                             ) %>% 
+    #   arrange(SNP, Condition) %>% 
+    #   unique()  
+    
+    bp <- ggplot(data = SS_geno_exp, aes(x = genotype, y = Expression, fill=Risk.level)) + 
+      geom_boxplot(show.legend = T) + 
+      geom_jitter(alpha=.5, width =.2,  show.legend = F) +  
+      facet_grid(facets = Condition~SNP, scales = "free_x", drop = T) +
+      theme_bw() + 
+      theme(strip.text.y = element_text(angle = 0), 
+            strip.text = element_text(colour = "white"),
+            strip.background = element_rect(fill="grey10"),
+            plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5), 
+            plot.background = element_rect(fill = "transparent"), 
+            panel.background = element_rect(fill = "transparent")) + 
+      # scale_fill_manual(values = c("red","yellow","green"))
+      scale_fill_brewer(palette = "Spectral") + labs(title=gene,subtitle = "PD Risk SNPs in Fairfax eQTL")
+      # ylim(c(NA,max(SS_geno_exp$Expression)*1.1))
+    print(bp)
+    
     if(SS_annotations){
       bp <- bp + annotate("text", label = paste("Beta =",labels$Beta,";", labels$P,";",labels$FDR_scient), 
                size = 4, x = 2, y = 7.5)
     }
+    
+    ggsave("./Data/QTL/Fairfax_2014/PD.Risk_Fairfax.eQTL.png", bp, dpi = 400, height = 12, width = 8)
     
     if(interact){
      print(plotly::ggplotly(bp)) 

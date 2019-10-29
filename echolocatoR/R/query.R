@@ -144,6 +144,7 @@ query_by_coordinates_merged <- function(top_SNPs, fullSS_path, subset_path, gene
 
 query_by_gene <- function(fullSS_path, subset_path, gene, gene_col, file_sep){
   colDict <- column_dictionary(fullSS_path)
+  # if(endsWith(fullSS_path,".gz")){fullSS_path <- paste("<(gzcat",fullSS_path,")")} 
   awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1{print $0} NR>1{if($",colDict[[gene_col]]," == \"",gene,"\"){print $0}}' ",fullSS_path,
                    "| tr -s '",file_sep,"' '\t'  > ",subset_path, sep="")
   printer("\n",awk_cmd,"\n")
@@ -232,7 +233,7 @@ coordinates_to_SNPs <- function(){
 
 query_handler <- function(gene, 
                           fullSS_path, 
-                          top_SNPs, 
+                          top_SNPs=NULL, 
                           subset_path, #top_SNPs="auto", 
                           min_POS=NA, 
                           max_POS=NA, 
@@ -276,9 +277,9 @@ query_handler <- function(gene,
 
 
 preprocess_subset <- function(gene, 
-                              top_SNPs, 
-                              subset_path, 
-                              file_sep,
+                              top_SNPs=NULL, 
+                              subset_path="./Data", 
+                              file_sep="\t",
                               chrom_col="CHR", 
                               position_col="POS", 
                               snp_col="SNP",
@@ -297,13 +298,13 @@ preprocess_subset <- function(gene,
                               verbose=T){
   printer("",v=verbose)
   message("---------------- Step 1.5: Standarize ----------")
-  query_check <- data.table::fread(subset_path, sep=file_sep, nrows = 2)
+  query_check <- data.table::fread(subset_path, nrows = 2)
   
   if(dim(query_check)[1]==0){
     file.remove(subset_path)
     stop("Could not find any rows in full data that matched query :(")
   } else{
-    query <- data.table::fread(subset_path, header=T, stringsAsFactors = F, sep = file_sep)
+    query <- data.table::fread(subset_path, header=T, stringsAsFactors = F)
      ## Calculate StdErr
     if(stderr_col=="calculate"){
       printer("Calculating Standard Error...")
@@ -355,6 +356,7 @@ preprocess_subset <- function(gene,
       query_mod$A2 <- query$A2
     }
     
+    if(is.null(top_SNPs)){top_SNPs <- cbind(Gene=gene,(query_mod %>% arrange(P))[1,])}
     topSNP_sub <- auto_topSNPs_sub(top_SNPs, query_mod, gene)
     
     ## Remove SNPs with NAs in stats

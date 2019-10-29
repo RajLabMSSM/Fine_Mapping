@@ -50,7 +50,7 @@ Zscore <- function(x, z.info){
 
 PAINTOR.create_locusFile <- function(results_path,
                                      PT_results_path,
-                                     GWAS_dataset_name="Nalls23andMe_2019",
+                                     GWAS_datasets="Nalls23andMe_2019",
                                      QTL_datasets=c("Fairfax_2014_CD14","Fairfax_2014_IFN",
                                                     "Fairfax_2014_LPS2","Fairfax_2014_LPS24"), #NULL
                                      gene,
@@ -79,10 +79,13 @@ PAINTOR.create_locusFile <- function(results_path,
   i=1
   for(qtl in QTL_datasets){
      printer("PAINTOR:: Merging QTL data - ",qtl)
+     qtl.dir <- strsplit(qtl,"_")[[1]]
+     qtl.dir <- paste(qtl.dir[-length(qtl.dir)], collapse="_")
+      
      z.info.qtl <- Zscore.get_mean_and_sd(fullSS=Directory_info(dataset_name = qtl, variable = "fullSumStats"),
                                           Effect_col="beta", 
                                           use_saved=T,
-                                          output_path=file.path("./Data/QTL/Fairfax_2014",paste0("z.info.",qtl,".RDS")) )
+                                          output_path=file.path("./Data/QTL",qtl.dir,paste0("z.info.",qtl,".RDS")) )
     # Merge QTL data together
     merged_DT <- mergeQTL.merge_handler(FM_all = merged_DT, qtl_file = qtl)
     merged_DT <- dplyr::mutate(merged_DT, 
@@ -145,29 +148,35 @@ PAINTOR.prepare_LD <- function(results_path,
 
 PAINTOR.locusName_handler <- function(locus_name=NA, 
                                       gene, 
-                                      GWAS_dataset_name=NA, 
-                                      QTL_datasets=NA){
+                                      GWAS_datasets=NULL, 
+                                      QTL_datasets=NULL){
   if(is.na(locus_name)){ 
-    locus_name <- paste(gene,GWAS_dataset_name,paste(QTL_datasets,collapse = "--"), sep = ".")
+    locus_name <- paste(gene,GWAS_datasets,paste(QTL_datasets,collapse = "--"), sep = ".")
     return(locus_name)
   } 
   return(locus_name)
 }
 
-PAINTOR.datatype_handler <- function(GWAS_dataset_name=NA, 
-                                     QTL_datasets=NA, 
-                                     gene){
-  if(!is.na(GWAS_dataset_name) & !all(is.na(QTL_datasets))){
-    printer("++ PAINTOR:: GWAS and QTL input data detected. Feeding both into PAINTOR...")
-    results_path <- file.path("./Data/GWAS",GWAS_dataset_name, gene) 
-  } else if(!is.na(GWAS_dataset_name) & all(is.na(QTL_datasets))){
-      printer("++ PAINTOR:: Only GWAS input data detected. Feeding into PAINTOR...")
-      results_path <- file.path("./Data/GWAS",GWAS_dataset_name, gene)
-    } else if(is.na(GWAS_dataset_name) & !all(is.na(QTL_datasets))){
-      printer("++ PAINTOR:: Only QTL input data detected. Feeding into PAINTOR...")
+PAINTOR.datatype_handler <- function(GWAS_datasets=NULL, 
+                                     QTL_datasets=NULL, 
+                                     gene){ 
+  if(!all(is.null(GWAS_datasets)) & !all(is.null(QTL_datasets))){ 
+    printer("++ PAINTOR::",length(GWAS_dataset_name),"GWAS and",
+            length(QTL_datasets),"QTL input datasets detected. Feeding both types into PAINTOR...")
+    results_path <- file.path("./Data/GWAS",paste0(GWAS_datasets,collapse="--"), gene)
+    
+  } else if(!all(is.null(GWAS_datasets)) & all(is.null(QTL_datasets))){
+      printer("++ PAINTOR:: OnlyGWAS input dataset(s) detected.",
+              "Feeding",length(GWAS_datasets),"GWAS dataset(s) into PAINTOR...")
+      results_path <- file.path("./Data/GWAS",GWAS_datasets, gene)
+      
+    } else if(all(is.null(GWAS_datasets)) & !all(is.null(QTL_datasets))){
+      printer("++ PAINTOR:: Only QTL input dataset(s) detected.",
+              "Feeding",length(QTL_datasets),"QTL dataset(s) into PAINTOR...")
       results_path <- file.path("./Data/QTL",paste0(QTL_datasets,collapse="--"),"merged_results", gene)
+      
     } else {
-      stop("++ PAINTOR:: Neither GWAS nor QTL data detected. Please enter at least one valid dataset.")
+      stop("++ PAINTOR:: Neither GWAS nor QTL datasets detected. Please enter at least one valid dataset.")
     } 
   PT_results_path <- file.path(results_path,"PAINTOR")
   dir.create(PT_results_path, showWarnings = F, recursive = T)
@@ -392,10 +401,58 @@ PAINTOR.run <- function(paintor_path,
 # ------------------------------#
 # ----------- PAINTOR ----------#
 # ------------------------------#
+
+
+PAINTOR.import_QTL_DT <- function(QTL_datasets, gene, trim_gene_limits=F){
+  QTL.dat <- lapply(QTL_datasets, function(qtl){
+    printer("++ PAINTOR:: Importing",qtl,"...")
+    qtl.dir <- strsplit(qtl,"_")[[1]][1] 
+    qtl.subdir <- strsplit(qtl,"_")[[1]][2]  
+    fullSS_path <- file.path("./Data/QTL",qtl.dir,qtl.subdir,paste0(qtl,".finemap.txt.gz")) 
+    subset_path <- file.path(dirname(fullSS_path),paste0(gene,"_",qtl,".txt"))
+    
+    # Save subset
+    if(file.exists(subset_path)){
+      subset_DT <- data.table::fread(subset_path, nThread = 4)
+    } else {
+      printer("PAINTOR:: Creating subset file for",gene)
+      qtl.dat <- data.table::fread(fullSS_path, nThread = 4) 
+      ## Remove the "gene" column bc it confuses subsetting functions
+      # qtl.dat <- dplyr::select(qtl.dat, select = -gene) %>% 
+      #   subset(gene_name==gene)  
+      data.table::fwrite(qtl.dat, subset_path, sep="\t")
+      subset_DT <- preprocess_subset(gene = gene,  
+                                     subset_path = subset_path,
+                                     chrom_col = "chr",
+                                     position_col = "pos_snps",
+                                     snp_col = "snps", 
+                                     effect_col = "beta", 
+                                     pval_col = "pvalue", 
+                                     tstat_col = "statistic", 
+                                     stderr_col = "calculate",
+                                     A1_col = "ref", 
+                                     A2_col = "alt")  %>% data.table::data.table()
+    }  
+    subset_DT <- cbind(Dataset=qtl, subset_DT) 
+    return(subset_DT)
+  }) %>% data.table::rbindlist() 
+  # Trim by coordinates
+  if(trim_gene_limits){
+    QTL.dat <- gene_trimmer(subset_DT = QTL.dat, gene = gene)
+  }  
+  QTL.spread <-  tidyr::spread(data = QTL.dat[,c("Dataset","CHR","SNP","Effect")], 
+                               key="Dataset", value = "Effect")
+  # dat.spread <-  QTL.dat[,-1] %>% unique()
+  # data.table:::merge.data.table(QTL.spread, dat.spread, by=c("SNP","CHR"), all.y = F)
+  # QTL.spread %>% arrange(MESA_AFA , MESA_CAU, MESA_HIS)
+  return(QTL.spread)
+}
+
+
 PAINTOR <- function(finemap_DT=NA,
                     paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
-                    GWAS_dataset_name=NA,
-                    QTL_datasets=NULL,#c("Fairfax_2014_CD14","Fairfax_2014_IFN", "Fairfax_2014_LPS2","Fairfax_2014_LPS24")
+                    GWAS_datasets=NULL,
+                    QTL_datasets=NULL,
                     gene,
                     locus_name=NA,
                     n_causal=5,
@@ -404,38 +461,54 @@ PAINTOR <- function(finemap_DT=NA,
                     chromatin_state="TssA",
                     use_annotations=F,
                     PP_threshold=.5,
-                    multi_finemap_col_name="PAINTOR"){
+                    multi_finemap_col_name="PAINTOR",
+                    trim_gene_limits=F){
   # Note: All file formats are assumed to be single space delimited.
 
   ## Quick setup
-  # chromatin_state="TssA"; paintor_path = "./echolocatoR/tools/PAINTOR_V3.0"; GWAS_dataset_name = "Nalls23andMe_2019"; QTL_datasets = c("Fairfax_2014_IFN","Fairfax_2014_LPS24");locus_name=NA; gene="LRRK2";  no_annotations=F;  XGR_dataset=NA; ROADMAP_search="monocyte"; n_causal=5; finemap_DT=NA; multi_finemap_col_name="PAINTOR_Fairfax";  PP_threshold=.5
-  if(is.na(GWAS_dataset_name)){
-    GWAS_dataset_name <- basename(dirname(results_path)); 
-    printer("PAINTOR:: Inferring GWAS dataset name:", GWAS_dataset_name)
-    }
+  # chromatin_state="TssA"; paintor_path = "./echolocatoR/tools/PAINTOR_V3.0"; GWAS_dataset_name = "Nalls23andMe_2019"; QTL_datasets = c("Fairfax_2014_IFN","Fairfax_2014_LPS24");locus_name=NA; gene="LRRK2";  no_annotations=F;  XGR_dataset=NA; ROADMAP_search="monocyte"; n_causal=5; finemap_DT=NA; multi_finemap_col_name="PAINTOR_Fairfax";  PP_threshold=.5; GWAS_datasets=NULL; QTL_datasets=c("MESA_AFA","MESA_CAU","MESA_HIS"); 
+  # if(is.na(GWAS_dataset_name)){
+  #   GWAS_dataset_name <- basename(dirname(results_path)); 
+  #   printer("PAINTOR:: Inferring GWAS dataset name:", GWAS_dataset_name)
+  #   }
   locus_name <- PAINTOR.locusName_handler(locus_name, 
                                           gene, 
-                                          GWAS_dataset_name, 
+                                          GWAS_datasets, 
                                           QTL_datasets)
   
-  PT_results_path <- PAINTOR.datatype_handler(GWAS_dataset_name=GWAS_dataset_name, 
+  PT_results_path <- PAINTOR.datatype_handler(GWAS_datasets=GWAS_datasets, 
                                               QTL_datasets=QTL_datasets, 
                                               gene=gene)
   printer("****** Double checking PT_results_path",PT_results_path)
   results_path <- dirname(PT_results_path)
-  if(!is.data.frame(finemap_DT)){
-    mfm_path <- file.path(results_path,"Multi-finemap/Multi-finemap_results.txt")
-    printer("PAINTOR:: No finemap_DT supplied. Retrieving from storage:",mfm_path)
-    finemap_DT <- data.table::fread(mfm_path, nThread = 4)
+  
+  if(!is.null(GWAS_datasets)){
+    if(!is.data.frame(finemap_DT)){
+      mfm_path <- file.path(results_path,"Multi-finemap/Multi-finemap_results.txt")
+      printer("PAINTOR:: No finemap_DT supplied. Retrieving from storage:",mfm_path)
+      finemap_DT <- data.table::fread(mfm_path, nThread = 4)
+    }
+  } else {  
+    finemap_DT <- PAINTOR.import_QTL_DT(QTL_datasets = QTL_datasets,
+                                        gene = gene,
+                                        trim_gene_limits = trim_gene_limits) 
   }
+  
 
   # 1. Locus File 
-  locus_DT <- PAINTOR.create_locusFile(results_path=results_path,
-                                       PT_results_path=PT_results_path,
-                                       GWAS_dataset_name=GWAS_dataset_name,
-                                       QTL_datasets=QTL_datasets,
-                                       gene=gene,
-                                       locus_name=locus_name) 
+  if(!any(is.null(GWAS_datasets))){
+    locus_DT <- PAINTOR.create_locusFile(results_path=results_path,
+                                         PT_results_path=PT_results_path,
+                                         GWAS_datasets=GWAS_datasets,
+                                         QTL_datasets=QTL_datasets,
+                                         gene=gene,
+                                         locus_name=locus_name) 
+  } else {
+    
+    # finemap_DT %>% dplyr::mutate(CHR=paste0("chr",CHR), 
+    #                               RSID=SNP,
+    #                               ZSCORE.P1=Zscore(x = Effect, z.info = z.info.gwas))
+  } 
   n_datasets <- sum(grepl(colnames(locus_DT), pattern = "ZSCORE"))
 
   

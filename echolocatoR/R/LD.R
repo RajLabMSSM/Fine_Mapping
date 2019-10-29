@@ -124,12 +124,13 @@ LD_plot <- function(LD_matrix, subset_DT, span=10){
 
  
 download_vcf <- function(subset_DT, 
-                         reference, 
+                         reference="1KG_Phase3", 
                          vcf_folder="./Data/Reference/1000_Genomes", 
                          gene, 
                          download_reference=T){ 
   ## http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
-  # Download portion of vcf from 1KG website
+  # Download portion of vcf from 1KG website 
+
   subset_DT$CHR <- gsub("chr","",subset_DT$CHR)
   region <- paste(unique(subset_DT$CHR),":",min(subset_DT$POS),"-",max(subset_DT$POS), sep="")
   chrom <- unique(subset_DT$CHR)
@@ -167,10 +168,7 @@ download_vcf <- function(subset_DT,
   # library(Rsamtools); #BiocManager::install("Rsamtools")
   subset_vcf <- file.path(vcf_folder, phase, paste(gene,"subset.vcf",sep="_")) 
   # Create directory if it doesn't exist
-  if(!dir.exists(dirname(subset_vcf)) ) {
-    printer("+ Creating ",vcf_folder," directory.")
-    dir.create(path = dirname(subset_vcf),recursive =  T, showWarnings = F)
-  }
+  dir.create(path = dirname(subset_vcf), recursive =  T, showWarnings = F)
   
   # Download and subset vcf if the subset doesn't exist already
   if(!file.exists(subset_vcf)){
@@ -184,6 +182,115 @@ download_vcf <- function(subset_DT,
   return(list(subset_vcf = subset_vcf,
               popDat = popDat))
 }
+
+
+
+plink_file <- function(base_url="./echolocatoR/tools/plink"){
+  os <- get_os()
+  if (os=="osx") { 
+    plink_version <- file.path(base_url, "plink1.9_mac");
+  } else if  (os=="linux") {
+    plink_version <- file.path(base_url, "plink1.9_linux");
+  } else {
+    plink_version <- file.path(base_url, "plink1.9_windows.exe");
+  }
+  return(plink_version)
+} 
+
+ 
+BCFTOOLS.filter_vcf <- function(subset_vcf, 
+                                popDat, 
+                                superpopulation, 
+                                remove_tmp=F){
+  vcf.gz <- paste0(subset_vcf,".gz")
+  vcf.gz.subset <- gsub("_subset","_samples_subset",vcf.gz)
+  # Compress vcf
+  if(!file.exists(vcf.gz)){
+    printer("LD:BCFTOOLS:: Compressing vcf file...")
+    system(paste("bgzip",subset_vcf))
+  }
+  # Re-index vcf
+  printer("LD:TABIX:: Re-indexing vcf.gz...")
+  system(paste("tabix -f -p vcf",vcf.gz)) 
+
+  # Subset samples 
+  selectedInds <- subset(popDat, superpop == superpopulation)$sample %>% unique()
+  printer("LD:BCFTOOLS:: Subsetting vcf to only include",superpopulation,"individuals (",length(selectedInds), "/",length(popDat$sample%>%unique()),").")
+  cmd <- paste("bcftools view -s",paste(selectedInds, collapse=","), vcf.gz, "| bgzip > tmp && mv tmp",vcf.gz.subset)
+  system(cmd)  
+  # mega_cmd <- paste(subset_vcf,
+  #                   "| bgzip",
+  #                   "| tabix -f -p vcf",
+  #                   "| bcftools view -s",paste(selectedInds, collapse=","), vcf.gz, 
+  #                   "| bgzip > tmp && mv tmp",vcf.gz.subset) 
+  return(vcf.gz.subset)
+}
+
+PLINK.vcf_to_bed <- function(vcf.gz.subset,  
+                             results_path){
+  printer("LD:PLINK:: Converting vcf.gz to .bed/.bim/.fam")
+  selectedInds <- subset(popDat, superpop == superpopulation)
+  cmd <- paste(plink_file(),"--vcf",vcf.gz.subset, "--out", file.path(results_path,"plink","plink"))
+  system(cmd)
+}
+
+PLINK.calculate_LD <- function(results_path, 
+                               ld_window=1000, # 10000000
+                               ld_format="bin"
+                               ){
+  printer("LD:PLINK:: Calculating LD ( r & D'-signed; LD-window =",ld_window,")")
+  plink_path_prefix <- file.path(results_path,"plink","plink")
+  out_prefix <- paste0(plink_path_prefix,".r_dprimeSigned")
+  if(ld_format=="bin"){
+    cmd <- paste(plink_file(),
+                 "--bfile",plink_path_prefix,
+                 "--r square bin", 
+                 "--out",out_prefix) 
+    ld.path <- paste0(out_prefix,".ld.bin")
+  } else {
+    cmd <- paste(plink_file(),
+                 "--bfile",plink_path_prefix,
+                 "--r dprime-signed",
+                 "--ld-window",ld_window,
+                 "--ld-window-kb",ld_window,
+                 "--out",out_prefix) 
+    ld.path <- paste0(out_prefix,".ld")
+  } 
+  system(cmd)
+  return(ld.path)
+}
+
+PLINK.read_bin <- function(ld.path){  
+  bim <- data.table::fread(file.path(dirname(ld.path), "plink.bim"), col.names = c("CHR","SNP","V3","POS","A1","A2")) 
+  bin.vector <- readBin(ld.path, what = "numeric", n=length(bim$SNP)^2)
+  ld.matrix <- matrix(bin.vector, nrow = length(bim$SNP), dimnames = list(bim$SNP, bim$SNP))
+}
+
+
+PLINK.read_ld_table <- function(ld.path, snp.subset=F){
+  # subset_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt")); snp.subset <- subset_DT$SNP
+  ld.table <- data.table::fread(ld.path, nThread = 4)
+  if(any(snp.subset!=F)){
+    printer("LD:PLINK:: Subsetting LD data...")
+    ld.table <- subset(ld.table, SNP_A %in% snp.subset | SNP_B %in% snp.subset)
+  } 
+  printer("LD:PLINK:: Casting data.matrix...")
+  ld.cast <- data.table::dcast.data.table(ld.table, 
+                                          formula = SNP_B ~ SNP_A, 
+                                          value.var="R",
+                                          fill=0, 
+                                          drop=T, 
+                                          fun.agg = function(x){mean(x,na.rm = T)}) 
+  ld.cast <- subset(ld.cast, SNP_B !=".", select = -`.`)
+  ld.mat <- data.frame(ld.cast, row.names = ld.cast$SNP_B) %>% data.table() %>% as.matrix()    
+  # ld.mat[1:10,1:10]
+  ld.mat[is.na(ld.mat)] <- 0
+}
+
+
+ 
+
+
 
 
 filter_vcf <- function(subset_vcf,
@@ -221,6 +328,8 @@ compute_LD_matrix <- function(results_path,
                               min_Dprime=F,
                               remove_correlates=F,
                               remove_tmps=T){   
+  # Quickstart
+  # gene <- "LRRK2"; results_path <- file.path("./Data/GWAS/Nalls23andMe_2019",gene); reference="1KG_Phase1"; vcf_folder="./Data/Reference/1000_Genomes"; superpopulation="EUR"; vcf_folder="./Data/Reference/1000_Genomes"; min_r2=F; LD_block=F; block_size=.7; min_Dprime=F;  remove_correlates=F; download_reference=T; subset_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"))
   vcf_info <- download_vcf(subset_DT=subset_DT, 
                              reference=reference, 
                              vcf_folder=vcf_folder, 
@@ -229,11 +338,16 @@ compute_LD_matrix <- function(results_path,
   subset_vcf <- vcf_info$subset_vcf
   popDat <- vcf_info$popDat
   
-  bed <- filter_vcf(subset_vcf=subset_vcf,
-                    subset_DT=subset_DT, 
-                    results_path=results_path, 
-                    superpopulation=superpopulation,
-                    popDat=popDat) 
+  # bed <- filter_vcf(subset_vcf=subset_vcf,
+  #                   subset_DT=subset_DT, 
+  #                   results_path=results_path, 
+  #                   superpopulation=superpopulation,
+  #                   popDat=popDat) 
+  vcf.gz.path <- BCFTOOLS.filter_vcf(subset_vcf = subset_vcf,
+                                      popDat = popDat, 
+                                      superpopulation = superpopulation,
+                                      remove_tmp = F)
+  PLINK.vcf_to_bed(vcf.gz.subset = vcf.gz.path, results_path = results_path)
   # Calculate pairwise LD for all SNP combinations
   #### "Caution that the LD matrix has to be correlation matrix" -SuSiER documentation
   ### https://stephenslab.github.io/susieR/articles/finemapping_summary_statistics.html  
@@ -262,68 +376,11 @@ compute_LD_matrix <- function(results_path,
   printer("Saving LD matrix of size:", dim(LD_matrix)[1],"rows x",dim(LD_matrix)[2],"columns.")
 }
 
-
-# download_all_vcfs <- function(vcf_folder="../1000_Genomes_VCFs"){
-#   # PHASE 3 DATA
-#   path3 <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/"
-#   for(chrom in c(1:22)){
-#     printer("\nDownloading Chromosome",chrom,"\n")
-#     URL <- paste("ALL.chr",chrom,".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep = "")
-#     system(paste("wget -P",file.path(vcf_folder,"Phase3"), file.path(path3, URL) ))
-#   }
-#   X_chrom <-"ALL.chrX.phase3_shapeit2_mvncall_integrated_v1b.20130502.genotypes.vcf.gz"
-#   system(paste("wget -P",file.path(vcf_folder,"Phase3"), file.path(path3, X_chrom)))
-#   Y_chrom <- "ALL.chrY.phase3_integrated_v2a.20130502.genotypes.vcf.gz"
-#   system(paste("wget -P",file.path(vcf_folder,"Phase3"), file.path(path3, Y_chrom) ))
-#   
-#   popDat_URL = file.path(path3, "integrated_call_samples_v3.20130502.ALL.panel")
-#   popDat <- read.delim(popDat_URL, header = F, row.names = NULL)
-#   write.table(popDat,file=file.path(vcf_folder,"Phase3","integrated_call_samples_v3.20130502.ALL.panel"), row.names = F, sep="\t", quote = F, col.names = F)
-#   
-#   # PHASE 1 DATA
-#   path1 <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521"
-#   for(chrom in c(1:22)){
-#     printer("\nDownloading Chromosome",chrom,"\n")
-#     URL <- paste("ALL.chr",chrom, ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
-#     system(paste( "wget -P",file.path(vcf_folder,"Phase1"), file.path(path1, URL) ))
-#   }
-#   X_chrom <- "ALL.chrX.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz"
-#   system( paste("wget -P",file.path(vcf_folder,"Phase1"), file.path(path1, X_chrom)) )
-#   
-#   popDat_URL = file.path(path1, "phase1_integrated_calls.20101123.ALL.panel")
-#   popDat <- read.delim(popDat_URL, header = F, row.names = NULL)
-#   write.table(popDat,file=file.path(vcf_folder,"Phase1","phase1_integrated_calls.20101123.ALL.panel"),  row.names = F, sep="\t", quote = F, col.names = F)
-# }
-
-# Filter by r2 with lead SNP
-# filter_by_LD <- function(LD_matrix, leadSNP, min_r2=.2){
-#   if(min_r2>0){
-#     l = LD_matrix[leadSNP,]
-#     ld_filt <- l[lapply(l, function(x){x^2}) >= min_r2] %>% names()
-#     # LD_matrix[LD_matrix^2>=.2,]
-#     return(LD_matrix[ld_filt, ld_filt])
-#   } else{return(LD_matrix)} 
-# }
-# LD_matrix <- filter_by_LD(LD_matrix, leadSNP, min_r2)
-
-
+ 
 
 ############# ############# #############
 #############    PLINK      #############
 ############# ############# #############
-plink_file <- function(base_url="./echolocatoR/tools/plink"){
-  os <- get_os()
-  if (os=="osx") { 
-    plink_version <- file.path(base_url, "plink1.9_mac");
-  } else if  (os=="linux") {
-    plink_version <- file.path(base_url, "plink1.9_linux");
-  } else {
-    plink_version <- file.path(base_url, "plink1.9_windows.exe");
-  }
-  return(plink_version)
-} 
-
-
 
 Dprime_table <- function(SNP_list, plink_folder){
   printer("+ Creating DPrime table")
@@ -406,7 +463,7 @@ plink_LD <-function(leadSNP,
     # R2 filter
     if(min_r2 != F ){
       printer("+++ Filtering LD Matrix (min_r2): Removing SNPs with r <=",min_r2,"for",leadSNP,"(lead SNP).")
-      r = sqrt(min_r2)
+      r = sqrt(min_r2) # PROBLEM: this doesn't give you r, which you need for SUSIE
       plink.ld <- subset(plink.ld, (SNP_A==leadSNP & R>=r) | (SNP_B==leadSNP & R>=r))   
     } else{printer("+ min_r2 == FALSE")}
     
@@ -508,6 +565,14 @@ snpStats_LDblocks <- function(){
 }
 
 
+
+
+
+GSA.download_vcf <- function(){
+  lead.pos <- 40614434 
+  one.Mb <- 500000*2  
+  cmd <- paste0("tabix chr12.dose.vcf.gz chr12:", lead.pos-one.Mb,"-",lead.pos+one.Mb) 
+}
 
 # Turn LD matrix into positive semi-definite matrix
 # LD_matrix_check <- function(LD_matrix){

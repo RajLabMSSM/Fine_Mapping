@@ -9,7 +9,7 @@ core.*
 /Data/GWAS/**/**/*.tsv
 /Data/GWAS/**/*.txt.gz
 #/Data/QTL/**/**/*.txt
-#/Data/QTL/**/**/*.txt.gz 
+/Data/QTL/**/**/*.txt.gz 
 #/Data/**/**/**/*.txt
 /Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt
 /Data/**/**/_genome_wide/COJO/cojo-file.ma  
