@@ -245,21 +245,20 @@ eQTL_boxplots <- function(snp_list,
     printer("")
     printer("+ Plotting eQTLs") 
     # encode genotypes
-    SS_geno_exp <- SS_geno_exp %>%
+    DAT <- SS_geno_exp %>%
       mutate(genotype = case_when(Genotype == 0 ~ paste(A1,A1,sep="/"),
                                   Genotype == 1 ~ paste(A1,A2,sep="/"),
                                   Genotype == 2 ~ paste(A2,A2,sep="/")))
     
-    expression.genotypes <- SS_geno_exp %>% 
+    expression.genotypes <- DAT %>% 
       dplyr::group_by(Gene, Condition, SNP, genotype, Genotype) %>%
       dplyr::summarise_each(c(Effect, P, FDR, Expression), funs = mean) 
     
-    
+    # Import PD GWAS data
     results_path <- "./Data/GWAS/Nalls23andMe_2019/LRRK2/"
     finemap_DT <- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
     finemap_DT <- subset(finemap_DT, SNP %in% unique(SS_geno_exp$SNP)) 
-    
-    # If the PD GWAS effect size is negative, flip the alleles and make the effect size positive.
+    ## If the PD GWAS effect size is negative, flip the alleles and make the effect size positive.
     finemap_flip <- finemap_DT %>% 
       dplyr::mutate(Effect.flip = case_when(Effect != abs(Effect) ~ -Effect,
                                                Effect == abs(Effect) ~ Effect),
@@ -267,34 +266,43 @@ eQTL_boxplots <- function(snp_list,
                                                Effect == abs(Effect) ~ A1),
                         Non_risk.allele = case_when(Effect != abs(Effect) ~ A1,
                                                Effect == abs(Effect) ~ A2))
-    finemap_flip <- finemap_flip[,c("SNP","Effect.flip","Risk.allele","Non_risk.allele")]
-    SS_geno_exp <- merge(SS_geno_exp, finemap_flip, by="SNP")
-    SS_geno_exp <- GWAS.QTL %>% dplyr::mutate(Risk.level = case_when(genotype == paste(Risk.allele,Risk.allele,sep="/") ~ "High",
+    finemap_flip <- finemap_flip[,c("SNP","MAF","Effect.flip","Risk.allele","Non_risk.allele")]
+    
+    # Merge QTL and GWAS
+    DAT <- merge(DAT, finemap_flip, by="SNP")
+    DAT <- DAT %>% dplyr::mutate(Risk.level = case_when(genotype == paste(Risk.allele,Risk.allele,sep="/") ~ "High",
                                                    genotype == paste(Non_risk.allele,Risk.allele,sep="/") |
                                                      genotype == paste(Risk.allele,Non_risk.allele,sep="/") ~ "Mid", 
                                                    genotype == paste(Non_risk.allele,Non_risk.allele,sep="/") ~ "Low"))
     
-    SS_geno_exp$Risk.level <- factor(SS_geno_exp$Risk.level, levels=c("High","Mid","Low"), ordered = T)
-     
+    DAT$Risk.level <- factor(DAT$Risk.level, levels=c("High","Mid","Low"), ordered = T)
+    # DAT$MAF <- paste("MAF =",DAT$MAF)
      
       
     # Get 1 effect size per Condition x SNP combination
     # d <- 4
-    # labels <- subset(SS_geno_exp , select = c("CHR","POS","PROBE_ID","Condition","SNP","Effect","P","FDR")) %>%  
-    #   dplyr::mutate(FDR_sig = ifelse(as.numeric(FDR) < 1.34e-05, "FDR < 1.34e-05**",paste0("FDR = ", formatC(FDR, format = "e", digits = 2))),
-    #                 FDR_scient = paste0("FDR = ", formatC(FDR, format = "e", digits = 2), ifelse(as.numeric(FDR) < 1.34e-05, "**","") ),
+    
+    labels <- DAT %>% 
+      dplyr::group_by(Condition, SNP) %>% 
+      dplyr::summarise(Effect=mean(Effect), FDR=mean(FDR), MAF=unique(MAF)) %>% 
+      dplyr::mutate( Effect=round(Effect,4), FDR=formatC(FDR, format = "e", digits = 2))
+    # labels <- subset(SS_geno_exp , select = c("CHR","POS","PROBE_ID","Condition","SNP","Effect","P","FDR")) %>%
+    #   dplyr::mutate(FDR_sig = ifelse(as.numeric(FDR) < 1.34e-05, "FDR < 1.34e-05**",
+    #                                  paste0("FDR = ", formatC(FDR, format = "e", digits = 2))),
+    #                 FDR_scient = paste0("FDR = ", formatC(FDR, format = "e", digits = 2), 
+    #                                     ifelse(as.numeric(FDR) < 1.34e-05, "**","") ),
     #                 P_sig = ifelse(as.numeric(P) < 0.05, "P < 0.05",paste0("P = ", formatC(P, format = "e", digits = 2))),
-    #                 Beta = format(round(Effect,d), nsmall=d), 
+    #                 Beta = format(round(Effect,d), nsmall=d),
     #                 P = paste("P =",formatC(P, format = "e", digits = 2)),
     #                 FDR = paste("FDR =",formatC(FDR, format = "e", digits = 2))
-    #                             ) %>% 
-    #   arrange(SNP, Condition) %>% 
-    #   unique()  
+    #                             ) %>%
+    #   arrange(SNP, Condition) %>%
+    #   unique()
     
-    bp <- ggplot(data = SS_geno_exp, aes(x = genotype, y = Expression, fill=Risk.level)) + 
+    bp <- ggplot(data = DAT, aes(x = genotype, y = Expression, fill=Risk.level)) + 
       geom_boxplot(show.legend = T) + 
       geom_jitter(alpha=.5, width =.2,  show.legend = F) +  
-      facet_grid(facets = Condition~SNP, scales = "free_x", drop = T) +
+      facet_grid(facets = Condition~SNP+MAF, scales = "free_x", drop = T) +
       theme_bw() + 
       theme(strip.text.y = element_text(angle = 0), 
             strip.text = element_text(colour = "white"),
@@ -304,16 +312,16 @@ eQTL_boxplots <- function(snp_list,
             plot.background = element_rect(fill = "transparent"), 
             panel.background = element_rect(fill = "transparent")) + 
       # scale_fill_manual(values = c("red","yellow","green"))
-      scale_fill_brewer(palette = "Spectral") + labs(title=gene,subtitle = "PD Risk SNPs in Fairfax eQTL")
+      scale_fill_brewer(palette = "Spectral") + 
+      labs(title=gene,subtitle = "PD Risk SNPs in Fairfax eQTL", x="Genotype") + 
+      geom_text(data = labels, inherit.aes = F, size = 3, color="firebrick",
+                aes(x = 2, y = 8.25,  label = paste0("Effect = ",Effect,"\nFDR = ",FDR))) 
       # ylim(c(NA,max(SS_geno_exp$Expression)*1.1))
     print(bp)
     
-    if(SS_annotations){
-      bp <- bp + annotate("text", label = paste("Beta =",labels$Beta,";", labels$P,";",labels$FDR_scient), 
-               size = 4, x = 2, y = 7.5)
-    }
+     
     
-    ggsave("./Data/QTL/Fairfax_2014/PD.Risk_Fairfax.eQTL.png", bp, dpi = 400, height = 12, width = 8)
+    ggsave("./Data/QTL/Fairfax_2014/PD.Risk_Fairfax.eQTL.png", bp, dpi = 400, height = 12, width = 9)
     
     if(interact){
      print(plotly::ggplotly(bp)) 
