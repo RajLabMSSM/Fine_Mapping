@@ -285,7 +285,8 @@ eQTL_boxplots <- function(snp_list,
     labels <- DAT %>% 
       dplyr::group_by(Condition, SNP) %>% 
       dplyr::summarise(Effect=mean(Effect), FDR=mean(FDR), MAF=unique(MAF)) %>% 
-      dplyr::mutate( Effect=round(Effect,4), FDR=formatC(FDR, format = "e", digits = 2))
+      dplyr::mutate( Effect=round(Effect,4), FDR=formatC(FDR, format = "e", digits = 2)) %>% 
+      dplyr::mutate(sig = ifelse(FDR<5e-9,"***",""))
     # labels <- subset(SS_geno_exp , select = c("CHR","POS","PROBE_ID","Condition","SNP","Effect","P","FDR")) %>%
     #   dplyr::mutate(FDR_sig = ifelse(as.numeric(FDR) < 1.34e-05, "FDR < 1.34e-05**",
     #                                  paste0("FDR = ", formatC(FDR, format = "e", digits = 2))),
@@ -315,7 +316,7 @@ eQTL_boxplots <- function(snp_list,
       scale_fill_brewer(palette = "Spectral") + 
       labs(title=gene,subtitle = "PD Risk SNPs in Fairfax eQTL", x="Genotype") + 
       geom_text(data = labels, inherit.aes = F, size = 3, color="firebrick",
-                aes(x = 2, y = 8.25,  label = paste0("Effect = ",Effect,"\nFDR = ",FDR))) 
+                aes(x = 2, y = 8.25,  label = paste0("Effect = ",Effect,"\nFDR = ",FDR," ",sig))) 
       # ylim(c(NA,max(SS_geno_exp$Expression)*1.1))
     print(bp)
     
