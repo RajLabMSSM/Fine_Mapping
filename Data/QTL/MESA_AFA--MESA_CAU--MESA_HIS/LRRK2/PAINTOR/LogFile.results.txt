@@ -1,0 +1,2 @@
+locus_name prior_variance ld_pcs
+LRRK2..MESA_AFA--MESA_CAU--MESA_HIS 1207.65,1866.7,5826.77 96,310,102

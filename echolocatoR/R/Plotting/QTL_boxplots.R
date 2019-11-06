@@ -320,8 +320,7 @@ eQTL_boxplots <- function(snp_list,
       # ylim(c(NA,max(SS_geno_exp$Expression)*1.1))
     print(bp)
     
-     
-    
+      
     ggsave("./Data/QTL/Fairfax_2014/PD.Risk_Fairfax.eQTL.png", bp, dpi = 400, height = 12, width = 9)
     
     if(interact){

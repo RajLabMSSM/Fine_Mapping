@@ -331,8 +331,8 @@ gene_trimmer <- function(subset_DT, gene, trim_gene_limits=T, min_POS=NULL, max_
     # Take most limiting min position
     min_POS <- max(min_POS, gene_info_sub$start_position, na.rm = T) 
     # Take most limiting max position
-    max_POS <- min(max_POS, gene_info_sub$end_position, na.rm = T) 
-    return(subset(subset_DT, POS>=min_POS & POS<=max_POS))
+    max_POS <- min(max_POS, gene_info_sub$end_position, na.rm = T)  
+    return(subset(subset_DT, CHR==gene_info$chromosome_name[1] & POS>=min_POS & POS<=max_POS))
   } else{return(subset_DT)} 
 }
 

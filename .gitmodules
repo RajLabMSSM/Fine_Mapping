@@ -10,3 +10,6 @@
 [submodule "echolocatoR/tools/fGWAS"]
 	path = echolocatoR/tools/fGWAS
 	url = https://github.com/wzhy2000/fGWAS.git
+[submodule "echolocatoR/tools/polyfun"]
+	path = echolocatoR/tools/polyfun
+	url = https://github.com/omerwe/polyfun.git

@@ -28,13 +28,9 @@ get_header <- function(large_file){
   return(header)
 }
 
-Data_dirs_to_table <- function(Data_dirs, writeCSV=F){
-  df <- data.frame()
-  for(n in names(Data_dirs)){
-    newRow <- data.frame(Data_dirs[n], stringsAsFactors = F)
-    colnames(newRow) <- c("Type","topSumStats", "fullSumStats","Reference")
-    df <- rbind(df, cbind(Dataset=n,newRow))
-  }  
+Data_dirs_to_table <- function(Data_dirs, writeCSV=F){  
+  df <- data.table::rbindlist(Data_dirs, fill=T)
+  df <- cbind(Dataset=names(Data_dirs), df)
   createDT(df)
   if(writeCSV!=F){ 
     data.table::fwrite(df, writeCSV, quote = F, sep = ",", row.names = F) 
@@ -43,7 +39,7 @@ Data_dirs_to_table <- function(Data_dirs, writeCSV=F){
 }
 
 
-list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
+list_Data_dirs <- function(writeCSV = "./Data/directories_table.csv"){
   root <- "/sc/orga/projects"
   Data_dirs = list(
     # ++++++++ GWAS SUMMARY STATS ++++++++ # 
@@ -52,6 +48,7 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
                            topSS="Data/GWAS/Nalls23andMe_2019/Nalls2019_TableS2.xlsx",
                            # fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt")),
                            fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt"),
+                           fullSS.local="./Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt",
                            reference="https://www.biorxiv.org/content/10.1101/388165v3"),  
     
     ## IGAP 
@@ -76,6 +73,7 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
     "Kunkle_2019" = list(type="Alzheimer's GWAS",
                          topSS="Data/GWAS/Kunkle_2019/Kunkle2019_supplementary_tables.xlsx", 
                          fullSS=file.path(root,"ad-omics/data/AD_GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt"),
+                         fullSS.local="./Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt.gz",
                          # fullSS_stage2=file.path(root,"ad-omics/data/AD_GWAS/Kunkle_etal_Stage2_results.txt"),
                          reference="https://www.nature.com/articles/s41588-019-0358-2"),
     
@@ -84,38 +82,45 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
     "MESA_AFA" = list(type="eQTL",
                       topSS="Data/eQTL/MESA/AFA/AFA_eQTL_PTK2B.txt",
                       fullSS=file.path(root,"ad-omics/data/MESA/AFA_cis_eqtl_summary_statistics.txt"), 
+                      fullSS.local="./Data/QTL/MESA/AFA/MESA_AFA.finemap.txt.gz",
                       reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
     ## MESA eQTLs: Caucasians
     "MESA_CAU" = list(type="eQTL",
                       topSS="Data/eQTL/MESA/CAU/CAU_eQTL_PTK2B.txt",
                       fullSS=file.path(root,"ad-omics/data/MESA/CAU_cis_eqtl_summary_statistics.txt"),
+                      fullSS.local="./Data/QTL/MESA/CAU/MESA_CAU.finemap.txt.gz",
                       reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
     ## MESA eQTLs: Hispanics
     "MESA_HIS" = list(type="eQTL",
                       topSS="Data/eQTL/MESA/HIS/HIS_eQTL_PTK2B.txt",
                       fullSS=file.path(root,"ad-omics/data/MESA/HIS_cis_eqtl_summary_statistics.txt"),
+                      fullSS.local="./Data/QTL/MESA/HIS/MESA_HIS.finemap.txt.gz",
                       reference="https://www.nhlbi.nih.gov/science/multi-ethnic-study-atherosclerosis-mesa"),
     
     ## Fairfax eQTLs: CD14
     "Fairfax_2014_CD14" = list(type="eQTL",
                       topSS=NA,
                       fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.CD14.47231.414.b.qced.f.txt"),
+                      fullSS.local="./Data/QTL/Fairfax_2014/CD14/Fairfax_2014_CD14.finemap.txt.gz",
                       reference="https://science.sciencemag.org/content/343/6175/1246949"), 
     ## Fairfax eQTLs: IFN
     "Fairfax_2014_IFN" = list(type="eQTL",
                                topSS=NA,
                                fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.IFN.47231.367.b.qced.f.txt"),
+                              fullSS.local="./Data/QTL/Fairfax_2014/IFN/Fairfax_2014_IFN.finemap.txt.gz",
                                reference="https://science.sciencemag.org/content/343/6175/1246949"),
      
     ## Fairfax eQTLs: IFN
     "Fairfax_2014_LPS2" = list(type="eQTL",
                               topSS=NA,
                               fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS2.47231.261.b.qced.f.txt"),
+                              fullSS.local="./Data/QTL/Fairfax_2014/LPS2/Fairfax_2014_LPS2.finemap.txt.gz",
                               reference="https://science.sciencemag.org/content/343/6175/1246949"), 
     ## Fairfax eQTLs: IFN
     "Fairfax_2014_LPS24" = list(type="eQTL",
                                topSS=NA,
                                fullSS=file.path(root,"ad-omics/data/fairfax/sumstats/cis.eqtls.fairfax.all.chr.LPS24.47231.322.b.qced.f.txt"),
+                               fullSS.local="./Data/QTL/Fairfax_2014/LPS24/Fairfax_2014_LPS24.finemap.txt.gz",
                                reference="https://science.sciencemag.org/content/343/6175/1246949"),   
     
     ## Cardiogenics: Macrophages
@@ -219,9 +224,9 @@ list_Data_dirs <- function(writeCSV = "Results/directories_table.csv"){
 
 
 
-Directory_info <- function(dataset_name, variable="topSumStats"){
+Directory_info <- function(dataset_name, variable="fullSS.local"){
   Data_dirs <- list_Data_dirs(writeCSV = F)
-  directory = subset(Data_dirs, Dataset==dataset_name)[1,variable] %>% as.character() 
+  directory = subset(Data_dirs, Dataset==dataset_name, select=variable) %>% as.character() 
   return(directory)
 }
 

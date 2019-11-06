@@ -28,10 +28,11 @@ LD.load_or_create <- function(results_path,
                               block_size=.7,
                               min_Dprime=F,
                               remove_correlates=F,
+                              fillNA=0,
                               verbose=T){
   LD_path <- file.path(results_path,"plink/LD_matrix.RData")
   if(!file.exists(LD_path) | force_new_LD==T){
-    printer("+ Computing LD matrix... \n", verbose) 
+    printer("+ Computing LD matrix...", verbose) 
     LD_matrix <- compute_LD_matrix(results_path = results_path, 
                                    subset_DT = subset_DT, 
                                    gene = gene,
@@ -43,7 +44,8 @@ LD.load_or_create <- function(results_path,
                                    LD_block = LD_block,
                                    block_size = block_size,
                                    min_Dprime = min_Dprime,
-                                   remove_correlates = remove_correlates) 
+                                   remove_correlates = remove_correlates,
+                                   fillNA = fillNA) 
     # Save LD matrix 
     # data.table::fwrite(LD_matrix, LD_path, sep="\t") 
     printer("+ Saving LD matrix to:",LD_path, v=verbose) 
@@ -69,38 +71,14 @@ plink_file <- function(base_url="./echolocatoR/tools/plink"){
   return(plink_version)
 } 
 # plink_file()
+ 
 
-# download_all_vcfs <- function(vcf_folder="../1000_Genomes_VCFs"){
-#   # PHASE 3 DATA
-#   path3 <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/"
-#   for(chrom in c(1:22)){
-#     printer("\nDownloading Chromosome",chrom,"\n")
-#     URL <- paste("ALL.chr",chrom,".phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",sep = "")
-#     system(paste("wget -P",file.path(vcf_folder,"Phase3"), file.path(path3, URL) ))
-#   }
-#   X_chrom <-"ALL.chrX.phase3_shapeit2_mvncall_integrated_v1b.20130502.genotypes.vcf.gz"
-#   system(paste("wget -P",file.path(vcf_folder,"Phase3"), file.path(path3, X_chrom)))
-#   Y_chrom <- "ALL.chrY.phase3_integrated_v2a.20130502.genotypes.vcf.gz"
-#   system(paste("wget -P",file.path(vcf_folder,"Phase3"), file.path(path3, Y_chrom) ))
-#   
-#   popDat_URL = file.path(path3, "integrated_call_samples_v3.20130502.ALL.panel")
-#   popDat <- read.delim(popDat_URL, header = F, row.names = NULL)
-#   write.table(popDat,file=file.path(vcf_folder,"Phase3","integrated_call_samples_v3.20130502.ALL.panel"), row.names = F, sep="\t", quote = F, col.names = F)
-#   
-#   # PHASE 1 DATA
-#   path1 <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521"
-#   for(chrom in c(1:22)){
-#     printer("\nDownloading Chromosome",chrom,"\n")
-#     URL <- paste("ALL.chr",chrom, ".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz", sep="")
-#     system(paste( "wget -P",file.path(vcf_folder,"Phase1"), file.path(path1, URL) ))
-#   }
-#   X_chrom <- "ALL.chrX.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz"
-#   system( paste("wget -P",file.path(vcf_folder,"Phase1"), file.path(path1, X_chrom)) )
-#   
-#   popDat_URL = file.path(path1, "phase1_integrated_calls.20101123.ALL.panel")
-#   popDat <- read.delim(popDat_URL, header = F, row.names = NULL)
-#   write.table(popDat,file=file.path(vcf_folder,"Phase1","phase1_integrated_calls.20101123.ALL.panel"),  row.names = F, sep="\t", quote = F, col.names = F)
-# }
+translate_population <- function(superpopulation){
+  pop_dict <- list("AFA"="AFR", "CAU"="EUR", "HIS"="AMR",
+                   "AFR"="AFR","EUR"="EUR", "AMR"="AMR")
+  translated.list <- as.character(pop_dict[superpopulation])
+  return(translated.list)
+}
 
 list_all_vcfs <-function(){
   all_vcfs <- paste0("http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr",c(1:22),
@@ -184,19 +162,7 @@ download_vcf <- function(subset_DT,
 }
 
 
-
-plink_file <- function(base_url="./echolocatoR/tools/plink"){
-  os <- get_os()
-  if (os=="osx") { 
-    plink_version <- file.path(base_url, "plink1.9_mac");
-  } else if  (os=="linux") {
-    plink_version <- file.path(base_url, "plink1.9_linux");
-  } else {
-    plink_version <- file.path(base_url, "plink1.9_windows.exe");
-  }
-  return(plink_version)
-} 
-
+ 
  
 BCFTOOLS.filter_vcf <- function(subset_vcf, 
                                 popDat, 
@@ -228,8 +194,8 @@ BCFTOOLS.filter_vcf <- function(subset_vcf,
 
 PLINK.vcf_to_bed <- function(vcf.gz.subset,  
                              results_path){
-  printer("LD:PLINK:: Converting vcf.gz to .bed/.bim/.fam")
-  selectedInds <- subset(popDat, superpop == superpopulation)
+  printer("LD:PLINK:: Converting vcf.gz to .bed/.bim/.fam") 
+  dir.create(file.path(results_path,"plink"), recursive = T, showWarnings = F)
   cmd <- paste(plink_file(),"--vcf",vcf.gz.subset, "--out", file.path(results_path,"plink","plink"))
   system(cmd)
 }
@@ -240,6 +206,7 @@ PLINK.calculate_LD <- function(results_path,
                                ){
   printer("LD:PLINK:: Calculating LD ( r & D'-signed; LD-window =",ld_window,")")
   plink_path_prefix <- file.path(results_path,"plink","plink")
+  dir.create(file.path(results_path,"plink"), recursive = T, showWarnings = F)
   out_prefix <- paste0(plink_path_prefix,".r_dprimeSigned")
   if(ld_format=="bin"){
     cmd <- paste(plink_file(),
@@ -327,7 +294,8 @@ compute_LD_matrix <- function(results_path,
                               block_size=.7, 
                               min_Dprime=F,
                               remove_correlates=F,
-                              remove_tmps=T){   
+                              remove_tmps=T,
+                              fillNA=0){   
   # Quickstart
   # gene <- "LRRK2"; results_path <- file.path("./Data/GWAS/Nalls23andMe_2019",gene); reference="1KG_Phase1"; vcf_folder="./Data/Reference/1000_Genomes"; superpopulation="EUR"; vcf_folder="./Data/Reference/1000_Genomes"; min_r2=F; LD_block=F; block_size=.7; min_Dprime=F;  remove_correlates=F; download_reference=T; subset_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"))
   vcf_info <- download_vcf(subset_DT=subset_DT, 
@@ -347,7 +315,8 @@ compute_LD_matrix <- function(results_path,
                                       popDat = popDat, 
                                       superpopulation = superpopulation,
                                       remove_tmp = F)
-  PLINK.vcf_to_bed(vcf.gz.subset = vcf.gz.path, results_path = results_path)
+  PLINK.vcf_to_bed(vcf.gz.subset = vcf.gz.path, 
+                   results_path = results_path)
   # Calculate pairwise LD for all SNP combinations
   #### "Caution that the LD matrix has to be correlation matrix" -SuSiER documentation
   ### https://stephenslab.github.io/susieR/articles/finemapping_summary_statistics.html  
@@ -355,14 +324,15 @@ compute_LD_matrix <- function(results_path,
   # LD_matrix <- gaston::LD(bed, lim = c(1,ncol(bed)), measure ="r") #"D"
   # LD_matrix[!is.finite(LD_matrix)] <- 0
   
-  # Get lead SNP rsid
+  # Get lead SNP rsid 
   leadSNP = subset(subset_DT, leadSNP==T)$SNP #rs76904798
   # Plink LD method
   LD_matrix <- plink_LD(plink_folder = file.path(results_path,"plink"),
                             leadSNP = leadSNP, 
                             min_r2 = min_r2,
                             min_Dprime = min_Dprime,
-                            remove_correlates = remove_correlates)  
+                            remove_correlates = remove_correlates, 
+                            fillNA = fillNA)  
   # Filter out SNPs not in the same LD block as the lead SNP
   if(LD_block){
     block_snps <- leadSNP_block(leadSNP, "./plink_tmp", block_size)
@@ -424,11 +394,11 @@ Dprime_table <- function(SNP_list, plink_folder){
 #   return(ld.matrix)
 # }
 
-run_plink_LD <-function(bim, plink_folder){
+run_plink_LD <-function(bim, plink_folder, r_format="r"){
   # METHOD 2 (faster, but less control over parameters. Most importantly, can't get Dprime)
   system( paste(plink_file(), "--bfile",file.path(plink_folder,"plink"),
                 "--extract",file.path(plink_folder,"SNPs.txt"),
-                "--r square bin --out", file.path(plink_folder,"plink")) )
+                paste0("--",r_format," square bin"), "--out", file.path(plink_folder,"plink")) )
   bin.vector <- readBin(file.path(plink_folder, "plink.ld.bin"), what = "numeric", n=length(bim$SNP)^2)
   ld.matrix <- matrix(bin.vector, nrow = length(bim$SNP), dimnames = list(bim$SNP, bim$SNP))
   return(ld.matrix)
@@ -439,7 +409,8 @@ plink_LD <-function(leadSNP,
                     plink_folder,
                     min_r2=F,
                     min_Dprime=F,
-                    remove_correlates=F){
+                    remove_correlates=F,
+                    fillNA=0){
   # Dprime ranges from -1 to 1
   start <- Sys.time()
 
@@ -484,7 +455,7 @@ plink_LD <-function(leadSNP,
     # ld.matrix <- ld.matrix[rownames(ld.matrix)!="rs34637584", colnames(ld.matrix)!="rs34637584"]
     }
     # !IMPORTANT!: Fill NAs (otherwise susieR will break)
-    ld.matrix[is.na(ld.matrix)] <- 0
+    ld.matrix[is.na(ld.matrix)] <- fillNA
     end <- Sys.time()
     printer("+ LD matrix calculated in",round(as.numeric(end-start),2),"seconds.")
     return(ld.matrix) 

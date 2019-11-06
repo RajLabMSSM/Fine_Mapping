@@ -276,6 +276,21 @@ query_handler <- function(gene,
 
 
 
+
+calculate.tstat <- function(finemap_DT, tstat_col="t_stat"){ 
+  if(tstat_col %in% colnames(finemap_DT)){
+    finemap_DT <- finemap_DT %>% dplyr::rename(t_stat = tstat_col)
+  } else if(("Effect" %in% colnames(finemap_DT)) & ("StdErr" %in% colnames(finemap_DT))){
+    printer("+ Calculating t-statistic from Effect and StdErr...")
+    finemap_DT <- finemap_DT %>% dplyr::mutate(t_stat =  Effect/StdErr)
+  } else {
+    printer("+ Could not calculate t-stat due to missing Effect and/or StdErr columns.")
+    print("++ Returning input data.") 
+  }
+  return(data.table::data.table(finemap_DT))
+}
+
+
 preprocess_subset <- function(gene, 
                               top_SNPs=NULL, 
                               subset_path="./Data", 
@@ -286,7 +301,7 @@ preprocess_subset <- function(gene,
                               pval_col="P", 
                               effect_col="Effect", 
                               stderr_col="StdErr",
-                              tstat_col="t-stat", 
+                              tstat_col="t_stat", 
                               MAF_col="MAF", 
                               freq_col="Freq",
                               N_cases_col="N_cases",
@@ -355,6 +370,9 @@ preprocess_subset <- function(gene,
       query_mod$A1 <- query$A1
       query_mod$A2 <- query$A2
     }
+    
+    query_mod$t_stat <- calculate.tstat(finemap_DT = query, tstat_col = tstat_col)$t_stat
+    
     
     if(is.null(top_SNPs)){top_SNPs <- cbind(Gene=gene,(query_mod %>% arrange(P))[1,])}
     topSNP_sub <- auto_topSNPs_sub(top_SNPs, query_mod, gene)
@@ -589,17 +607,7 @@ find_probes <- function(map_file, genes){
 #   printer("\nExtraction completed in", round(end_eQTL_sub-start_eQTL_sub, 2),"seconds \n")
 #   return(top_SNPs)
 # }
-# 
-# 
-# 
-# translate_population <- function(superpopulation){
-#   pop_dict <- list("AFA"="AFR", "CAU"="EUR", "HIS"="AMR",
-#                    "AFR"="AFR","EUR"="EUR", "AMR"="AMR")
-#   return(pop_dict[superpopulation][[1]])
-# }
-# 
-# 
-# 
+ 
 
 
 

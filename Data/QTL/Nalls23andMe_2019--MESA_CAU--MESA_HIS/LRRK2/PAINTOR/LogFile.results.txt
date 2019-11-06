@@ -1,0 +1,2 @@
+locus_name prior_variance ld_pcs
+LRRK2..MESA_CAU--MESA_HIS 183.015,4.67311 16,16

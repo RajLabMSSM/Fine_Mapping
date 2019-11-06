@@ -2,7 +2,10 @@
 # Multi-finemap # 
 #///////////////#
 
-find_consensus_SNPs <- function(finemap_DT, verbose=T, support_thresh="all", sort_by_support=T){
+find_consensus_SNPs <- function(finemap_DT, 
+                                verbose=T, 
+                                support_thresh="all", 
+                                sort_by_support=T){
   printer("+ Identifying Consensus SNPs...",v=verbose)
   # Find SNPs that are in the credible set for all fine-mapping tools
   CS_cols <- colnames(finemap_DT)[endsWith(colnames(finemap_DT),".Credible_Set")] 
@@ -24,7 +27,12 @@ find_consensus_SNPs <- function(finemap_DT, verbose=T, support_thresh="all", sor
   PP.cols <- grep(".Probability",colnames(finemap_DT), value = T)  
   PP.sub <- subset(finemap_DT, select=c("SNP",PP.cols)) %>% data.frame()# %>% unique() 
   PP.sub[is.na(PP.sub)] <- 0
-  finemap_DT$mean.PP <- rowMeans(PP.sub[,-1]) 
+  if(NCOL(PP.sub[,-1]) > 1){
+    finemap_DT$mean.PP <- rowMeans(PP.sub[,-1]) 
+  } else{ 
+    finemap_DT$mean.PP <- PP.sub[,-1]
+    }
+  
   # PP.sub %>% arrange(desc(mean.PP)) %>% head() 
    printer("++",length(CS_cols),"fine-mapping methods used.")
    printer("++",dim(subset(finemap_DT,Support>0))[1],"Credible Set SNPs identified.")
