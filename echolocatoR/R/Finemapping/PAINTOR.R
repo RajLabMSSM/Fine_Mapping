@@ -818,6 +818,7 @@ PAINTOR <- function(finemap_DT=NA,
 ### ### ### PLOT ### ### ### 
 
 gather.transethnic.LD <- function(merged_DT, 
+                                  gene,
                                   conditions=c("Nalls23andMe_2019", 
                                                "MESA_AFA","MESA_CAU","MESA_HIS")){
   for(cond in conditions){

@@ -61,7 +61,8 @@ SUSIE <- function(subset_DT,
                   dataset_type="GWAS",
                   n_causal=5,
                   sample_size=NA, 
-                  var_y="estimate"){
+                  var_y="estimate",
+                  prior_weights=NULL){
   # Sum of Single Effects (SuSiE): Iterative Bayesian Step-wise Selection
   # https://stephenslab.github.io/susieR/
   vars <- get_var_y(subset_DT, dataset_type)
@@ -81,6 +82,9 @@ SUSIE <- function(subset_DT,
                                     standardize = TRUE,
                                     estimate_residual_variance = TRUE, # TRUE
                                     var_y = vars$phenotype_variance, # Variance of the phenotype (e.g. gene expression, or disease status)
+                                    
+                                    # A p vector of prior probability that each element is non-zero
+                                    prior_weights = prior_weights,
                                     
                                     verbose = FALSE ) 
   # try({susieR::susie_plot_iteration(fitted_bhat, n_causal, 'test_track_fit')})

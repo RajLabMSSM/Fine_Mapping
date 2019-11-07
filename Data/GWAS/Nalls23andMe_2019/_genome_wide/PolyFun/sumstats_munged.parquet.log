@@ -1,0 +1,13 @@
+[INFO]  Reading sumstats file...
+[INFO]  Done in 10.11 seconds
+[INFO]  7798414 SNPs are in the sumstats file
+[INFO]  Removing 34202 HLA SNPs
+[INFO]  7764212 SNPs with sumstats remained after all filtering stages
+[INFO]  Saving munged sumstats to ./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet
+[INFO]  Reading sumstats file...
+[INFO]  Done in 10.03 seconds
+[INFO]  7798414 SNPs are in the sumstats file
+[INFO]  Removing 34202 HLA SNPs
+[INFO]  7764212 SNPs with sumstats remained after all filtering stages
+[INFO]  Saving munged sumstats to ./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet
+[INFO]  Done
