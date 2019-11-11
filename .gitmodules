@@ -12,4 +12,4 @@
 	url = https://github.com/wzhy2000/fGWAS.git
 [submodule "echolocatoR/tools/polyfun"]
 	path = echolocatoR/tools/polyfun
-	url = https://github.com/omerwe/polyfun.git
+	url = https://github.com/RajLabMSSM/polyfun.git

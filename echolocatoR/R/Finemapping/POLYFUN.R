@@ -16,13 +16,21 @@
 
 
 # NOTES for Omer:
-# 1. Should be able to continue running with missing SNPs. Should also report the number of missing SNPs without having to go into the file.
-# 2. Verbose options to let you know what's going on at each step (preference).
-# 3. If a user supplies both SNP and BP/CHR, use all of these to merge (to avoid duplicate col names).
-# 4. Additional python dependency for step 2 of Approach 2: bitarray
-# 5. Line 69 of munge_polyfun_sumstats.py: "SNP" col wasn't being renamed.
-# 6. polyfun.py script reduced the number of SNPs from 7764212 to 34851, printing "[WARNING]  number of SNPs is smaller than 200k; this is almost always bad."
-# 7. Received the following error while running polyfun.py: "ValueError: not all SNPs in the sumstats file are also in the annotations file"
+     
+# 6. polyfun.py script reduced the number of SNPs from 7764212 to 34851, printing "[WARNING]  number of SNPs is smaller than 200k; this is almost always bad."  Is all the filtering just because the example reference set is small?
+# 9. If a variant has been filtered out by PolyFun at some point, is it appropriate to assign that variant a prior prob value of 0? I'm looking for ways to retain as many SNPs as possible for the fine-mapping analysis so I can compare functional fine-mapping (e.g. PolyFun+SUSIE) vs. statistical fine-mapping (e.g. SUSIE).
+ 
+# GitHub Notes:
+## How to pull changes from original repo into the forked repo
+# https://digitaldrummerj.me/git-syncing-fork-with-original-repo/
+
+
+POLYFUN.help <- function(){
+  cmd <- paste("python3",file.path(polyfun,"polyfun.py"),
+               "--help")
+  system(cmd)
+}
+
 
 # %%%%%%%%%%%%%%%% PolyFun approach 1 %%%%%%%%%%%%%%%% 
 ## Using precomputed prior causal probabilities based on a meta-analysis of 15 UK Biobank traits
@@ -35,7 +43,7 @@ POLYFUN.prepare_snp_input <- function(PF.output.path,
   printer("PolyFun:: Preparing SNP input file...")  
   PF.dat <- dplyr::select(finemap_DT, SNP, CHR, BP=POS, A1, A2)
   printer("+ PolyFun::",nrow(PF.dat),"SNPs identified.")
-  snp.path <- file.path(PT.path,"snps_to_finemap.txt.gz")
+  snp.path <- file.path(PF.output.path,"snps_to_finemap.txt.gz")
   printer("+ PolyFun:: Writing SNP file ==>",snp.path)
   data.table::fwrite(PF.dat, file = snp.path, 
                      nThread = 4, sep = " ")
@@ -43,10 +51,10 @@ POLYFUN.prepare_snp_input <- function(PF.output.path,
 }
 
 
-POLYFUN.initialize <- function(finemap_DT, 
-                               results_path, 
+POLYFUN.initialize <- function(results_path, 
+                               finemap_DT=NULL, 
                                dataset="Nalls23andMe_2019", 
-                               locus=NULL){
+                               locus="_genome_wide"){
   # Create path
   PF.output.path <- file.path(results_path, "PolyFun")
   dir.create(PF.output.path, showWarnings = F, recursive = T)
@@ -67,10 +75,11 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
                                            results_path="./Data/GWAS/Nalls23andMe_2019/LRRK2",
                                            dataset="Nalls23andMe_2019",
                                            finemap_DT=NULL, 
-                                           locus=NULL){
+                                           locus="LRRK2"){
   PF.output.path <- file.path(results_path, "PolyFun")
   finemap_DT <- POLYFUN.initialize(finemap_DT=finemap_DT, 
-                                results_path=results_path, locus = "LRRK2")
+                                    results_path=results_path, 
+                                    locus=locus)
   # Prepare input
   snp.path <- POLYFUN.prepare_snp_input(PF.output.path=PF.output.path, 
                                         results_path=results_path,
@@ -83,27 +92,214 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
   print(cmd)
   system(cmd) 
   # Import results
-  priors <- data.table::fread(PF.output.file, nThread = 4)
-  merged_DT <- data.table::merge.data.table(finemap_DT, 
-                               dplyr::select(priors, SNP, PolyFun.priors=SNPVAR) %>% 
-                                 data.table::data.table(), by="SNP")
- 
-  
-  LD_matrix <- readRDS(file.path(results_path,"plink/LD_matrix.RData"))
-  LD_matrix <- LD_matrix[merged_DT$SNP, merged_DT$SNP]
-  subset_DT <- SUSIE(merged_DT, 
-                      LD_matrix, 
-                      dataset_type="GWAS",
-                      n_causal=5,
-                      sample_size=NA, 
-                      var_y="estimate",
-                      prior_weights=merged_DT$PolyFun.priors) 
-  subset_DT <- subset_DT %>% dplyr::rename(PolyFun_SUSIE.Probability=Probability, 
-                              PolyFun_SUSIE.Credible_Set=Credible_Set) %>% 
-    data.table::data.table()
+  priors <- data.table::fread(PF.output.file, nThread = 4) 
   return(priors)
 }
 
+
+ 
+
+# %%%%%%%%%%%%%%%% PolyFun approaches 2 & 3 %%%%%%%%%%%%%%%% 
+## 2. Computing prior causal probabilities via an L2-regularized extension of S-LDSC
+## 3. Computing prior causal probabilities non-parametrically
+ 
+
+
+POLYFUN.munge_summ_stats <- function(polyfun="./echolocatoR/tools/polyfun",  
+                                     dataset="Nalls23andMe_2019",
+                                     sample.size=1474097,
+                                     min_INFO=0,
+                                     min_MAF=0){
+  results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
+  PF.output.path <- file.path(results_path, "PolyFun")
+  munged.path <- file.path(PF.output.path,"sumstats_munged.parquet") 
+  # Requires space-delimited file with the following columns (munging can recognize several variations of these names):
+  ## SNP CHR BP ....and....
+  ## either a p-value, an effect size estimate and its standard error, a Z-score or a p-value 
+  if(!file.exists(munged.path)){ 
+    printer("+ PolyFun:: Initiating data munging pipeline...")
+    cmd <- paste("python3",file.path(polyfun,"munge_polyfun_sumstats.py"),
+                 "--sumstats",Directory_info(dataset_name = dataset, "fullSS.local"),
+                 "--n",sample.size, # Study sample size
+                 "--out",munged.path,
+                 "--min-info",min_INFO,
+                 "--min-maf", min_MAF)
+    print(cmd)
+    system(cmd)
+  } else {printer("+ PolyFun:: Existing munged summary stats files detected.")} 
+}
+
+
+
+POLYFUN.gather_ldscores <- function(output_prefix){
+  ldscore.files <-  list.files(dirname(output_prefix), pattern = ".l2.ldscore.parquet", full.names = T)
+  parquor <- POLYFUN.read_parquet(ldscore.files[1])
+}
+
+
+
+POLYFUN.read_parquet <- function(parquet_path){
+  # Converts parquet to data.table
+  SparkR::sparkR.session()
+  parquor <- SparkR::read.parquet(parquet_path)
+  parquor <- SparkR::as.data.frame(parquor) %>% 
+    data.table::data.table() 
+  return(parquor)
+}
+
+
+POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
+                                    PF.output.path,
+                                    munged.path, 
+                                    min_INFO = 0.6,
+                                    min_MAF = 0.05,
+                                    annotations.path=file.path(polyfun,"example_data/annotations."),
+                                    weights.path=file.path(polyfun,"example_data/weights."), 
+                                    prefix="PD_GWAS",
+                                    chrom="all",
+                                    compute_ldscores=F, 
+                                    allow_missing_SNPs=T){
+  # Quickstart:
+  # polyfun="./echolocatoR/tools/polyfun"; parametric=T;  weights.path=file.path(polyfun,"example_data/weights."); annotations.path=file.path(polyfun,"example_data/annotations."); munged.path= "./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet"; parametric=T; dataset="Nalls23andMe_2019"; prefix="PD_GWAS"; compute_ldscores=F; allow_missing_SNPs=T; chrom="all"
+  
+  # 0. Create paths
+  results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
+  PF.output.path <- file.path(results_path, "PolyFun")
+  dir.create(PF.output.path, showWarnings = F, recursive = T) 
+  out.path <- file.path(PF.output.path,"output")
+  output_prefix <- file.path(out.path, prefix)
+  dir.create(out.path, showWarnings = F, recursive = T)
+  
+  # 1. Munge summary stats
+  printer("PolyFun:: [1]  Create a munged summary statistics file in a PolyFun-friendly parquet format.")
+  POLYFUN.munge_summ_stats(polyfun=polyfun,
+                         dataset="Nalls23andMe_2019",
+                         sample.size=1474097, 
+                         min_INFO = 0.6,
+                         min_MAF = 0.05)  
+  
+  # 2. 
+  ## If compute_ldscores == F:
+  # This will create 2 output files for each chromosome: output/testrun.<CHR>.snpvar_ridge.gz and output/testrun.<CHR>.snpvar_ridge_constrained.gz. The first contains estimated per-SNP heritabilities for all SNPs (which can be used for downstream analysis with PolyFun; see below), and the second contains truncated per-SNP heritabilities, which can be used directly as prior causal probabilities in fine-mapping.  
+  printer("PolyFun:: [2] Run PolyFun with L2-regularized S-LDSC")
+  cmd2 <- paste("python3",file.path(polyfun,"polyfun.py"),
+                "--compute-h2-L2",
+               # Approach 2 = Parametric = no partitions = T
+               # Approach 3 = Non-parametric = partitions = F 
+                ifelse(compute_ldscores,"","--no-partitions"),
+                "--output-prefix",output_prefix,
+                "--sumstats",munged.path,
+                "--ref-ld-chr",annotations.path,
+                "--w-ld-chr",weights.path,
+                ifelse(allow_missing_SNPs,"--allow-missing",""))
+  print(cmd2)
+  system(cmd2)
+  
+  # Computationally intensive: can parallelize by chromosomes
+  if(compute_ldscores){
+    # 3.
+    printer("PolyFun:: [3] Compute LD-scores for each SNP bin")
+    cmd3 <- paste("python3",file.path(polyfun,"polyfun.py"),
+                  "--compute-ldscores",
+                  "--output-prefix",output_prefix,
+                  "--bfile-chr",file.path(dirname(annotations.path),"reference."),
+                  ifelse(chrom=="all","",paste("--chr",chrom)),
+                  ifelse(allow_missing_SNPs,"--allow-missing",""))
+    print(cmd3)
+    system(cmd3)
+    
+    # 4.
+    printer("PolyFun:: [4] Re-estimate per-SNP heritabilities via S-LDSC")
+    cmd4 <- paste("python3",file.path(polyfun,"polyfun.py"),
+                  "--compute-h2-bins",
+                  "--output-prefix",output_prefix,
+                  "--sumstats",munged.path,
+                  "--w-ld-chr",weights.path, 
+                  ifelse(allow_missing_SNPs,"--allow-missing",""))
+    print(cmd4)
+    system(cmd4)
+    
+    printer("PolyFun:: Results directory =",dirname(output_prefix))
+    printer("PolyFun:: Results files:")
+    printer("          *.snpvar_ridge.gz")
+    printer("          *.snpvar_ridge_constrained.gz") 
+    # The output of the partitioned LDSC has the suffix: .snpvar_constrained.gz (one per chrom)
+    LDSC.files <- list.files(out.path, pattern = "*.snpvar_constrained.gz", full.names = T)
+    # pd_ldsc <- data.table::fread(PS_LDSC.files[1], nThread = 4) 
+    # ldscore <- POLYFUN.read_parquet(file.path(out.path,"PD_GWAS.1.l2.ldscore.parquet")) 
+    # bin.1 <- POLYFUN.read_parquet(file.path(out.path,"PD_GWAS.2.bins.parquet"))
+    #rowSums(bin.1[,-c(1:5)]) # each SNP belongs to only 1 bin 
+  } else { LDSC.files <- list.files(out.path, pattern = "_ridge_constrained.gz", full.names = T) } 
+  return(LDSC.files)
+}
+
+
+POLYFUN.merge_ldsc_files <- function(ldsc.files){
+  priors <- lapply(ldsc.files, function(x){
+    printer(x)
+    pri <- data.table::fread(x, nThread = 4) 
+    return(pri)
+  }) %>% data.table::rbindlist()
+  return(priors)
+}
+
+
+# %%%%%%%%%%%%%%%% Run PolyFun+SUSIE %%%%%%%%%%%%%%%% 
+POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun", 
+                          dataset="Nalls23andMe_2019",
+                          finemap_DT=NULL, 
+                          polyfun_priors=c("precomputed","parametric","non-parametric"),
+                          locus="_genome_wide"){
+  
+  # polyfun="./echolocatoR/tools/polyfun";  results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide"; dataset="Nalls23andMe_2019"; locus="LRRK2"; finemap_DT=NULL; polyfun_priors="parametric"
+  results_path <- file.path(dirname(Directory_info("Nalls23andMe_2019")),locus)
+  finemap_DT <- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
+  chrom <- unique(finemap_DT$CHR)
+   
+  # Import priors
+  # ~~~~~~~~ Approach 1 ~~~~~~~~ 
+  if (polyfun_priors=="precomputed"){
+    priors <- POLYFUN.get_precomputed_priors(results_path=results_path,
+                                             dataset=dataset,
+                                             finemap_DT=finemap_DT,
+                                             locus=locus)
+    
+  # ~~~~~~~~ Approach 2 ~~~~~~~~ 
+  } else if (polyfun_priors=="parametric"){
+    ldsc.files <- list.files(out.path, pattern = "*.snpvar_ridge_constrained.gz", full.names = T) %>% 
+      grep(pattern = paste0(".",chrom,"."), value = T)
+    priors <- POLYFUN.merge_ldsc_files(ldsc.files) 
+    # ~~~~~~~~ Approach 3 ~~~~~~~~ 
+  } else if (polyfun_priors=="non-parametric"){
+    ldsc.files <- list.files(out.path, pattern = "*.snpvar_constrained.gz", full.names = T) %>% 
+      grep(pattern = paste0(".",chrom,"."), value = T)
+    priors <- POLYFUN.merge_ldsc_files(ldsc.files) 
+  } 
+  # Prepare data
+  merged_DT <- data.table::merge.data.table(finemap_DT, 
+                                            dplyr::select(priors, SNP, PolyFun.priors=SNPVAR) %>% 
+                                              data.table::data.table(), 
+                                            by="SNP")
+  LD_matrix <- readRDS(file.path(results_path,"plink/LD_matrix.RData"))
+  LD_matrix <- LD_matrix[merged_DT$SNP, merged_DT$SNP]
+  # Run SUSIE
+  subset_DT <- SUSIE(merged_DT, 
+                     LD_matrix, 
+                     dataset_type="GWAS",
+                     n_causal=5,
+                     sample_size=NA, 
+                     var_y="estimate",
+                     prior_weights=merged_DT$PolyFun.priors) 
+  subset_DT <- subset_DT %>% dplyr::rename(PolyFun_SUSIE.Probability=Probability, 
+                                           PolyFun_SUSIE.Credible_Set=Credible_Set) %>% 
+    data.table::data.table()
+  return(subset_DT)
+}
+
+
+
+
+# %%%%%%%%%%%%%%%% Run PolyFun+SUSIE %%%%%%%%%%%%%%%% 
 POLYFUN.plot <- function(subset_DT,
                          locus=NULL,
                          subtitle="PolyFun Comparison",
@@ -113,7 +309,7 @@ POLYFUN.plot <- function(subset_DT,
   r2 <- data.table::data.table(SNP=names(LD_matrix[lead.snp,]), r2=LD_matrix[lead.snp,]^2)
   dat <- data.table::merge.data.table(subset_DT, r2, by="SNP")
   dat <- dplyr::mutate(dat, Mb=round(POS/1000000,3)) 
-   
+  
   
   library(patchwork)
   # GWAS
@@ -121,16 +317,16 @@ POLYFUN.plot <- function(subset_DT,
     scale_color_gradient(low="blue",high="red", breaks=c(0,.5,1)) + 
     geom_point() + 
     labs(y="GWAS -log10(P)") + 
-  # PolyFun priors
-  ggplot(dat, aes(x=Mb, y=PolyFun.priors, color=PolyFun.priors)) + 
+    # PolyFun priors
+    ggplot(dat, aes(x=Mb, y=PolyFun.priors, color=PolyFun.priors)) + 
     scale_color_viridis_c(limits=c(0,1), breaks=c(0,.5,1)) +
     geom_point() + 
     # ylim(0,1) +
-  # PolyFun+SUSIE PP
-  ggplot(dat, aes(x=Mb, y=PolyFun_SUSIE.Probability, color=PolyFun_SUSIE.Probability)) + 
+    # PolyFun+SUSIE PP
+    ggplot(dat, aes(x=Mb, y=PolyFun_SUSIE.Probability, color=PolyFun_SUSIE.Probability)) + 
     geom_point() + 
-  # SUSIE PP
-  ggplot(dat, aes(x=Mb, y=SUSIE.Probability, color=SUSIE.Probability)) + 
+    # SUSIE PP
+    ggplot(dat, aes(x=Mb, y=SUSIE.Probability, color=SUSIE.Probability)) + 
     geom_point() + 
     # Overall layers
     patchwork::plot_layout(ncol = 1) + 
@@ -139,78 +335,10 @@ POLYFUN.plot <- function(subset_DT,
                                theme =  theme(plot.title = element_text(hjust = 0.5),
                                               plot.subtitle = element_text(hjust = 0.5)))  
   print(gg)  
-  ggsave(file.path(results_path,'Multi-finemap',"PolyFun.plot.png"), plot = gg,dpi = 400, height = 8, width = 7)
+  ggsave(file.path(results_path,'PolyFun',"PolyFun.plot.png"), plot = gg,dpi = 400, height = 8, width = 7)
 }
 
 
 
 
-
-
-# %%%%%%%%%%%%%%%% PolyFun approach 2 %%%%%%%%%%%%%%%% 
-## Computing prior causal probabilities via an L2-regularized extension of S-LDSC
-
-# POLYFUN.prepare_boltlmm <- function(finemap_DT,
-#                                     PF.output.path){
-#   printer("POLYFUN:: Creating input summary stats file...")
-#   ss.file <- file.path(PF.output.path, "boltlmm_sumstats.gz")
-#   input.dat <-  dplyr::select(finemap_DT, SNP, 
-#                               CHR, BP=POS, 
-#                               ALLELE1=A1, ALLELE0=A2, 
-#                               P_LINREG=P, BETA=Effect, SE=StdErr)
-#   data.table::fwrite(input.dat, ss.file, nThread = 4, sep=" ")
-#   return(ss.file)
-# }
-
-
-POLYFUN.L2_regularized_LDSC <- function(polyfun="./echolocatoR/tools/polyfun",
-                                        PF.output.path,
-                                        munged.path, 
-                                        annotations.path=file.path(polyfun,"example_data/annotations."),
-                                        weights.path=file.path(polyfun,"example_data/weights."),
-                                        parametric=T){
-  # Approach 2 = Parametric = no partitions
-  # Approach 3 = Non-parametric = partitions
-  partitions <- ifelse(parametric, "--no-partitions", "")
-  out.path <- file.path(PF.output.path,"output")
-  dir.create(out.path, showWarnings = F, recursive = T)
-  cmd <- paste("python3",file.path(polyfun,"polyfun.py"),
-                "--compute-h2-L2",
-                partitions,
-                "--output-prefix",file.path(out.path,"testrun"),
-                "--sumstats",munged.path,
-                "--ref-ld-chr",annotations.path,
-                "--w-ld-chr",weights.path)
-  print(cmd)
-  system(cmd)
-}
-
-
-POLYFUN.calculate_new_priors <- function(polyfun="./echolocatoR/tools/polyfun", 
-                                         finemap_DT=NULL, 
-                                         sample.size=NULL,
-                                         dataset="Nalls23andMe_2019",
-                                         sample.size=1474097){
-  results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
-  PF.output.path <- file.path(results_path, "PolyFun")
- 
-  finemap_DT <- POLYFUN.initialize(finemap_DT=finemap_DT,
-                                   results_path = results_path,
-                                   dataset = dataset)
-  
-  # Requires space-delimited file with the following columns (munging can recognize several variations of these names):
-  ## SNP CHR BP ....and....
-  ## either a p-value, an effect size estimate and its standard error, a Z-score or a p-value 
-  
-  # Munge summary stats
-  munged.path <- file.path(PF.output.path,"sumstats_munged.parquet")
-  cmd <- paste("python3",file.path(polyfun,"munge_polyfun_sumstats.py"),
-                "--sumstats",Directory_info(dataset_name = dataset, "fullSS.local"),
-                "--n",sample.size, # Study sample size
-                "--out",munged.path,
-                "--min-info",0,
-                "--min-maf", 0)
-  print(cmd)
-  system(cmd)
-}
 
