@@ -31,10 +31,25 @@ POLYFUN.help <- function(){
   system(cmd)
 }
 
+POLYFUN.install_dependencies <- function(libraries = c("numpy",
+                                                       "scipy",
+                                                       "scikit-learn",
+                                                       "pandas",
+                                                       "tqdm",
+                                                       "pyarrow",
+                                                       "bitarray",
+                                                       "networkx",
+                                                       "rpy2")){  
+  # Python
+  system(paste("ml python/3.7.3 &&","pip install --user", paste(libraries,collapse=" "))) 
+  # R
+  list.of.packages <- c("ggplot2", "Ckmeans.1d.dp","crayon")
+  new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+  if(length(new.packages)) install.packages(new.packages)
+}
 
 # %%%%%%%%%%%%%%%% PolyFun approach 1 %%%%%%%%%%%%%%%% 
 ## Using precomputed prior causal probabilities based on a meta-analysis of 15 UK Biobank traits
-
 POLYFUN.prepare_snp_input <- function(PF.output.path,
                                        results_path="./Data/GWAS/Nalls23andMe_2019/LRRK2",
                                        finemap_DT=NULL){
@@ -55,6 +70,7 @@ POLYFUN.initialize <- function(results_path,
                                finemap_DT=NULL, 
                                dataset="Nalls23andMe_2019", 
                                locus="_genome_wide"){
+  library("Ckmeans.1d.dp")
   # Create path
   PF.output.path <- file.path(results_path, "PolyFun")
   dir.create(PF.output.path, showWarnings = F, recursive = T)
@@ -105,25 +121,30 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
  
 
 
-POLYFUN.munge_summ_stats <- function(polyfun="./echolocatoR/tools/polyfun",  
+POLYFUN.munge_summ_stats <- function(polyfun="./echolocatoR/tools/polyfun",
+                                     python="python3",
                                      dataset="Nalls23andMe_2019",
                                      sample.size=1474097,
                                      min_INFO=0,
-                                     min_MAF=0){
+                                     min_MAF=0,
+                                     server=F){
   results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
   PF.output.path <- file.path(results_path, "PolyFun")
   munged.path <- file.path(PF.output.path,"sumstats_munged.parquet") 
+  # data.table::fread("/sc/orga/projects/pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt", nrows = 2)
+  fullSS.loc <- ifelse(server,"fullSS","fullSS.local")
   # Requires space-delimited file with the following columns (munging can recognize several variations of these names):
   ## SNP CHR BP ....and....
   ## either a p-value, an effect size estimate and its standard error, a Z-score or a p-value 
   if(!file.exists(munged.path)){ 
     printer("+ PolyFun:: Initiating data munging pipeline...")
-    cmd <- paste("python3",file.path(polyfun,"munge_polyfun_sumstats.py"),
-                 "--sumstats",Directory_info(dataset_name = dataset, "fullSS.local"),
+    cmd <- paste(python, file.path(polyfun,"munge_polyfun_sumstats.py"),
+                 "--sumstats",Directory_info(dataset_name = dataset, ifelse(server,"fullSS",fullSS.loc)),
                  "--n",sample.size, # Study sample size
                  "--out",munged.path,
-                 "--min-info",min_INFO,
-                 "--min-maf", min_MAF)
+                 "--min-info",0,#min_INFO,
+                 "--min-maf", 0.001# min_MAF
+                 )
     print(cmd)
     system(cmd)
   } else {printer("+ PolyFun:: Existing munged summary stats files detected.")} 
@@ -162,6 +183,10 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
   # Quickstart:
   # polyfun="./echolocatoR/tools/polyfun"; parametric=T;  weights.path=file.path(polyfun,"example_data/weights."); annotations.path=file.path(polyfun,"example_data/annotations."); munged.path= "./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet"; parametric=T; dataset="Nalls23andMe_2019"; prefix="PD_GWAS"; compute_ldscores=F; allow_missing_SNPs=T; chrom="all"
   
+  # Load python if on Chimera cluster
+  if(startsWith(getwd(), "/sc/")){
+    python <- "ml python/3.7.3 && python3"
+  }
   # 0. Create paths
   results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
   PF.output.path <- file.path(results_path, "PolyFun")
@@ -173,10 +198,13 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
   # 1. Munge summary stats
   printer("PolyFun:: [1]  Create a munged summary statistics file in a PolyFun-friendly parquet format.")
   POLYFUN.munge_summ_stats(polyfun=polyfun,
-                         dataset="Nalls23andMe_2019",
-                         sample.size=1474097, 
-                         min_INFO = 0.6,
-                         min_MAF = 0.05)  
+                           python = python,
+                           dataset="Nalls23andMe_2019",
+                           sample.size=1474097, 
+                           min_INFO = 0,
+                           min_MAF = 0.001, 
+                           server = T)  
+  system("python --version")
   
   # 2. 
   ## If compute_ldscores == F:
@@ -251,7 +279,7 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
                           polyfun_priors=c("precomputed","parametric","non-parametric"),
                           locus="_genome_wide"){
   
-  # polyfun="./echolocatoR/tools/polyfun";  results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide"; dataset="Nalls23andMe_2019"; locus="LRRK2"; finemap_DT=NULL; polyfun_priors="parametric"
+  # polyfun="./echolocatoR/tools/polyfun";  results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide"; dataset="Nalls23andMe_2019"; locus="LRRK2"; finemap_DT=NULL; polyfun_priors="parametric"; sample.size=1474097; min_INFO=0; min_MAF=0; server=F;
   results_path <- file.path(dirname(Directory_info("Nalls23andMe_2019")),locus)
   finemap_DT <- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
   chrom <- unique(finemap_DT$CHR)
