@@ -381,8 +381,90 @@ POLYFUN.plot <- function(subset_DT,
   print(gg)  
   ggsave(file.path(results_path,'PolyFun',"PolyFun.plot.png"), plot = gg,dpi = 400, height = 8, width = 7)
 }
+# 
+# rtracks <- function( ){
+#   # https://www.bioconductor.org/packages/release/bioc/vignettes/rtracklayer/inst/doc/rtracklayer.pdf
+#   library(rtracklayer)
+#   library(GenomicRanges)
+#   
+#   mySession <- browserSession ()
+#   genome(mySession) <- "hg19" 
+#   track.names <- trackNames(ucscTableQuery(mySession)) 
+#   df <- data.frame(track.names)
+#   
+#   
+#   track.name <- "wgEncodeUwDgf"  
+#   e2f3.grange <- GRanges("chr6", IRanges(20400587, 20403336)) 
+#   mySession <- browserSession() 
+#   tbl.k562.dgf.e2f3 <- getTable(ucscTableQuery(mySession, track=track.name,
+#                                                range=e2f3.grange, table=table.name))
+#   
+#   tbl.k562.dgf.hg19 <- getTable(ucscTableQuery (mySession, track=track.name,
+#                                                 table=table.name))
+#   
+# }
 
-
-
-
-
+GVIZ.ucsc_tracks <- function(){
+  # https://bioconductor.org/packages/release/bioc/html/Gviz.html
+  # Tutorial
+  # https://bioconductor.org/packages/release/bioc/vignettes/Gviz/inst/doc/Gviz.html
+  # Gviz::UcscTrack()
+  subset_DT <- finemap_DT
+  
+  library(Gviz)
+  library(GenomicRanges)
+  availableDisplayPars(grtrack) 
+  avail
+  
+  # Data  
+  dtrack <- DataTrack(data=subset_DT, 
+                      # start=coords[-length(coords)], end=coords[-1], chromosome=chr,
+                      genome=gen, name="Uniform", type="histogram", fill="blue")
+  from <- min(subset_DT$POS)
+  to <- max(subset_DT$POS)
+  chr <- paste0("chr",subset_DT$CHR[1])
+  ucsc_coords <- paste0(chr,":",from,"-",to)
+  gen <- "hg19" # "mm9"#
+  
+  snpStats::ld()
+  # Nuclei download (not recognized by Gviz currently...)
+  
+  # UCSC Tracks  
+  conservation <- UcscTrack(genome=gen,
+                            chromosome=chr, 
+                            from = from, to = to,
+                            start=from, end=to, 
+                            trackType="DataTrack",
+                            track="nuclei_h3k27ac_hg19_pooled", 
+                            name="exvivo_H3K27ac_pooled",
+                            table="hub_400557_human_microglia_H3K27ac_exvivo_pooled_hg19"
+                          
+                            # data="score",
+                            # # type="hist", window="auto", 
+                            # col.histogram="darkblue", 
+                            # fill.histogram="darkblue"
+                            )  
+  
+  # Data
+  atrack <- AnnotationTrack(cpgIslands, name="CpG") 
+  # Axis
+  gtrack <- GenomeAxisTrack()
+  # Gene Models
+  data(geneModels) 
+  grtrack <- GeneRegionTrack(geneModels, genome=gen, chromosome=chr, 
+                             name="Gene Model", transcriptAnnotation="symbol", 
+                             background.title="grey20") 
+  # Ideogram
+  itrack <- IdeogramTrack(genome=gen, chromosome=chr)
+  # Genomic Sequence
+  library(BSgenome.Hsapiens.UCSC.hg19)
+  strack <- SequenceTrack(Hsapiens, chromosome=chr,name="DNA Sequence")  
+  
+  
+  # Plot
+  plotTracks(list(itrack, dtrack, gtrack, atrack, grtrack, strack),  
+             background.title="grey20", 
+             background.panel="transparent", 
+             rotation.title=0)
+}
+  
