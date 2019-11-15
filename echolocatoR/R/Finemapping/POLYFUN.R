@@ -42,10 +42,27 @@ POLYFUN.install_dependencies <- function(libraries = c("numpy",
                                                        "rpy2")){  
   # Python
   system(paste("ml python/3.7.3 &&","pip install --user", paste(libraries,collapse=" "))) 
+  system("pip install --user pandas && pip freeze | grep pandas")
   # R
   list.of.packages <- c("ggplot2", "Ckmeans.1d.dp","crayon")
   new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-  if(length(new.packages)) install.packages(new.packages)
+  if(length(new.packages)) install.packages(new.packages) 
+}
+
+ 
+POLYFUN.load_conda <- function(server=F){
+  # Install anaconda
+  # https://medium.com/ayuth/install-anaconda-on-macos-with-homebrew-c94437d63a37
+  if(server){
+    system("ml anaconda3")
+  } else {
+    system("brew cask install anaconda")
+    system("conda init bash")
+    try({system("conda init fish")}) 
+    }
+  
+  system("'export PATH='/usr/local/anaconda3/bin:$PATH' >> ~/.zshrc")
+  system("source ~/.zshrc") 
 }
 
 # %%%%%%%%%%%%%%%% PolyFun approach 1 %%%%%%%%%%%%%%%% 
@@ -69,8 +86,7 @@ POLYFUN.prepare_snp_input <- function(PF.output.path,
 POLYFUN.initialize <- function(results_path, 
                                finemap_DT=NULL, 
                                dataset="Nalls23andMe_2019", 
-                               locus="_genome_wide"){
-  library("Ckmeans.1d.dp")
+                               locus="_genome_wide"){ 
   # Create path
   PF.output.path <- file.path(results_path, "PolyFun")
   dir.create(PF.output.path, showWarnings = F, recursive = T)
@@ -185,7 +201,7 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
   
   # Load python if on Chimera cluster
   if(startsWith(getwd(), "/sc/")){
-    python <- "ml python/3.7.3 && python3"
+    python <- "ml anaconda3 && conda && ml python/3.7.3 && python3"
   }
   # 0. Create paths
   results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
