@@ -55,7 +55,7 @@ Parkinson's Disease GWAS.
 # fig.show='hold'
 dataset_name <- "Nalls23andMe_2019"
 top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
-  topSS_path = Directory_info(dataset_name, "topSumStats"),
+  topSS_path = Directory_info(dataset_name, "topSS"),
   chrom_col = "CHR", position_col = "BP", snp_col="SNP",
   pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
   caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats",

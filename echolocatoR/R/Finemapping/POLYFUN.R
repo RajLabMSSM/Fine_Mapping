@@ -65,6 +65,12 @@ POLYFUN.load_conda <- function(server=F){
   system("source ~/.zshrc") 
 }
 
+
+POLYFUN.conda_from_yaml <- function(yaml_path){
+  cmd <- paste("conda env create -f",yaml_path)
+  system(cmd)
+}
+
 # %%%%%%%%%%%%%%%% PolyFun approach 1 %%%%%%%%%%%%%%%% 
 ## Using precomputed prior causal probabilities based on a meta-analysis of 15 UK Biobank traits
 POLYFUN.prepare_snp_input <- function(PF.output.path,
@@ -197,7 +203,7 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
                                     compute_ldscores=F, 
                                     allow_missing_SNPs=T){
   # Quickstart:
-  # polyfun="./echolocatoR/tools/polyfun"; parametric=T;  weights.path=file.path(polyfun,"example_data/weights."); annotations.path=file.path(polyfun,"example_data/annotations."); munged.path= "./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet"; parametric=T; dataset="Nalls23andMe_2019"; prefix="PD_GWAS"; compute_ldscores=F; allow_missing_SNPs=T; chrom="all"
+  # polyfun="./echolocatoR/tools/polyfun"; parametric=T;  weights.path=file.path(polyfun,"example_data/weights."); annotations.path=file.path(polyfun,"example_data/annotations."); munged.path= "./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet"; parametric=T; dataset="Nalls23andMe_2019"; prefix="PD_GWAS"; compute_ldscores=F; allow_missing_SNPs=T; chrom="all"; finemap_DT=NULL; locus="LRRK2"; server=T;
   
   # Load python if on Chimera cluster
   if(startsWith(getwd(), "/sc/")){
@@ -295,7 +301,7 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
                           polyfun_priors=c("precomputed","parametric","non-parametric"),
                           locus="_genome_wide"){
   
-  # polyfun="./echolocatoR/tools/polyfun";  results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide"; dataset="Nalls23andMe_2019"; locus="LRRK2"; finemap_DT=NULL; polyfun_priors="parametric"; sample.size=1474097; min_INFO=0; min_MAF=0; server=F;
+  # polyfun="./echolocatoR/tools/polyfun";  results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide"; dataset="Nalls23andMe_2019"; locus="LRRK2"; finemap_DT=NULL; polyfun_priors="parametric"; sample.size=1474097; min_INFO=0; min_MAF=0; server=T;
   results_path <- file.path(dirname(Directory_info("Nalls23andMe_2019")),locus)
   finemap_DT <- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
   chrom <- unique(finemap_DT$CHR)
@@ -408,64 +414,73 @@ GVIZ.ucsc_tracks <- function(){
   # https://bioconductor.org/packages/release/bioc/html/Gviz.html
   # Tutorial
   # https://bioconductor.org/packages/release/bioc/vignettes/Gviz/inst/doc/Gviz.html
-  # Gviz::UcscTrack()
-  subset_DT <- finemap_DT
-  
+  # Gviz::UcscTrack() 
   library(Gviz)
   library(GenomicRanges)
-  availableDisplayPars(grtrack) 
-  avail
   
-  # Data  
-  dtrack <- DataTrack(data=subset_DT, 
-                      # start=coords[-length(coords)], end=coords[-1], chromosome=chr,
-                      genome=gen, name="Uniform", type="histogram", fill="blue")
+  subset_DT <- finemap_DT
   from <- min(subset_DT$POS)
   to <- max(subset_DT$POS)
   chr <- paste0("chr",subset_DT$CHR[1])
   ucsc_coords <- paste0(chr,":",from,"-",to)
   gen <- "hg19" # "mm9"#
   
-  snpStats::ld()
-  # Nuclei download (not recognized by Gviz currently...)
+  # data test 
   
-  # UCSC Tracks  
-  conservation <- UcscTrack(genome=gen,
-                            chromosome=chr, 
-                            from = from, to = to,
-                            start=from, end=to, 
-                            trackType="DataTrack",
-                            track="nuclei_h3k27ac_hg19_pooled", 
-                            name="exvivo_H3K27ac_pooled",
-                            table="hub_400557_human_microglia_H3K27ac_exvivo_pooled_hg19"
-                          
-                            # data="score",
-                            # # type="hist", window="auto", 
-                            # col.histogram="darkblue", 
-                            # fill.histogram="darkblue"
-                            )  
+  # Data track
+  d.track <- DataTrack(data=-log10(subset_DT$P),
+                       start=subset_DT$POS, end=subset_DT$POS-1, chr=chr,  
+                       genome=gen, name="GWAS", col="purple",
+                       type=c("p"))
+  plotTracks(d.track, from=from, to=to, chr=chr) 
+  # availableDisplayPars(dtrack)
+  
+  # UCSC Tracks   
+  # UCSCtrack doesn't recognize BigWig files. Have to import as a data file.
+  library(Gviz) 
+  
+  bigWigFiles <- readxl::read_excel("./echolocatoR/tools/Annotations/Glass.snEpigenomics.xlsx") 
+  bigWigFiles <- subset(bigWigFiles, marker!="-" &  cell_type!="peripheral microglia")
+  bigWigFile <- bigWigFiles$data_link[1]
+  nuc.track <- DataTrack(bigWigFile,
+                            from=from,
+                            to=to,
+                            genome=gen,
+                            type="histogram",
+                            chromosome=chr,
+                            name=basename(bigWigFile),
+                            importFunction=Gviz:::.import.bw) 
+  # command above takes some time to fetch the data...
+  # plotTracks(nuc_track, from=from, to=to, genome=gen, chromosome=chr)
   
   # Data
-  atrack <- AnnotationTrack(cpgIslands, name="CpG") 
+  # atrack <- AnnotationTrack(cpgIslands, name="CpG") 
   # Axis
-  gtrack <- GenomeAxisTrack()
+  g.track <- GenomeAxisTrack()
   # Gene Models
   data(geneModels) 
-  grtrack <- GeneRegionTrack(geneModels, genome=gen, chromosome=chr, 
-                             name="Gene Model", transcriptAnnotation="symbol", 
-                             background.title="grey20") 
+  gr.track <- GeneRegionTrack(geneModels, from=from, to=to,
+                              genome=gen, chromosome=chr, 
+                              name="Gene Model", transcriptAnnotation="symbol", 
+                              background.title="grey20") 
   # Ideogram
-  itrack <- IdeogramTrack(genome=gen, chromosome=chr)
+  i.track <- IdeogramTrack(genome=gen, chromosome=chr)
   # Genomic Sequence
   library(BSgenome.Hsapiens.UCSC.hg19)
-  strack <- SequenceTrack(Hsapiens, chromosome=chr,name="DNA Sequence")  
+  s.track <- SequenceTrack(Hsapiens, chromosome=chr,name="DNA Sequence")  
   
   
   # Plot
-  plotTracks(list(itrack, dtrack, gtrack, atrack, grtrack, strack),  
+  plotTracks(list(i.track, 
+                  g.track,  
+                  d.track, 
+                  nuc.track, 
+                  gr.track, 
+                  s.track),  
              background.title="grey20", 
-             background.panel="transparent", 
-             rotation.title=0)
+             background.panel="transparent"
+             # rotation.title=0
+             )
 }
 
 
