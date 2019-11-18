@@ -16,6 +16,7 @@ core.*
 
 /Data/**/**/plink
 /Data/Reference/**/**/*.vcf
+/Data/Reference/**/**/*.vcf.gz
 Manuscripts/
 /Data/**/**/**/FINEMAP/data.ld
 /Data/**/**/**/plink/LD_matrix.RData
