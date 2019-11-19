@@ -66,9 +66,18 @@ POLYFUN.load_conda <- function(server=F){
 }
 
 
-POLYFUN.conda_from_yaml <- function(yaml_path){
+POLYFUN.conda_from_yaml <- function(yaml_path="./echolocatoR/tools/python_env.yml"){
   cmd <- paste("conda env create -f",yaml_path)
+  print(cmd)
   system(cmd)
+}
+
+POLYFUN.conda_from_list <- function(){
+  cmd <- paste("conda create -n polyfun_venv python=3.7.3",
+               "numpy scipy scikit-learn pandas>=0.25.0 tqdm pyarrow",
+               "bitarray networkx rpy2")
+  print(cmd)
+  
 }
 
 # %%%%%%%%%%%%%%%% PolyFun approach 1 %%%%%%%%%%%%%%%% 
@@ -410,6 +419,115 @@ POLYFUN.plot <- function(subset_DT,
 #   
 # }
 
+
+GGBIO.ucsc_tracks <- function(finemap_DT){ 
+  # finemap_DT <- quick_finemap()
+  # UCSC Tracks   
+  import.bw.filt <- function(bw.file, gr.dat){  
+    bw.dat <- rtracklayer::BigWigSelection(ranges = gr.dat, 
+                                           colnames = "score")  
+    # import.bw:: https://rdrr.io/bioc/Gviz/src/R/Gviz.R#sym-.import.bw
+    bw.filt <- rtracklayer::import.bw(con = bw.file, selection= gr.dat)
+    # bw.filt <- Gviz:::.import.bw(bw.file, selection = gr.dat)
+    # gr <- bw.filt@range
+    # gr.filt <- gr[seqnames(gr) == chr & start(gr) > from & end(gr) < to] 
+    plot(x = start(bw.filt), y=bw.filt$score)
+    return(bw.filt)
+  }
+  # Import BigWig annotation files
+  bigWigFiles <- readxl::read_excel("./echolocatoR/annotations/Glass_lab/Glass.snEpigenomics.xlsx") 
+  bigWigFiles <- subset(bigWigFiles, marker!="-" &  cell_type!="peripheral microglia")
+  
+  # Convert finemap data to granges
+  dat <- finemap_DT
+  dat$seqnames <- paste0("chr",dat$CHR) 
+  dat$start.end <- dat$POS
+  gr.dat <- GenomicRanges::makeGRangesFromDataFrame(df = dat,
+                                                    seqnames.field = "seqnames",
+                                                    start.field = "start.end", 
+                                                    end.field = "start.end", 
+                                                    keep.extra.columns = T)   
+  bw.grlist <- lapply(1:nrow(bigWigFiles), function(i){ 
+    bw.file <- bigWigFiles$data_link[i]
+    bw.name <- gsub("_pooled|pooled_","",bigWigFiles$name[i])
+    printer("GVIZ:: Importing...",bw.name)
+    bw.filt <- import.bw.filt(bw.file=bw.file, 
+                              gr.dat = gr.dat)
+    colnames(mcols(bw.filt))[1] <- bw.name
+    # bw.filt$expt_name <- bw.name  
+    # bw.filt$cell_type <-strsplit(bw.name, "_")[[1]][[1]]
+    # bw.filt$assay <- strsplit(bw.name, "_")[[1]][[2]]
+    return(bw.filt)
+  })
+  gr.snp <- Reduce(function(x, y) GenomicRanges::merge(x, y, all.x=T), 
+                   append(bw.grlist, gr.dat))  
+  
+  # Fine-mapping tracks
+  INIT_list <- list(   
+    "GWAS"=ggbio::plotGrandLinear(obj = gr.snp, aes(y=-log10(P), fill=-log10(P))),
+    "Fine_mapping"=ggbio::plotGrandLinear(obj = gr.snp, aes(y=mean.PP, color=mean.PP)) + 
+      scale_color_viridis_c()
+  )    
+  # BigWig tracks from Glass
+  bw.cols <- colnames(mcols(gr.snp))[1:12]  
+  BW_tracks<- lapply(bw.cols, function(annot){
+    gg.bw <- ggbio::plotGrandLinear(gr.snp, aes(y=eval(parse(text=annot)), 
+                                                color=eval(parse(text=annot))) 
+    ) + labs(y="Score", color="Score") + ylim(0,45)
+    # if(bw.cols!=bw.cols[1]){
+    #   gg.bw <- gg.bw + labs()
+    # }
+    return(gg.bw)                                                             
+  }) 
+  TRACKS_list <- append(INIT_list, BW_tracks)  
+  names(TRACKS_list) <- c(names(INIT_list), gsub("_","\n",bw.cols))
+  
+  
+  # gr.snp[start(gr.snp)!=Inf]
+  # Fuse all tracks 
+  gene <- "LRRK2"
+  library(ggbio)
+  params_list <- list(title = paste0(gene," [",length(seqnames(gr.snp))," SNPs]"), 
+                      track.bg.color = "transparent",
+                      track.plot.color = "transparent",
+                      label.text.cex = .7, 
+                      label.bg.fill = "grey12",
+                      label.text.color = "white",
+                      label.text.angle = 0,
+                      label.width = unit(5.5, "lines"),
+                      xlim = c(min(start(gr.snp)), max(start(gr.snp))),
+                      heights = c(rep(1,length(INIT_list)), rep(1,length(BW_tracks)) ))
+  TRACKS_list <- append(TRACKS_list, params_list)
+  trks <- suppressWarnings(do.call("tracks", TRACKS_list)) 
+  
+  # add lines
+  lead.pos <- subset(finemap_DT,SNP=="rs76904798")$POS
+  consensus.pos <- subset(finemap_DT, Consensus_SNP==T)$POS
+  trks_plus_lines <- trks + 
+    # theme_bw() + 
+    # ggbio::theme_genome() +  
+    # theme(strip.text.y = element_text(angle = 0), 
+    #       strip.text = element_text(size=9 )) + 
+    geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') +
+    geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=1, size=.3, linetype='solid') 
+   
+  ggsave(file.path(results_path,"Annotation","Glass.snEpigenomics.png"), 
+         plot = trks_plus_lines, dpi=400, height = 15, width = 8, 
+         bg = "transparent")
+  trks_plus_lines
+  
+  INIT_list[[1]] +
+    geom_vline(xintercept = , color="red", alpha=1, size=.3, linetype='solid')   
+   
+  # Save merged Glass epigenomic data
+  data.table::fwrite(GenomicRanges::as.data.frame(gr.snp[,bw.cols]),
+                     file.path("./echolocatoR/annotations/Glass_lab/LRRK2.Glass.txt"),
+                     sep="\t", nThread = 4)
+}
+
+
+
+
 GVIZ.ucsc_tracks <- function(){
   # https://bioconductor.org/packages/release/bioc/html/Gviz.html
   # Tutorial
@@ -424,32 +542,15 @@ GVIZ.ucsc_tracks <- function(){
   chr <- paste0("chr",subset_DT$CHR[1])
   ucsc_coords <- paste0(chr,":",from,"-",to)
   gen <- "hg19" # "mm9"#
-  
-  # data test 
-  
-  # Data track
+   
+  # Finemapping Data track
   d.track <- DataTrack(data=-log10(subset_DT$P),
                        start=subset_DT$POS, end=subset_DT$POS-1, chr=chr,  
                        genome=gen, name="GWAS", col="purple",
                        type=c("p"))
-  plotTracks(d.track, from=from, to=to, chr=chr) 
+  # plotTracks(d.track, from=from, to=to, chr=chr) 
   # availableDisplayPars(dtrack)
   
-  # UCSC Tracks   
-  # UCSCtrack doesn't recognize BigWig files. Have to import as a data file.
-  library(Gviz) 
-  
-  bigWigFiles <- readxl::read_excel("./echolocatoR/tools/Annotations/Glass.snEpigenomics.xlsx") 
-  bigWigFiles <- subset(bigWigFiles, marker!="-" &  cell_type!="peripheral microglia")
-  bigWigFile <- bigWigFiles$data_link[1]
-  nuc.track <- DataTrack(bigWigFile,
-                            from=from,
-                            to=to,
-                            genome=gen,
-                            type="histogram",
-                            chromosome=chr,
-                            name=basename(bigWigFile),
-                            importFunction=Gviz:::.import.bw) 
   # command above takes some time to fetch the data...
   # plotTracks(nuc_track, from=from, to=to, genome=gen, chromosome=chr)
   
