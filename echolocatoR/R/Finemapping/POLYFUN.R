@@ -396,31 +396,12 @@ POLYFUN.plot <- function(subset_DT,
   print(gg)  
   ggsave(file.path(results_path,'PolyFun',"PolyFun.plot.png"), plot = gg,dpi = 400, height = 8, width = 7)
 }
-# 
-# rtracks <- function( ){
-#   # https://www.bioconductor.org/packages/release/bioc/vignettes/rtracklayer/inst/doc/rtracklayer.pdf
-#   library(rtracklayer)
-#   library(GenomicRanges)
-#   
-#   mySession <- browserSession ()
-#   genome(mySession) <- "hg19" 
-#   track.names <- trackNames(ucscTableQuery(mySession)) 
-#   df <- data.frame(track.names)
-#   
-#   
-#   track.name <- "wgEncodeUwDgf"  
-#   e2f3.grange <- GRanges("chr6", IRanges(20400587, 20403336)) 
-#   mySession <- browserSession() 
-#   tbl.k562.dgf.e2f3 <- getTable(ucscTableQuery(mySession, track=track.name,
-#                                                range=e2f3.grange, table=table.name))
-#   
-#   tbl.k562.dgf.hg19 <- getTable(ucscTableQuery (mySession, track=track.name,
-#                                                 table=table.name))
-#   
-# }
-
-
+ 
 GGBIO.ucsc_tracks <- function(finemap_DT){ 
+  # GLASS DATA: UCSC GB
+  # https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr2:127770344-127983251&hgsid=778249165_ySowqECRKNxURRn6bafH0yewAiuf
+  
+  
   # finemap_DT <- quick_finemap()
   # UCSC Tracks   
   import.bw.filt <- function(bw.file, gr.dat){  
@@ -462,6 +443,8 @@ GGBIO.ucsc_tracks <- function(finemap_DT){
   gr.snp <- Reduce(function(x, y) GenomicRanges::merge(x, y, all.x=T), 
                    append(bw.grlist, gr.dat))  
   
+ 
+  
   # Fine-mapping tracks
   INIT_list <- list(   
     "GWAS"=ggbio::plotGrandLinear(obj = gr.snp, aes(y=-log10(P), fill=-log10(P))),
@@ -495,7 +478,7 @@ GGBIO.ucsc_tracks <- function(finemap_DT){
                       label.text.color = "white",
                       label.text.angle = 0,
                       label.width = unit(5.5, "lines"),
-                      xlim = c(min(start(gr.snp)), max(start(gr.snp))),
+                      # xlim = c(min(start(gr.snp)), max(start(gr.snp))),
                       heights = c(rep(1,length(INIT_list)), rep(1,length(BW_tracks)) ))
   TRACKS_list <- append(TRACKS_list, params_list)
   trks <- suppressWarnings(do.call("tracks", TRACKS_list)) 
@@ -526,62 +509,237 @@ GGBIO.ucsc_tracks <- function(finemap_DT){
 }
 
 
-
-
-GVIZ.ucsc_tracks <- function(){
-  # https://bioconductor.org/packages/release/bioc/html/Gviz.html
-  # Tutorial
-  # https://bioconductor.org/packages/release/bioc/vignettes/Gviz/inst/doc/Gviz.html
-  # Gviz::UcscTrack() 
-  library(Gviz)
-  library(GenomicRanges)
-  
-  subset_DT <- finemap_DT
-  from <- min(subset_DT$POS)
-  to <- max(subset_DT$POS)
-  chr <- paste0("chr",subset_DT$CHR[1])
-  ucsc_coords <- paste0(chr,":",from,"-",to)
-  gen <- "hg19" # "mm9"#
-   
-  # Finemapping Data track
-  d.track <- DataTrack(data=-log10(subset_DT$P),
-                       start=subset_DT$POS, end=subset_DT$POS-1, chr=chr,  
-                       genome=gen, name="GWAS", col="purple",
-                       type=c("p"))
-  # plotTracks(d.track, from=from, to=to, chr=chr) 
-  # availableDisplayPars(dtrack)
-  
-  # command above takes some time to fetch the data...
-  # plotTracks(nuc_track, from=from, to=to, genome=gen, chromosome=chr)
-  
-  # Data
-  # atrack <- AnnotationTrack(cpgIslands, name="CpG") 
-  # Axis
-  g.track <- GenomeAxisTrack()
-  # Gene Models
-  data(geneModels) 
-  gr.track <- GeneRegionTrack(geneModels, from=from, to=to,
-                              genome=gen, chromosome=chr, 
-                              name="Gene Model", transcriptAnnotation="symbol", 
-                              background.title="grey20") 
-  # Ideogram
-  i.track <- IdeogramTrack(genome=gen, chromosome=chr)
-  # Genomic Sequence
-  library(BSgenome.Hsapiens.UCSC.hg19)
-  s.track <- SequenceTrack(Hsapiens, chromosome=chr,name="DNA Sequence")  
-  
-  
-  # Plot
-  plotTracks(list(i.track, 
-                  g.track,  
-                  d.track, 
-                  nuc.track, 
-                  gr.track, 
-                  s.track),  
-             background.title="grey20", 
-             background.panel="transparent"
-             # rotation.title=0
-             )
+NOTT_2019.superenhancers <- function(s6_path="./echolocatoR/annotations/Glass_lab/aay0793-Nott-Table-S6.xlsx"){ 
+  s6 <- readxl::read_excel( , skip = 2)  
+  annot_sub <- subset(s6, chr== paste0("chr",unique(finemap_DT$CHR)) & start>=min(finemap_DT$POS) & end<=max(finemap_DT$POS) )
+  if(nrow(annot_sub)>0){
+    merged_DT <- data.table::merge.data.table(finemap_DT %>% 
+                                                dplyr::mutate(chr=paste0("chr",CHR), 
+                                                              start=as.numeric(POS)) %>% 
+                                                data.table::data.table(),
+                                              data.table::data.table(s6), 
+                                              by = c("chr","start"))
+  }
 }
+  
+NOTT_2019.enhancer_promoter_interactions <- function(finemap_DT, 
+                                                     s5_path="./echolocatoR/annotations/Glass_lab/aay0793-Nott-Table-S5.xlsx"){  
+  sheets_s5 <- readxl::excel_sheets(s5_path) 
+  s5 <- readxl::read_excel(s5_path, sheet = sheets_s5[1], skip = 2) 
+  s5 <- s5 %>% dplyr::rename(chr=Chr, start=Start, end=End)  
+  # Subset to window
+  annot_sub <- subset(s5, chr== paste0("chr",unique(finemap_DT$CHR)) & 
+                        start>=min(finemap_DT$POS) & 
+                        end<=max(finemap_DT$POS) )  
+  return(annot_sub)
+}
+
+NOTT_2019.get_promoters <- function(annot_sub){ 
+  promoter.cols <- grep("*_active_promoter",  colnames(annot_sub), value = T)
+  promoter_celltypes <- gsub("\\_.*","", promoter.cols[as.logical(annot_sub[,promoter.cols])] )
+  promoter_celltypes <- as.character(marker_key[promoter_celltypes])
+  promoter_celltypes <- paste(promoter_celltypes,collapse="; ")
+  return(promoter_celltypes)
+}
+
+NOTT_2019.get_interactions <- function(annot_sub){  
+  interact.cols <- grep("*_interactions", colnames(annot_sub), value = T)   
+  interact.DT <- lapply(interact.cols, function(column){
+    coords <- strsplit(annot_sub[,column][[1]], ",")
+    coord.dt <- lapply(coords, function(coord){
+      data.table::data.table(Interaction=column, 
+                             Cell_type=marker_key[gsub("\\_.*","",column)],
+                             Coordinates=coord) %>% return() 
+    }) %>% data.table::rbindlist()
+    return(coord.dt)
+  } )  %>% data.table::rbindlist()
+  interact.DT <- subset(interact.DT, !is.na(Coordinates)) %>%  
+    tidyr::separate(col = Coordinates, 
+             into=c("chr","Start","End"), sep = ":|-") %>%
+     separate(col = Interaction, into=c("Marker","Element",NA), sep="_", remove = F ) 
+  interact.DT <- interact.DT %>% 
+    dplyr::mutate(Cell_type_interaction=paste(Cell_type,"-",Element))
+  interact.DT$Cell_type <- interact.DT$Cell_type %>% as.character()
+  interact.DT$Start <- as.numeric(interact.DT$Start)
+  interact.DT$End <- as.numeric(interact.DT$End)
+  # Summarise distance from different celltype enhancer interactions
+  summarise_top.consensus.dist <- interact.DT %>% 
+    dplyr::mutate(top.consensus.dist=End - top.consensus.pos) %>% 
+    dplyr::group_by(Cell_type) %>% 
+    dplyr::summarise(top.consensus.dist = mean(top.consensus.dist))
+  print(summarise_top.consensus.dist)
+  return(interact.DT)
+}
+
+GGBIO.nott_etal_2019 <- function(){
+  # finemap_DT <- quick_finemap()
+  library(ggbio)
+  marker_key <- list(PU1="Microglia",
+                     Olig2="Oligodendrocytes",
+                     NeuN="Neurons",
+                     LHX2="Astrocytes")
+  lead.pos <- subset(finemap_DT,SNP=="rs76904798")$POS  
+  consensus.pos <- subset(finemap_DT, Consensus_SNP==T)$POS  
+  top.consensus.pos <- top_n(subset(finemap_DT, Consensus_SNP==T), n=1, wt = mean.PP)$POS  
+  # Subset to relevant region
+  annot_sub <- NOTT_2019.enhancer_promoter_interactions(finemap_DT = finemap_DT)
+  ## Extract active promoters
+  promoter_celltypes <- NOTT_2019.get_promoters(annot_sub)
+  ## Extract promoter interactions
+  interact.DT <- NOTT_2019.get_interactions(annot_sub)
+  
+   
+  # GWAS track
+  GWAS_trk <- ggplot(data=finemap_DT, aes(x=POS, y=-log10(P), color=-log10(P))) +
+    geom_point()  
+  
+  FM_trk <- ggplot(data=finemap_DT, aes(x=POS, y=mean.PP, color=mean.PP)) +
+    geom_point() +  
+    scale_color_viridis_c(breaks=c(0,.5,1), limits=c(0,1)) +
+    ylim(0,1)
+    
+  # Nott tracks   
+  # Nott_s5 <- ggbio::ggbio() + 
+  #   ggbio::geom_rect(data = annot_sub, aes(xmin=start, xmax=end, ymin=0, ymax=1), 
+  #                    fill="turquoise", alpha=.75) +   
+  #   facet_grid(facets = Annotation~.) 
+  # Nott_s5 <- invisible_legend(Nott_s5)
+  
+  # Nott:  interactions
+  # Nott_interactions
+  
+  NOTT.interact_trk <- ggplot() +
+     ggbio::geom_arch(data = interact.DT, aes(x=Start, xend=End, color=Cell_type_interaction)) + 
+    scale_y_reverse() +
+    scale_colour_brewer(palette = "Accent") + 
+    labs(subtitle = paste0(annot_sub$Annotation[[1]]," - ",promoter_celltypes) ) 
+    
+  
+  # Makes tracks list
+  TRACKS_list <- list(
+      "GWAS"=GWAS_trk,
+      "Fine-mapping"=FM_trk,
+      "Nott (2019)\nInteractome"=NOTT.interact_trk
+      # "Nott et al. (2019)\nPromoter\ninteractome"=Nott_s5 
+  )
+  # Parameters
+  gene <- "LRRK2"
+  params_list <- list(title = paste0(gene), 
+                      track.bg.color = "transparent",
+                      track.plot.color = "transparent",
+                      label.text.cex = .7, 
+                      label.bg.fill = "grey12",
+                      label.text.color = "white",
+                      label.text.angle = 0,
+                      label.width = unit(5.5, "lines"),
+                      xlim = c(min(finemap_DT$POS), max(finemap_DT$POS))
+                      # heights = c(rep(1,length(INIT_list)), rep(1,length(BW_tracks)) )
+                      )
+  TRACKS_list <- append(TRACKS_list, params_list)
+  trks <- suppressWarnings(do.call("tracks", TRACKS_list)) 
+   
+  trks_plus_lines <- trks + 
+    # Nott: promoter
+    ggbio::geom_rect(data = annot_sub, aes(xmin=start, xmax=end, ymin=-0, ymax=Inf), 
+                     fill="turquoise", alpha=.5, inherit.aes=F) +  
+    # Lead GWAS line
+    geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') +
+    # Consensus line
+    geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=1, size=.3, linetype='solid') + theme_classic() +
+    theme(plot.subtitle = element_text(color = "turquoise", size = 8))
+  
+  ggsave(filename = file.path(results_path,"Annotation",paste0("Nott.sn-epigenomics_ggbio.png")), 
+         plot = trks_plus_lines,
+         height = 7, width = 7, dpi = 1000, bg = "transparent") 
+  
+  
+  }
+  
+
+  
+
+# 
+# 
+# GVIZ.ucsc_tracks <- function(){
+#   # https://bioconductor.org/packages/release/bioc/html/Gviz.html
+#   # Tutorial
+#   # https://bioconductor.org/packages/release/bioc/vignettes/Gviz/inst/doc/Gviz.html
+#   # Gviz::UcscTrack() 
+#   library(Gviz)
+#   library(GenomicRanges)
+#   
+#   subset_DT <- finemap_DT
+#   from <- min(subset_DT$POS)
+#   to <- max(subset_DT$POS)
+#   chr <- paste0("chr",subset_DT$CHR[1])
+#   ucsc_coords <- paste0(chr,":",from,"-",to)
+#   gen <- "hg19" # "mm9"#
+#    
+#   # Finemapping Data track
+#   d.track <- DataTrack(data=-log10(subset_DT$P),
+#                        start=subset_DT$POS, end=subset_DT$POS-1, chr=chr,  
+#                        genome=gen, name="GWAS", col="purple",
+#                        type=c("p"))
+#   # plotTracks(d.track, from=from, to=to, chr=chr) 
+#   # availableDisplayPars(dtrack)
+#   
+#   # command above takes some time to fetch the data...
+#   # plotTracks(nuc_track, from=from, to=to, genome=gen, chromosome=chr)
+#   
+#   # Data
+#   # atrack <- AnnotationTrack(cpgIslands, name="CpG") 
+#   # Axis
+#   g.track <- GenomeAxisTrack()
+#   # Gene Models
+#   data(geneModels) 
+#   gr.track <- GeneRegionTrack(geneModels, from=from, to=to,
+#                               genome=gen, chromosome=chr, 
+#                               name="Gene Model", transcriptAnnotation="symbol", 
+#                               background.title="grey20") 
+#   # Ideogram
+#   i.track <- IdeogramTrack(genome=gen, chromosome=chr)
+#   # Genomic Sequence
+#   library(BSgenome.Hsapiens.UCSC.hg19)
+#   s.track <- SequenceTrack(Hsapiens, chromosome=chr,name="DNA Sequence")  
+#   
+#   
+#   # Plot
+#   plotTracks(list(i.track, 
+#                   g.track,  
+#                   d.track, 
+#                   nuc.track, 
+#                   gr.track, 
+#                   s.track),  
+#              background.title="grey20", 
+#              background.panel="transparent"
+#              # rotation.title=0
+#              )
+# }
+
+
+
+
+# rtracks <- function( ){
+#   # https://www.bioconductor.org/packages/release/bioc/vignettes/rtracklayer/inst/doc/rtracklayer.pdf
+#   library(rtracklayer)
+#   library(GenomicRanges)
+#   
+#   mySession <- browserSession ()
+#   genome(mySession) <- "hg19" 
+#   track.names <- trackNames(ucscTableQuery(mySession)) 
+#   df <- data.frame(track.names)
+#   
+#   
+#   track.name <- "wgEncodeUwDgf"  
+#   e2f3.grange <- GRanges("chr6", IRanges(20400587, 20403336)) 
+#   mySession <- browserSession() 
+#   tbl.k562.dgf.e2f3 <- getTable(ucscTableQuery(mySession, track=track.name,
+#                                                range=e2f3.grange, table=table.name))
+#   
+#   tbl.k562.dgf.hg19 <- getTable(ucscTableQuery (mySession, track=track.name,
+#                                                 table=table.name))
+#   
+# }
+
 
 
