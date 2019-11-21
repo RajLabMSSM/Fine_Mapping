@@ -32,4 +32,4 @@ Manuscripts/
 /Data/**/**/_genome_wide/fGWAS/Input/annotations.Nalls23andMe_2019.txt 
 /Data/**/**/_genome_wide/PolyFun/sumstats_munged.parquet
 ## PolyFun
-/Data/**/**/_genome_wide/PolyFun/output/
+#/Data/**/**/_genome_wide/PolyFun/output/
