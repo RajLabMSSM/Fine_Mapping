@@ -152,6 +152,13 @@ reload <- function(){
 
 # data.table::fwrite( subset(subset_DT, SNP != "rs34637584"), "Data/GWAS/Nalls23andMe_2019/LRRK2/LocusZoomData_-rs34637584.txt", sep="\t")
 
+quick_finemap <- function(){
+  gene <- "LRRK2"
+  results_path <<- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
+  finemap_DT <- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
+  return(finemap_DT)
+}
+
 # quick_start
 quickstart <- function(){ 
   reload()
