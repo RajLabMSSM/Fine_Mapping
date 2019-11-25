@@ -105,13 +105,23 @@ download_vcf <- function(subset_DT,
                          reference="1KG_Phase3", 
                          vcf_folder="./Data/Reference/1000_Genomes", 
                          gene, 
-                         download_reference=T){ 
+                         download_reference=T, 
+                         whole_vcf=F){ 
   ## http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
   # Download portion of vcf from 1KG website 
 
   subset_DT$CHR <- gsub("chr","",subset_DT$CHR)
-  region <- paste(unique(subset_DT$CHR),":",min(subset_DT$POS),"-",max(subset_DT$POS), sep="")
+  if(whole_vcf){
+    region <= ""
+    gene=""
+  } else {
+    region <- paste(unique(subset_DT$CHR),":",
+                    min(subset_DT$POS),"-",
+                    max(subset_DT$POS), sep="")
+  } 
   chrom <- unique(subset_DT$CHR)
+  
+  
   
   # PHASE 3 DATA
   if(reference=="1KG_Phase3"){
@@ -144,7 +154,9 @@ download_vcf <- function(subset_DT,
                                header = F, sep="\t",  fill=T, stringsAsFactors = F, 
                                col.names = c("sample","population","superpop","platform"))
   # library(Rsamtools); #BiocManager::install("Rsamtools")
-  subset_vcf <- file.path(vcf_folder, phase, paste(gene,"subset.vcf",sep="_")) 
+  subset_vcf <- file.path(vcf_folder, phase, 
+                          ifelse(whole_vcf, paste(reference, paste0("chr",chrom),"vcf", sep="."),
+                                                 paste(gene,"subset.vcf",sep="_"))) 
   # Create directory if it doesn't exist
   dir.create(path = dirname(subset_vcf), recursive =  T, showWarnings = F)
   
@@ -160,7 +172,7 @@ download_vcf <- function(subset_DT,
   return(list(subset_vcf = subset_vcf,
               popDat = popDat))
 }
-
+ 
 
  
  

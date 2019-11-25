@@ -13,12 +13,6 @@
 # 3. Computing prior causal probabilities non-parametrically. This is the most robust approach, but it is computationally intensive and requires access to individual-level genotypic data from a large reference panel (optimally >10,000 population-matched individuals). 
 #####-------------------------------------------------------------
 
-
-
-# NOTES for Omer:
-     
-# 6. polyfun.py script reduced the number of SNPs from 7764212 to 34851, printing "[WARNING]  number of SNPs is smaller than 200k; this is almost always bad."  Is all the filtering just because the example reference set is small?
-# 9. If a variant has been filtered out by PolyFun at some point, is it appropriate to assign that variant a prior prob value of 0? I'm looking for ways to retain as many SNPs as possible for the fine-mapping analysis so I can compare functional fine-mapping (e.g. PolyFun+SUSIE) vs. statistical fine-mapping (e.g. SUSIE).
  
 # GitHub Notes:
 ## How to pull changes from original repo into the forked repo
@@ -72,10 +66,19 @@ POLYFUN.conda_from_yaml <- function(yaml_path="./echolocatoR/tools/python_env.ym
   system(cmd)
 }
 
-POLYFUN.conda_from_list <- function(){
+POLYFUN.conda_from_list <- function(libraries = c("numpy",
+                                                  "scipy",
+                                                  "scikit-learn",
+                                                  "pandas",
+                                                  "tqdm",
+                                                  "pyarrow",
+                                                  "bitarray",
+                                                  "networkx",
+                                                  "rpy2")){
+  # NOTE: version specification must use quotes
   cmd <- paste("conda create -n polyfun_venv python=3.7.3",
-               "numpy scipy scikit-learn pandas>=0.25.0 tqdm pyarrow",
-               "bitarray networkx rpy2")
+               "numpy scipy scikit-learn 'pandas>=0.25.0'", 
+               paste(libraries, collapse=" "))
   print(cmd)
   
 }
@@ -134,8 +137,8 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
   PF.output.file <- file.path(PF.output.path,"snps_with_priors.snpvar.gz")
   # Retrieve priors
   cmd <- paste("python3",file.path(polyfun,"extract_snpvar.py"),
-        "--snps",snp.path,
-        "--out",file.path(PF.output.path,"snps_with_priors"))
+               "--snps",snp.path,
+               "--out",file.path(PF.output.path,"snps_with_priors"))
   print(cmd)
   system(cmd) 
   # Import results
@@ -153,7 +156,7 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
 
 
 POLYFUN.munge_summ_stats <- function(polyfun="./echolocatoR/tools/polyfun",
-                                     python="python3",
+                                     python="python",
                                      dataset="Nalls23andMe_2019",
                                      sample.size=1474097,
                                      min_INFO=0,
@@ -188,6 +191,13 @@ POLYFUN.gather_ldscores <- function(output_prefix){
   parquor <- POLYFUN.read_parquet(ldscore.files[1])
 }
 
+POLYFUN.gather_enrichment <- function(out.path, annot){
+  enrich.files <- list.files(out.path, "*.l2.M", full.names = T)
+  pd <- reticulate::import("pandas")
+  reticulate::use_condaenv()
+  annot.list <- pd$read_parquet("./echolocatoR/tools/polyfun/annotation_list.csv")
+}
+
 
 
 POLYFUN.read_parquet <- function(parquet_path){
@@ -213,11 +223,10 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
                                     allow_missing_SNPs=T){
   # Quickstart:
   # polyfun="./echolocatoR/tools/polyfun"; parametric=T;  weights.path=file.path(polyfun,"example_data/weights."); annotations.path=file.path(polyfun,"example_data/annotations."); munged.path= "./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet"; parametric=T; dataset="Nalls23andMe_2019"; prefix="PD_GWAS"; compute_ldscores=F; allow_missing_SNPs=T; chrom="all"; finemap_DT=NULL; locus="LRRK2"; server=T;
-  
-  # Load python if on Chimera cluster
-  if(startsWith(getwd(), "/sc/")){
-    python <- "ml anaconda3 && conda && ml python/3.7.3 && python3"
-  }
+ 
+  annotations.path <-  "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB/baselineLF2.2.UKB."
+  weights.path <-  "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB/weights.UKB."
+   
   # 0. Create paths
   results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
   PF.output.path <- file.path(results_path, "PolyFun")
@@ -239,9 +248,18 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
   
   # 2. 
   ## If compute_ldscores == F:
-  # This will create 2 output files for each chromosome: output/testrun.<CHR>.snpvar_ridge.gz and output/testrun.<CHR>.snpvar_ridge_constrained.gz. The first contains estimated per-SNP heritabilities for all SNPs (which can be used for downstream analysis with PolyFun; see below), and the second contains truncated per-SNP heritabilities, which can be used directly as prior causal probabilities in fine-mapping.  
+  # This will create 2 output files for each chromosome: output/testrun.<CHR>.snpvar_ridge.gz and output/testrun.<CHR>.snpvar_ridge_constrained.gz. The first contains estimated per-SNP heritabilities for all SNPs (which can be used for downstream analysis with PolyFun; see below), and the second contains truncated per-SNP heritabilities, which can be used directly as prior causal probabilities in fine-mapping.
+  # library(reticulate)
+  # reticulate::use_virtualenv("polyfun_conda")
+  # pd <- reticulate::import("pandas")
+  # pd$read_csv("./Data/directories_table.csv")
+  # reticulate::
+  # source_python(file.path(polyfun,"polyfun.py"))
+  
+  # NOTE! if you're running without the "--no-partitions" flag, 
+  ## you need to load R first `ml R`.
   printer("PolyFun:: [2] Run PolyFun with L2-regularized S-LDSC")
-  cmd2 <- paste("python3",file.path(polyfun,"polyfun.py"),
+  cmd2 <- paste("python",file.path(polyfun,"polyfun.py"),
                 "--compute-h2-L2",
                # Approach 2 = Parametric = no partitions = T
                # Approach 3 = Non-parametric = partitions = F 
@@ -258,18 +276,18 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
   if(compute_ldscores){
     # 3.
     printer("PolyFun:: [3] Compute LD-scores for each SNP bin")
-    cmd3 <- paste("python3",file.path(polyfun,"polyfun.py"),
+    cmd3 <- paste("python",file.path(polyfun,"polyfun.py"),
                   "--compute-ldscores",
                   "--output-prefix",output_prefix,
                   "--bfile-chr",file.path(dirname(annotations.path),"reference."),
-                  ifelse(chrom=="all","",paste("--chr",chrom)),
-                  ifelse(allow_missing_SNPs,"--allow-missing",""))
+                   ifelse(chrom=="all","",paste("--chr",chrom)),
+                  ifelse(allow_missing_SNPs,"--allow-missing","") )
     print(cmd3)
     system(cmd3)
     
     # 4.
     printer("PolyFun:: [4] Re-estimate per-SNP heritabilities via S-LDSC")
-    cmd4 <- paste("python3",file.path(polyfun,"polyfun.py"),
+    cmd4 <- paste("python",file.path(polyfun,"polyfun.py"),
                   "--compute-h2-bins",
                   "--output-prefix",output_prefix,
                   "--sumstats",munged.path,
@@ -356,6 +374,75 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
 }
 
 
+POLYFUN.ukbb_LD <- function(finemap_DT){
+  base_url  <- "./echolocatoR/tools/polyfun/LD_temp"
+  alkes_url <- "https://data.broadinstitute.org/alkesgroup/UKBB_LD"
+  chr <- unique(finemap_DT$CHR)
+  min.pos <- min(finemap_DT$POS)
+  max.pos <- max(finemap_DT$POS)
+  file.name <- paste0("chr",chr,"_","40000001_43000001")
+  gz.path <- file.path(base_url,paste0(file.name,".gz"))
+  npz.path <- file.path(base_url,paste0(file.name,".npz"))
+  
+  # 1. Download LD files if not present 
+  # system(paste("wget",file.path(alkes_url,file.name)))
+ 
+  # Download all UKBB LD files
+  # "wget -nc -r -A '*.gz|*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD"
+  
+  # RSIDs file
+  rsids <- data.table::fread(gz.path, nThread = 4) 
+  rsids <- subset(rsids, position>=min(finemap_DT$POS) & 
+                    position<=max(finemap_DT$POS))
+  # Actual LD values 
+  #
+  reticulate::source_python(file.path(polyfun,"load_ld.py"))
+  ld.out <- load_ld(ld_prefix = file.path(base_url,"/"),
+                    sumstats_prefix = munged.path)
+  
+  #
+  np <- reticulate::import("numpy")
+  npz <- np$load(file.path(base_url,"/chr12_40000001_43000001.npz"))
+  npz$keys()
+  npz["row"][1:10,1:10]
+   
+}
+
+POLYFUN.download_ref_files <- function()
+
+
+
+POLYFUN.finemapper <- function(polyfun= "./echolocatoR/tools/polyfun",
+                               munged.path=NULL,
+                               locus=NULL,
+                               results_path=NULL){ 
+  # finemap_DT <- quick_finemap();  
+  base_url  <- "./echolocatoR/tools/polyfun/LD_temp"
+  chr <- unique(finemap_DT$CHR) 
+  file.name <- paste0("chr",chr,"_","40000001_43000001")
+  ld_path <- file.path(base_url,file.name)
+  gz.path <- file.path(base_url,paste0(file.name,".gz"))
+  npz.path <- file.path(base_url,paste0(file.name,".npz"))
+   
+  
+  cmd <- paste("python",file.path(polyfun,"finemapper.py"), 
+                "--ld",ld_path,
+                "--sumstats", Directory_info(dataset_name = dataset, ifelse(server,"fullSS","fullSS.local")),
+                # "--sumstats","./echolocatoR/tools/polyfun/"
+                "--n",1474097,
+                "--chr",chr,
+                "--start",min(finemap_DT$POS),
+                "--end",max(finemap_DT$POS),
+                "--method susie",
+                "--max-num-causal 5",
+                "--threads 2",# use max detected cores if not specified
+                "--out",file.path(results_path,paste0("finemap.UKBB.",locus,".gz")))
+  print(cmd)
+  system(cmd)
+    
+  
+}
+
 
 
 # %%%%%%%%%%%%%%%% Run PolyFun+SUSIE %%%%%%%%%%%%%%%% 
@@ -363,11 +450,17 @@ POLYFUN.plot <- function(subset_DT,
                          locus=NULL,
                          subtitle="PolyFun Comparison",
                          conditions=c("SUSIE","PolyFun_SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")){
+  # Quickstart
+  # locus="LRRK2"; subtitle="PolyFun Comparison"; conditions=c("SUSIE","PolyFun_SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")
   # # Get r2 
-  lead.snp <- subset(subset_DT, leadSNP)$SNP
-  r2 <- data.table::data.table(SNP=names(LD_matrix[lead.snp,]), r2=LD_matrix[lead.snp,]^2)
-  dat <- data.table::merge.data.table(subset_DT, r2, by="SNP")
+  if(plot_ld){
+    lead.snp <- top_n(subset_DT,1,P)$SNP #subset(subset_DT, leadSNP==T)$SNP
+    r2 <- data.table::data.table(SNP=names(LD_matrix[lead.snp,]), 
+                                 r2=LD_matrix[lead.snp,]^2)
+    dat <- data.table::merge.data.table(subset_DT, r2, by="SNP") 
+  } else{dat <- dplyr::mutate(subset_DT, r2=1)}
   dat <- dplyr::mutate(dat, Mb=round(POS/1000000,3)) 
+ 
   
   
   library(patchwork)
@@ -376,17 +469,35 @@ POLYFUN.plot <- function(subset_DT,
     scale_color_gradient(low="blue",high="red", breaks=c(0,.5,1)) + 
     geom_point() + 
     labs(y="GWAS -log10(P)") + 
+    ggrepel::geom_label_repel(data = top_n(dat,n=1,-P), 
+                              aes(label=SNP),alpha=0.8) +
+    geom_point(data=top_n(dat,n=1,-P), size=5, shape=1, color="red") + 
+    
     # PolyFun priors
     ggplot(dat, aes(x=Mb, y=PolyFun.priors, color=PolyFun.priors)) + 
     scale_color_viridis_c(limits=c(0,1), breaks=c(0,.5,1)) +
     geom_point() + 
     # ylim(0,1) +
+    
     # PolyFun+SUSIE PP
     ggplot(dat, aes(x=Mb, y=PolyFun_SUSIE.Probability, color=PolyFun_SUSIE.Probability)) + 
     geom_point() + 
+    ggrepel::geom_label_repel(data = subset(dat,PolyFun_SUSIE.Probability>=.95), 
+                              aes(label=SNP),alpha=0.8) +
+    geom_point(data=subset(dat,PolyFun_SUSIE.Probability>=.95), 
+               size=5, shape=1, color="green") + 
+    scale_y_continuous(breaks = c(0,.5,1), limits = c(0,1.1)) + 
+    scale_color_continuous(breaks=c(0,.5,1)) +
+    
     # SUSIE PP
     ggplot(dat, aes(x=Mb, y=SUSIE.Probability, color=SUSIE.Probability)) + 
     geom_point() + 
+    ggrepel::geom_label_repel(data = subset(dat,SUSIE.Probability>=.95), 
+                              aes(label=SNP),alpha=0.8) +
+    geom_point(data=subset(dat,SUSIE.Probability>=.95), 
+               size=5, shape=1, color="green") + 
+    scale_y_continuous(breaks = c(0,.5,1), limits = c(0,1.1)) + 
+    scale_color_continuous(breaks=c(0,.5,1)) +
     # Overall layers
     patchwork::plot_layout(ncol = 1) + 
     patchwork::plot_annotation(title = "LRRK2", 
@@ -397,6 +508,22 @@ POLYFUN.plot <- function(subset_DT,
   ggsave(file.path(results_path,'PolyFun',"PolyFun.plot.png"), plot = gg,dpi = 400, height = 8, width = 7)
 }
  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 GGBIO.ucsc_tracks <- function(finemap_DT){ 
   # GLASS DATA: UCSC GB
   # https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr2:127770344-127983251&hgsid=778249165_ySowqECRKNxURRn6bafH0yewAiuf
