@@ -163,8 +163,14 @@ POLYFUN.munge_summ_stats <- function(polyfun="./echolocatoR/tools/polyfun",
                                      min_MAF=0,
                                      server=F){
   results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
-  PF.output.path <- file.path(results_path, "PolyFun")
-  munged.path <- file.path(PF.output.path,"sumstats_munged.parquet") 
+
+  if(server){
+    PF.output.path <- "/sc/orga/projects/pd-omics/tools/polyfun" 
+  } else {
+    PF.output.path <- file.path(results_path, "PolyFun")
+  } 
+  munged.path <- file.path(PF.output.path,
+                           paste(dataset,".sumstats_munged.parquet",sep="")) 
   # data.table::fread("/sc/orga/projects/pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt", nrows = 2)
   fullSS.loc <- ifelse(server,"fullSS","fullSS.local")
   # Requires space-delimited file with the following columns (munging can recognize several variations of these names):
@@ -172,7 +178,7 @@ POLYFUN.munge_summ_stats <- function(polyfun="./echolocatoR/tools/polyfun",
   ## either a p-value, an effect size estimate and its standard error, a Z-score or a p-value 
   if(!file.exists(munged.path)){ 
     printer("+ PolyFun:: Initiating data munging pipeline...")
-    cmd <- paste(python, file.path(polyfun,"munge_polyfun_sumstats.py"),
+    cmd <- paste("python", file.path(polyfun,"munge_polyfun_sumstats.py"),
                  "--sumstats",Directory_info(dataset_name = dataset, ifelse(server,"fullSS",fullSS.loc)),
                  "--n",sample.size, # Study sample size
                  "--out",munged.path,
@@ -182,6 +188,7 @@ POLYFUN.munge_summ_stats <- function(polyfun="./echolocatoR/tools/polyfun",
     print(cmd)
     system(cmd)
   } else {printer("+ PolyFun:: Existing munged summary stats files detected.")} 
+  return(munged.path)
 }
 
 
@@ -210,6 +217,69 @@ POLYFUN.read_parquet <- function(parquet_path){
 }
 
 
+POLYFUN.ukbb_LD <- function(finemap_DT, 
+                            results_path,
+                            force_new_LD=F){
+  base_url  <- "./echolocatoR/tools/polyfun/LD_temp"
+  alkes_url <- "https://data.broadinstitute.org/alkesgroup/UKBB_LD"
+  chr <- unique(finemap_DT$CHR)
+  min.pos <- min(finemap_DT$POS)
+  max.pos <- max(finemap_DT$POS)
+  file.name <- paste0("chr",chr,"_","40000001_43000001")
+  gz.path <- file.path(base_url,paste0(file.name,".gz"))
+  npz.path <- file.path(base_url,paste0(file.name,".npz"))
+  UKBB.LD.file <- file.path(results_path,"plink/ukbb_LD.RDS")
+  
+  # 1. Download LD files if not present 
+  # system(paste("wget",file.path(alkes_url,file.name)))
+  
+  # Download all UKBB LD files
+  # "wget -nc -r -A '*.gz|*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD"
+  # "wget https://data.broadinstitute.org/alkesgroup/UKBB_LD/chr12_40000001_43000001.npz" # For some reason, way faster withOUT the --no-parent flag
+  # RSIDs file
+  # rsids <- data.table::fread(gz.path, nThread = 4) 
+  if(file.exists(UKBB.LD.file) & force_new_LD!=T){
+    printer("POLYFUN:: Pre-existing UKBB LD file detected.")
+    ld_R <- readRDS(UKBB.LD.file)
+  } else {
+    library(reticulate) 
+    reticulate::use_condaenv("polyfun_venv", conda = "/usr/local/anaconda3/condabin/conda")
+    # conda_list("/usr/local/anaconda3/condabin/conda")
+    reticulate::source_python(file.path(polyfun,"load_ld.py"))
+    ld.out <- load_ld(ld_prefix = file.path(base_url,"chr12_40000001_43000001"))
+    # LD matrix
+    ld_R <- ld.out[[1]]
+    head(ld_R)[1:10]
+    # SNP info
+    ld_snps <- ld.out[[2]] 
+    rsids <- subset(ld_snps, rsid %in% finemap_DT$SNP)
+    ld.indices <- as.integer(row.names(rsids))
+    ld_R <- ld_R[ld.indices, ld.indices]
+    row.names(ld_R) <- rsids$rsid
+    colnames(ld_R) <- rsids$rsid
+    printer("LD matrix dimensions", paste(dim(ld_R),collapse=" x "))
+    printer("+ POLYFUN:: Saving LD =>",UKBB.LD.file)
+    saveRDS(ld_R, UKBB.LD.file)
+  } 
+  return(ld_R)
+}
+
+POLYFUN.download_ref_files <- function(alkes_url="https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase1_plinkfiles.tgz", 
+                                       output_path="/sc/orga/projects/pd-omics/data/1000_Genomes/Phase1"){
+  file_name <- basename(alkes_url)
+  cmd <- paste("wget",
+               alkes_url,
+               "--no-parent",
+               "& mv",file_name, output_path,
+               "& tar zxvf",output_path,"--strip 1")
+  paste(cmd)   
+  ref.prefix <- list.files(output_path, pattern = "*.bim", full.names = T)[1]
+  ref.prefix <- gsub(".?.bim","", ref.prefix)
+  return(ref.prefix)
+}
+
+
+
 POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
                                     PF.output.path,
                                     munged.path, 
@@ -220,7 +290,8 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
                                     prefix="PD_GWAS",
                                     chrom="all",
                                     compute_ldscores=F, 
-                                    allow_missing_SNPs=T){
+                                    allow_missing_SNPs=T,
+                                    ref.prefix="/sc/orga/projects/pd-omics/data/1000_Genomes/Phase1/1000G.mac5eur."){
   # Quickstart:
   # polyfun="./echolocatoR/tools/polyfun"; parametric=T;  weights.path=file.path(polyfun,"example_data/weights."); annotations.path=file.path(polyfun,"example_data/annotations."); munged.path= "./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet"; parametric=T; dataset="Nalls23andMe_2019"; prefix="PD_GWAS"; compute_ldscores=F; allow_missing_SNPs=T; chrom="all"; finemap_DT=NULL; locus="LRRK2"; server=T;
  
@@ -237,14 +308,13 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
   
   # 1. Munge summary stats
   printer("PolyFun:: [1]  Create a munged summary statistics file in a PolyFun-friendly parquet format.")
-  POLYFUN.munge_summ_stats(polyfun=polyfun,
-                           python = python,
-                           dataset="Nalls23andMe_2019",
-                           sample.size=1474097, 
-                           min_INFO = 0,
-                           min_MAF = 0.001, 
-                           server = T)  
-  system("python --version")
+  munged.path <- POLYFUN.munge_summ_stats(polyfun=polyfun,
+                                           python = python,
+                                           dataset="Nalls23andMe_2019",
+                                           sample.size=1474097, 
+                                           min_INFO = 0,
+                                           min_MAF = 0.001, 
+                                           server = T)   
   
   # 2. 
   ## If compute_ldscores == F:
@@ -279,8 +349,8 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
     cmd3 <- paste("python",file.path(polyfun,"polyfun.py"),
                   "--compute-ldscores",
                   "--output-prefix",output_prefix,
-                  "--bfile-chr",file.path(dirname(annotations.path),"reference."),
-                   ifelse(chrom=="all","",paste("--chr",chrom)),
+                  "--bfile-chr",ref.prefix,
+                  ifelse(chrom=="all","",paste("--chr",chrom)),
                   ifelse(allow_missing_SNPs,"--allow-missing","") )
     print(cmd3)
     system(cmd3)
@@ -357,7 +427,10 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
                                             dplyr::select(priors, SNP, PolyFun.priors=SNPVAR) %>% 
                                               data.table::data.table(), 
                                             by="SNP")
-  LD_matrix <- readRDS(file.path(results_path,"plink/LD_matrix.RData"))
+  # LD_matrix <- readRDS(file.path(results_path,"plink/LD_matrix.RData"))
+  LD_matrix <- POLYFUN.ukbb_LD(finemap_DT, 
+                               results_path,
+                               force_new_LD=F)
   LD_matrix <- LD_matrix[merged_DT$SNP, merged_DT$SNP]
   # Run SUSIE
   subset_DT <- SUSIE(merged_DT, 
@@ -372,43 +445,6 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
     data.table::data.table()
   return(subset_DT)
 }
-
-
-POLYFUN.ukbb_LD <- function(finemap_DT){
-  base_url  <- "./echolocatoR/tools/polyfun/LD_temp"
-  alkes_url <- "https://data.broadinstitute.org/alkesgroup/UKBB_LD"
-  chr <- unique(finemap_DT$CHR)
-  min.pos <- min(finemap_DT$POS)
-  max.pos <- max(finemap_DT$POS)
-  file.name <- paste0("chr",chr,"_","40000001_43000001")
-  gz.path <- file.path(base_url,paste0(file.name,".gz"))
-  npz.path <- file.path(base_url,paste0(file.name,".npz"))
-  
-  # 1. Download LD files if not present 
-  # system(paste("wget",file.path(alkes_url,file.name)))
- 
-  # Download all UKBB LD files
-  # "wget -nc -r -A '*.gz|*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD"
-  
-  # RSIDs file
-  rsids <- data.table::fread(gz.path, nThread = 4) 
-  rsids <- subset(rsids, position>=min(finemap_DT$POS) & 
-                    position<=max(finemap_DT$POS))
-  # Actual LD values 
-  #
-  reticulate::source_python(file.path(polyfun,"load_ld.py"))
-  ld.out <- load_ld(ld_prefix = file.path(base_url,"/"),
-                    sumstats_prefix = munged.path)
-  
-  #
-  np <- reticulate::import("numpy")
-  npz <- np$load(file.path(base_url,"/chr12_40000001_43000001.npz"))
-  npz$keys()
-  npz["row"][1:10,1:10]
-   
-}
-
-POLYFUN.download_ref_files <- function()
 
 
 
@@ -447,6 +483,7 @@ POLYFUN.finemapper <- function(polyfun= "./echolocatoR/tools/polyfun",
 
 # %%%%%%%%%%%%%%%% Run PolyFun+SUSIE %%%%%%%%%%%%%%%% 
 POLYFUN.plot <- function(subset_DT,
+                         LD_matrix,
                          locus=NULL,
                          subtitle="PolyFun Comparison",
                          conditions=c("SUSIE","PolyFun_SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")){
@@ -466,12 +503,13 @@ POLYFUN.plot <- function(subset_DT,
   library(patchwork)
   # GWAS
   gg <- ggplot(dat, aes(x=Mb, y=-log10(P), color=r2)) + 
-    scale_color_gradient(low="blue",high="red", breaks=c(0,.5,1)) + 
+    scale_color_gradient(low="blue",high="red", breaks=c(0,.5,1), limits=c(0,1)) + 
     geom_point() + 
     labs(y="GWAS -log10(P)") + 
     ggrepel::geom_label_repel(data = top_n(dat,n=1,-P), 
                               aes(label=SNP),alpha=0.8) +
     geom_point(data=top_n(dat,n=1,-P), size=5, shape=1, color="red") + 
+    scale_y_continuous(limits = c(0,max(-log10(dat$P))*1.1)) + 
     
     # PolyFun priors
     ggplot(dat, aes(x=Mb, y=PolyFun.priors, color=PolyFun.priors)) + 
@@ -482,30 +520,32 @@ POLYFUN.plot <- function(subset_DT,
     # PolyFun+SUSIE PP
     ggplot(dat, aes(x=Mb, y=PolyFun_SUSIE.Probability, color=PolyFun_SUSIE.Probability)) + 
     geom_point() + 
-    ggrepel::geom_label_repel(data = subset(dat,PolyFun_SUSIE.Probability>=.95), 
+    ggrepel::geom_label_repel(data = subset(dat,PolyFun_SUSIE.Probability>=.5), 
                               aes(label=SNP),alpha=0.8) +
-    geom_point(data=subset(dat,PolyFun_SUSIE.Probability>=.95), 
+    geom_point(data=subset(dat, PolyFun_SUSIE.Credible_Set>0),
+               #subset(dat, PolyFun_SUSIE.Probability>=.95), 
                size=5, shape=1, color="green") + 
     scale_y_continuous(breaks = c(0,.5,1), limits = c(0,1.1)) + 
-    scale_color_continuous(breaks=c(0,.5,1)) +
+    scale_color_continuous(breaks=c(0,.5,1), limits=c(0,1)) +
     
     # SUSIE PP
     ggplot(dat, aes(x=Mb, y=SUSIE.Probability, color=SUSIE.Probability)) + 
     geom_point() + 
-    ggrepel::geom_label_repel(data = subset(dat,SUSIE.Probability>=.95), 
+    ggrepel::geom_label_repel(data = subset(dat,SUSIE.Credible_Set>0), 
                               aes(label=SNP),alpha=0.8) +
     geom_point(data=subset(dat,SUSIE.Probability>=.95), 
                size=5, shape=1, color="green") + 
     scale_y_continuous(breaks = c(0,.5,1), limits = c(0,1.1)) + 
-    scale_color_continuous(breaks=c(0,.5,1)) +
+    scale_color_continuous(breaks=c(0,.5,1), limits=c(0,1)) +
     # Overall layers
     patchwork::plot_layout(ncol = 1) + 
-    patchwork::plot_annotation(title = "LRRK2", 
-                               subtitle = subtitle,
+    patchwork::plot_annotation(title = "PolyFun Comparison", 
+                               subtitle = locus,
                                theme =  theme(plot.title = element_text(hjust = 0.5),
                                               plot.subtitle = element_text(hjust = 0.5)))  
   print(gg)  
-  ggsave(file.path(results_path,'PolyFun',"PolyFun.plot.png"), plot = gg,dpi = 400, height = 8, width = 7)
+  ggsave(file.path(results_path,'PolyFun',"PolyFun.plot.png"), plot = gg,
+         dpi = 400, height = 8, width = 7)
 }
  
 
