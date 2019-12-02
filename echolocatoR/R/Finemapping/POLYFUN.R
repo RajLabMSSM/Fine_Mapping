@@ -446,6 +446,70 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
   return(subset_DT)
 }
 
+POLYFUN.h2_enrichment <- function(priors, 
+                                   target_SNPs=NULL, # Much faster if you supply chrom
+                                   out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output/"){ 
+  
+  # Only consider SNPs that overlap between LDCS and GWAS results to make things fair 
+  target_SNPs <- intersect(target_SNPs, priors$SNP)
+  priors.target <- subset(priors.sub, SNP %in% target_SNPs)
+  
+  # Calculate enrichment
+  target_h2 <- subset(priors.sub, SNP %in% target_SNPs)$SNPVAR %>% sum()
+  total_h2 <- sum(priors$SNPVAR)
+  n_target_SNPs <- nrow(priors.target)
+  n_total_SNPs <- nrow(priors)
+  
+  h2.enrichment <- (target_h2/total_h2) / (n_target_SNPs/n_total_SNPs)
+  return(h2.enrichment)
+}
+
+
+POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT, 
+                                     chrom="*", 
+                                     ldsc_suffix="*.snpvar_ridge_constrained.gz",
+                                     subtitle="", 
+                                     show_plot=T,
+                                     save_plot="./h2_enrichment.png"){
+  # Gather your LDSC results
+  ldsc.files <- list.files(out.path, pattern = ldsc_suffix, full.names = T) %>% 
+    grep(pattern = paste0(".",chrom,"."), value = T)
+  priors <- POLYFUN.merge_ldsc_files(ldsc.files) %>% subset(SNP %in% finemap_DT$SNP) 
+  
+  # GWAS nominally sig hits
+  GWAS.nom.sig <- POLYFUN.h2_enrichment(priors=priors, 
+                                        target_SNPs=subset(finemap_DT, P<.05)$SNP )
+  # GWAS sig hits
+  GWAS.sig <- POLYFUN.h2_enrichment(priors=priors, 
+                                    target_SNPs=subset(finemap_DT, P<5e-8)$SNP)
+  # Credible Set
+  Finemap.credset <- POLYFUN.h2_enrichment(priors=priors, 
+                                          target_SNPs = subset(finemap_DT, Support>0)$SNP)
+  # Consenus SNP
+  Finemap.consensus <- POLYFUN.h2_enrichment(priors=priors,
+                                            target_SNPs = subset(finemap_DT, Consensus_SNP==T)$SNP)
+  res <- data.frame(SNP.Group=c("GWAS_nom. sig.","GWAS_sig.","Fine-mapped_Credible Set","Fine-mapped_Consensus"),
+             h2.enrichment=c(GWAS.nom.sig,GWAS.sig, Finemap.credset, Finemap.consensus))
+  
+  if(show_plot){
+    gp <- ggplot(data = res, aes(x= gsub("_","\n",SNP.Group), y=h2.enrichment, fill= SNP.Group)) + 
+      geom_col(show.legend = F) + 
+      labs(title="PolyFun-LDSC Enrichment",
+           subtitle=subtitle,
+           x="SNP Group") 
+    print(gp)
+    if(save_plot!=F){
+      ggsave(plot = gp, filename = save_plot)
+    }
+  } 
+  return(res)
+}
+# merged_results <- merge_finemapping_results(minimum_support=0,
+#                                             include_leadSNPs=T)
+# h2.enrich.df <- POLYFUN.h2_enrichment_SNPgroups(finemap_DT = merged_results,
+#                                          subtitle = "Genome-wide")
+
+
 
 
 POLYFUN.finemapper <- function(polyfun= "./echolocatoR/tools/polyfun",
