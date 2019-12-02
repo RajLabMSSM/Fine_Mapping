@@ -14,9 +14,11 @@ core.*
 /Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt
 /Data/**/**/_genome_wide/COJO/cojo-file.ma  
 
+# Reference VCF files
 /Data/**/**/plink
 /Data/Reference/**/**/*.vcf
 /Data/Reference/**/**/*.vcf.gz
+/Data/Reference/**/**/*.vcf.gz.tbi
 Manuscripts/
 /Data/**/**/**/FINEMAP/data.ld
 /Data/**/**/**/plink/LD_matrix.RData
