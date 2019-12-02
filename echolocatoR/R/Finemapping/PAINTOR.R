@@ -638,6 +638,8 @@ PAINTOR <- function(finemap_DT=NA,
                     QTL_populations="EUR",
                     LD_reference="1KG_Phase1",
                     force_new_LD=F){
+  #@@@@@@@@@ Multi-condition, Multi-GWAS, multi-QTL, Multi-ethnic 
+  #    and/or Annotated Fine-mapping @@@@@@@@@
   # Note: All file formats are assumed to be single space delimited.
   
   ## Quick setup

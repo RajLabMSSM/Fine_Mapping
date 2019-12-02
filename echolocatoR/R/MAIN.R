@@ -354,7 +354,11 @@ dt.replace <- function(DT, target, replacement){
 }
 
 
-gene_trimmer <- function(subset_DT, gene, trim_gene_limits=T, min_POS=NULL, max_POS=NULL){
+gene_trimmer <- function(subset_DT, 
+                         gene, 
+                         trim_gene_limits=T, 
+                         min_POS=NULL, 
+                         max_POS=NULL){
   printer("BiomaRt:: Trimming data to only include SNPs within gene coordinates.")
   if(trim_gene_limits){
     gene_info <- biomart_geneInfo(gene)
@@ -483,7 +487,10 @@ finemap_pipeline <- function(gene,
      try({subset_DT <- subset(subset_DT, MAF >= min_MAF) })
    } 
    # Trim subset according to annotations of where the gene's limit are 
-   subset_DT <- gene_trimmer(subset_DT, trim_gene_limits, gene, min_POS, max_POS) 
+   subset_DT <- gene_trimmer(subset_DT, gene=gene,
+                             trim_gene_limits=trim_gene_limits,
+                             min_POS=min_POS,
+                             max_POS=min_POS) 
    
   ### Compute LD matrix 
   message("--- Step 2: Calculate Linkage Disequilibrium ---")

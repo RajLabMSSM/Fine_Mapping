@@ -107,15 +107,15 @@ query_by_coordinates <- function(top_SNPs,
                                  min_POS, 
                                  max_POS, 
                                  bp_distance){
+  gz.reader <- ifelse(endsWith(fullSS_path,".gz"), " gzcat ","")
   topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),]
   if(is.na(min_POS)){min_POS <- topSNP_sub$POS - bp_distance}
   if(is.na(max_POS)){max_POS <- topSNP_sub$POS + bp_distance}
   printer("---Min snp position:",min_POS, "---")
   printer("---Max snp position:",max_POS, "---")
   colDict <- column_dictionary(fullSS_path)
-  awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1 {print $0} NR>1 { if($",colDict[[chrom_col]]," == ",topSNP_sub$CHR,
-                   " && ($", colDict[[position_col]]," >= ",min_POS," && $",colDict[[position_col]]," <= ",max_POS,")) {print $0} }' ",fullSS_path,
-                   " > ",subset_path,sep="")
+  awk_cmd <- paste0(gz.reader,fullSS_path," | awk -F '",file_sep,"' 'NR==1 {print $0} NR>1 { if($",colDict[[chrom_col]]," == ",topSNP_sub$CHR,
+                   " && ($", colDict[[position_col]]," >= ",min_POS," && $",colDict[[position_col]]," <= ",max_POS,")) {print $0} }'"," > ",subset_path)
   printer("\n",awk_cmd,"\n")
   system(awk_cmd)
 }

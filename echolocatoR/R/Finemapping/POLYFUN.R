@@ -539,8 +539,8 @@ POLYFUN.plot <- function(subset_DT,
     scale_color_continuous(breaks=c(0,.5,1), limits=c(0,1)) +
     # Overall layers
     patchwork::plot_layout(ncol = 1) + 
-    patchwork::plot_annotation(title = "PolyFun Comparison", 
-                               subtitle = locus,
+    patchwork::plot_annotation(title = locus, 
+                               subtitle = paste(nrow(dat),"SNPs"),#"PolyFun Comparison",
                                theme =  theme(plot.title = element_text(hjust = 0.5),
                                               plot.subtitle = element_text(hjust = 0.5)))  
   print(gg)  

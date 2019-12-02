@@ -72,7 +72,7 @@ list_Data_dirs <- function(writeCSV = "./Data/directories_table.csv"){
     ## Kunkle et al. (2018) Alzheimer's GWAS 
     "Kunkle_2019" = list(type="Alzheimer's GWAS",
                          topSS="Data/GWAS/Kunkle_2019/Kunkle2019_supplementary_tables.xlsx", 
-                         fullSS=file.path(root,"ad-omics/data/AD_GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt"),
+                         fullSS=file.path(root,"ad-omics/data/AD_GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt.gz"),
                          fullSS.local="./Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.txt.gz",
                          # fullSS_stage2=file.path(root,"ad-omics/data/AD_GWAS/Kunkle_etal_Stage2_results.txt"),
                          reference="https://www.nature.com/articles/s41588-019-0358-2"),

@@ -109,20 +109,23 @@ download_vcf <- function(subset_DT,
                          whole_vcf=F){ 
   ## http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
   # Download portion of vcf from 1KG website 
-
+  
   subset_DT$CHR <- gsub("chr","",subset_DT$CHR)
   if(whole_vcf){
     region <= ""
     gene=""
   } else {
-    region <- paste(unique(subset_DT$CHR),":",
-                    min(subset_DT$POS),"-",
-                    max(subset_DT$POS), sep="")
+    # Method 1: get all within a range
+    # region <- paste(unique(subset_DT$CHR),":",
+    #                 min(subset_DT$POS),"-",
+    #                 max(subset_DT$POS), sep="")
+    # Method 2: specify exact positions
+    regions.txt <- file.path(results_path,"plink","regions.txt")
+    data.table::fwrite(list(paste0(subset_DT$CHR,":", subset_DT$POS,"-",subset_DT$POS)), 
+                            file=regions.txt)
+    region <- paste("-R",regions.txt) 
   } 
-  chrom <- unique(subset_DT$CHR)
-  
-  
-  
+  chrom <- unique(subset_DT$CHR) 
   # PHASE 3 DATA
   if(reference=="1KG_Phase3"){
     printer("LD Reference Panel = 1KG_Phase3")
