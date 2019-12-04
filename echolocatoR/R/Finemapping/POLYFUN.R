@@ -447,15 +447,14 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
 }
 
 POLYFUN.h2_enrichment <- function(priors, 
-                                   target_SNPs=NULL, # Much faster if you supply chrom
-                                   out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output/"){ 
-  
+                                   target_SNPs=NULL # Much faster if you supply chrom
+                                   ){  
   # Only consider SNPs that overlap between LDCS and GWAS results to make things fair 
   target_SNPs <- intersect(target_SNPs, priors$SNP)
-  priors.target <- subset(priors.sub, SNP %in% target_SNPs)
+  priors.target <- subset(priors, SNP %in% target_SNPs)
   
   # Calculate enrichment
-  target_h2 <- subset(priors.sub, SNP %in% target_SNPs)$SNPVAR %>% sum()
+  target_h2 <- subset(priors, SNP %in% target_SNPs)$SNPVAR %>% sum()
   total_h2 <- sum(priors$SNPVAR)
   n_target_SNPs <- nrow(priors.target)
   n_total_SNPs <- nrow(priors)
@@ -466,11 +465,12 @@ POLYFUN.h2_enrichment <- function(priors,
 
 
 POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT, 
-                                     chrom="*", 
-                                     ldsc_suffix="*.snpvar_ridge_constrained.gz",
-                                     subtitle="", 
-                                     show_plot=T,
-                                     save_plot="./h2_enrichment.png"){
+                                             chrom="*", 
+                                             ldsc_suffix="*.snpvar_ridge_constrained.gz",
+                                             subtitle="", 
+                                             show_plot=T,
+                                             save_plot="./h2_enrichment.png",
+                                            out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output/"){
   # Gather your LDSC results
   ldsc.files <- list.files(out.path, pattern = ldsc_suffix, full.names = T) %>% 
     grep(pattern = paste0(".",chrom,"."), value = T)
