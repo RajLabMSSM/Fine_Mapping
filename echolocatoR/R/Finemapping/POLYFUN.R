@@ -19,6 +19,16 @@
 # https://digitaldrummerj.me/git-syncing-fork-with-original-repo/
 
 
+read_parquet <- function(parquet.file){
+          # library(reticulate) 
+          # conda_path="/hpc/packages/minerva-centos7/anaconda3/2018.12"
+          reticulate::use_condaenv("polyfun_venv")
+          # reticulate::conda_list() 
+          pd <- reticulate::import("pandas")
+          a_df <- pd$read_parquet(parquet.file)
+          return(a_df) 
+}
+
 POLYFUN.help <- function(){
   cmd <- paste("python3",file.path(polyfun,"polyfun.py"),
                "--help")
@@ -197,14 +207,24 @@ POLYFUN.gather_ldscores <- function(output_prefix){
   ldscore.files <-  list.files(dirname(output_prefix), pattern = ".l2.ldscore.parquet", full.names = T)
   parquor <- POLYFUN.read_parquet(ldscore.files[1])
 }
-
-POLYFUN.gather_enrichment <- function(out.path, annot){
-  enrich.files <- list.files(out.path, "*.l2.M", full.names = T)
-  pd <- reticulate::import("pandas")
-  reticulate::use_condaenv()
-  annot.list <- pd$read_parquet("./echolocatoR/tools/polyfun/annotation_list.csv")
+ 
+POLYFUN.gather_annotations <- function(chromosomes=c(1:22), 
+                                       subset_SNPs=NULL,
+                                       polyfun_annots="/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB"){
+  annot_DT <- lapply(chromosomes, function(chrom){
+    printer("+ POLYFUN:: Chromosome",chrom,"...")
+    parquet.file <- list.files(polyfun_annots, 
+                               pattern = paste0("*\\.",chrom,"\\.annot\\.parquet"), 
+                               full.names = T)
+    annot_df <- read_parquet(parquet.file)
+    annot_df$BP <- as.integer(annot_df$BP)
+    if(!is.null(subset_SNPs)){
+      annot_df <- subset(annot_df, SNP %in% subset_SNPs)
+    }
+    return(data.table::data.table(annot_df))
+  }) %>% data.table::rbindlist() 
+  return(annot_DT)
 }
-
 
 
 POLYFUN.read_parquet <- function(parquet_path){
@@ -446,23 +466,142 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
   return(subset_DT)
 }
 
-POLYFUN.h2_enrichment <- function(priors, 
-                                   target_SNPs=NULL # Much faster if you supply chrom
-                                   ){  
+POLYFUN.h2_enrichment <- function(h2_df, 
+                                  target_SNPs=NULL){  
   # Only consider SNPs that overlap between LDCS and GWAS results to make things fair 
-  target_SNPs <- intersect(target_SNPs, priors$SNP)
-  priors.target <- subset(priors, SNP %in% target_SNPs)
-  
-  # Calculate enrichment
-  target_h2 <- subset(priors, SNP %in% target_SNPs)$SNPVAR %>% sum()
-  total_h2 <- sum(priors$SNPVAR)
-  n_target_SNPs <- nrow(priors.target)
-  n_total_SNPs <- nrow(priors)
-  
-  h2.enrichment <- (target_h2/total_h2) / (n_target_SNPs/n_total_SNPs)
+  # target_SNPs <- intersect(target_SNPs, h2_df$SNP)
+  h2.target <- subset(h2_df, SNP %in% target_SNPs)
+  if(nrow(h2.target)>0){
+    # Calculate enrichment
+    target_h2 <- sum(subset(h2.target, SNP %in% target_SNPs)$SNPVAR, na.rm = T)
+    total_h2 <- sum(h2_df$SNPVAR, na.rm = T)
+    n_target_SNPs <- nrow(h2.target)
+    n_total_SNPs <- nrow(h2_df)
+    
+    h2.enrichment <- (target_h2/total_h2) / (n_target_SNPs/n_total_SNPs)
+  } else {
+    h2.enrichment <- NA
+  } 
   return(h2.enrichment)
 }
 
+
+POLYFUN.h2_enrichment_annot <- function(finemap_DT, 
+                                        h2_df,
+                                        annot_DT, 
+                                        locus=F){ 
+  if(locus!=F){ 
+    printer(locus)
+    finemap_DT <- subset(finemap_DT, Gene==locus) 
+    }
+   # Subset to only common snps: h2 vs. finemap files vs. annotation files
+  common.snps <- intersect(intersect(h2_df$SNP, finemap_DT$SNP), annot_DT$SNP)
+  annot_DT <- subset(annot_DT, SNP %in% common.snps)
+  finemap_DT <- subset(finemap_DT, SNP %in% common.snps)
+  h2_df.sub <- subset(h2_df, SNP %in% common.snps)
+  printer("+ Total number of SNPs:",nrow(h2_df.sub))
+  
+  # Calculate enrichment for each annotation
+  annot.names <- colnames(annot_DT[,-c(1:5)])
+  printer("+ POLYFUN:: Calculating enrichment for",length(annot.names),"annotations.")
+  annot.enrich <- lapply(annot.names, function(annot){
+    target_SNPs <- annot_DT[annot_DT[[annot]] == 1,]$SNP  
+    h2.enrich <- POLYFUN.h2_enrichment(h2_df = h2_df.sub, 
+                                       target_SNPs = target_SNPs)
+    res.dt <- data.table::data.table(Annotation=annot, h2.enrichment=h2.enrich)
+    return(res.dt)
+  }) %>% data.table::rbindlist() 
+  
+  return(annot.enrich)
+}
+
+
+
+
+POLYFUN.h2_enrichment_annot_SNPgroups <- function(finemap_DT, 
+                                                  chrom="*", 
+                                                  ldsc_suffix="*.snpvar_ridge_constrained.gz",
+                                                  subtitle="", 
+                                                  show_plot=T,
+                                                  save_plot="./h2_enrichment_annotations.png",
+                                                  out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output"){
+  # Quickstart
+  # finemap_DT=quick_finemap(); chrom="*"; ldsc_suffix="*.snpvar_ridge_constrained.gz"; subtitle="";show_plot=T; save_plot="./h2_enrichment.png"; out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output"; conda_path="/hpc/packages/minerva-centos7/anaconda3/2018.12"; polyfun_annots="/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB"
+  # Gather your heritability
+  ldsc.files <- list.files(out.path, pattern = ldsc_suffix, full.names = T) %>% 
+    grep(pattern = paste0(".",chrom,"."), value = T)
+  h2_df <- POLYFUN.merge_ldsc_files(ldsc.files) 
+  #
+  printer("POLYFUN:: Gathering binary annotatin files...")
+  chromosomes <- unique(finemap_DT$CHR)
+  annot_DT <- POLYFUN.gather_annotations(chromosomes = chromosomes, 
+                                         subset_SNPs = finemap_DT$SNP)
+  
+  # Calculate enrichment for each annotation
+  locus=F#"LRRK2"
+  GWAS.nom.sig <- POLYFUN.h2_enrichment_annot(subset(finemap_DT, P<0.05), 
+                                               h2_df,
+                                               annot_DT,
+                                               locus)
+  GWAS.nom.sig$SNP.Group <- "GWAS_nom. sig."
+  
+  GWAS.sig <- POLYFUN.h2_enrichment_annot(subset(finemap_DT, P<5e-8), 
+                                          h2_df,
+                                          annot_DT,
+                                          locus)
+  GWAS.sig$SNP.Group <- "GWAS_sig."
+  
+  Finemap.credset <- POLYFUN.h2_enrichment_annot(subset(finemap_DT, Support>0), 
+                                            h2_df,
+                                            annot_DT,
+                                            locus)
+  Finemap.credset$SNP.Group <- "Fine-mapped_Credible Set"
+  
+  
+  Finemap.consensus <- POLYFUN.h2_enrichment_annot(subset(finemap_DT, Consensus_SNP==T), 
+                                                  h2_df,
+                                                  annot_DT,
+                                                  locus)
+  Finemap.consensus$SNP.Group <- "Fine-mapped_Consensus"
+  
+  res <- data.table::rbindlist(list(GWAS.nom.sig, GWAS.sig, Finemap.credset, Finemap.credset, Finemap.consensus)) 
+  
+  if(show_plot){
+    library(ggplot2)
+    gp <- ggplot(data = res, aes(x= Annotation, y=h2.enrichment, fill= SNP.Group)) + 
+      facet_grid(facets = SNP.Group~.) + 
+      geom_col(show.legend = F, position = "dodge") + 
+      labs(title="PolyFun-LDSC Enrichment",
+           subtitle=subtitle,
+           x="SNP Group") +
+      theme_classic() + 
+      theme(axis.text.x = element_text(angle = 45, hjust = 1, size=4))
+    print(gp)
+    if(save_plot!=F){
+      ggsave(plot = gp, filename  = save_plot, height=10, width=5)
+    }
+  }
+}
+# 
+# POLYFUN.finemapped_traits <- function(finemap_DT){  
+#   fm_traits <- readxl::read_excel("./echolocatoR/tools/polyfun/SuppTables.xlsx", sheet = "S7")
+#   fm_traits <- fm_traits %>% 
+#     dplyr::mutate(POS=as.integer(BP)) %>%  
+#     data.table::data.table() %>% 
+#     subset(CHR %in% unique(finemap_DT$CHR) & POS >= min(finemap_DT$POS) & POS <= max(finemap_DT$POS))
+#   fm_traits$`PIP (PolyFun + SuSiE)` <- as.numeric(gsub("<|>","",fm_traits$`PIP (PolyFun + SuSiE)`))
+#   finemap_merged <- data.table:::merge.data.table(fm_traits, finemap_DT, 
+#                                                   by=c("CHR","POS","SNP"), 
+#                                                   all.y = T) 
+#   library(patchwork)
+#   ggplot(finemap_merged) + 
+#     geom_point(aes(x=POS, y=mean.PP, color=mean.PP)) +  
+#   ggplot(finemap_merged) +
+#     geom_point(aes(x=POS, y=PolyFun_SUSIE.PP, 
+#                    color=PolyFun_SUSIE.PP)) + 
+#     patchwork::plot_layout(ncol = 1)
+#   
+# }
 
 POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT, 
                                              chrom="*", 
@@ -470,23 +609,31 @@ POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT,
                                              subtitle="", 
                                              show_plot=T,
                                              save_plot="./h2_enrichment.png",
-                                            out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output/"){
-  # Gather your LDSC results
+                                             out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output"){
+  # Quickstart
+  # finemap_DT=quick_finemap(); chrom="*"; ldsc_suffix="*.snpvar_ridge_constrained.gz"; subtitle="";show_plot=T; save_plot="./h2_enrichment.png"; out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output"; conda_path="/hpc/packages/minerva-centos7/anaconda3/2018.12"; polyfun_annots="/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB"
+  # Gather your heritability
   ldsc.files <- list.files(out.path, pattern = ldsc_suffix, full.names = T) %>% 
     grep(pattern = paste0(".",chrom,"."), value = T)
-  priors <- POLYFUN.merge_ldsc_files(ldsc.files) %>% subset(SNP %in% finemap_DT$SNP) 
+  h2_df <- POLYFUN.merge_ldsc_files(ldsc.files) 
+  # Subset to only common snps: h2 vs. finemap files
+  common.snps <- intersect(h2_df$SNP, finemap_DT$SNP)
+  h2_df <- subset(h2_df, SNP %in% common.snps) 
+  finemap_DT <- subset(finemap_DT, SNP %in% common.snps) 
+  
+  
   
   # GWAS nominally sig hits
-  GWAS.nom.sig <- POLYFUN.h2_enrichment(priors=priors, 
+  GWAS.nom.sig <- POLYFUN.h2_enrichment(h2_df=h2_df, 
                                         target_SNPs=subset(finemap_DT, P<.05)$SNP )
   # GWAS sig hits
-  GWAS.sig <- POLYFUN.h2_enrichment(priors=priors, 
+  GWAS.sig <- POLYFUN.h2_enrichment(h2_df=h2_df, 
                                     target_SNPs=subset(finemap_DT, P<5e-8)$SNP)
   # Credible Set
-  Finemap.credset <- POLYFUN.h2_enrichment(priors=priors, 
+  Finemap.credset <- POLYFUN.h2_enrichment(h2_df=h2_df, 
                                           target_SNPs = subset(finemap_DT, Support>0)$SNP)
   # Consenus SNP
-  Finemap.consensus <- POLYFUN.h2_enrichment(priors=priors,
+  Finemap.consensus <- POLYFUN.h2_enrichment(h2_df=h2_df,
                                             target_SNPs = subset(finemap_DT, Consensus_SNP==T)$SNP)
   res <- data.frame(SNP.Group=c("GWAS_nom. sig.","GWAS_sig.","Fine-mapped_Credible Set","Fine-mapped_Consensus"),
              h2.enrichment=c(GWAS.nom.sig,GWAS.sig, Finemap.credset, Finemap.consensus))
@@ -508,6 +655,8 @@ POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT,
 #                                             include_leadSNPs=T)
 # h2.enrich.df <- POLYFUN.h2_enrichment_SNPgroups(finemap_DT = merged_results,
 #                                          subtitle = "Genome-wide")
+# h2.enrich.annot.df <- POLYFUN.h2_enrichment_annot(finemap_DT = merged_results, 
+#                                                   h2_df = h2_df)
 
 
 
@@ -684,7 +833,7 @@ GGBIO.ucsc_tracks <- function(finemap_DT){
   )    
   # BigWig tracks from Glass
   bw.cols <- colnames(mcols(gr.snp))[1:12]  
-  BW_tracks<- lapply(bw.cols, function(annot){
+  BW_tracks<- y(bw.cols, function(annot){
     gg.bw <- ggbio::plotGrandLinear(gr.snp, aes(y=eval(parse(text=annot)), 
                                                 color=eval(parse(text=annot))) 
     ) + labs(y="Score", color="Score") + ylim(0,45)
