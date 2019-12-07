@@ -54,7 +54,7 @@ POLYFUN.install_dependencies <- function(libraries = c("numpy",
 }
 
  
-POLYFUN.load_conda <- function(server=F){
+POLYFUN.install_conda <- function(server=F){
   # Install anaconda
   # https://medium.com/ayuth/install-anaconda-on-macos-with-homebrew-c94437d63a37
   if(server){
@@ -63,10 +63,19 @@ POLYFUN.load_conda <- function(server=F){
     system("brew cask install anaconda")
     system("conda init bash")
     try({system("conda init fish")}) 
-    }
-  
+    } 
   system("'export PATH='/usr/local/anaconda3/bin:$PATH' >> ~/.zshrc")
   system("source ~/.zshrc") 
+}
+
+POLYFUN.load_conda <- function(server=F){
+  printer("POLYFUN:: Loading polyfun_venv...")
+  if(server){ 
+    reticulate::use_condaenv("polyfun_venv")
+  }
+  reticulate::use_condaenv("polyfun_venv",
+                           conda = "/usr/local/anaconda3/condabin/conda")
+  # conda_list("/usr/local/anaconda3/condabin/conda")
 }
 
 
@@ -92,6 +101,8 @@ POLYFUN.conda_from_list <- function(libraries = c("numpy",
   print(cmd)
   
 }
+
+
 
 # %%%%%%%%%%%%%%%% PolyFun approach 1 %%%%%%%%%%%%%%%% 
 ## Using precomputed prior causal probabilities based on a meta-analysis of 15 UK Biobank traits
@@ -171,7 +182,9 @@ POLYFUN.munge_summ_stats <- function(polyfun="./echolocatoR/tools/polyfun",
                                      sample.size=1474097,
                                      min_INFO=0,
                                      min_MAF=0,
-                                     server=F){
+                                     server=F){  
+  reticulate::use_condaenv("polyfun_venv", condaenv = )
+  
   results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
 
   if(server){
@@ -262,9 +275,7 @@ POLYFUN.ukbb_LD <- function(finemap_DT,
     printer("POLYFUN:: Pre-existing UKBB LD file detected.")
     ld_R <- readRDS(UKBB.LD.file)
   } else {
-    library(reticulate) 
-    reticulate::use_condaenv("polyfun_venv", conda = "/usr/local/anaconda3/condabin/conda")
-    # conda_list("/usr/local/anaconda3/condabin/conda")
+    POLYFUN.load_conda()
     reticulate::source_python(file.path(polyfun,"load_ld.py"))
     ld.out <- load_ld(ld_prefix = file.path(base_url,"chr12_40000001_43000001"))
     # LD matrix
