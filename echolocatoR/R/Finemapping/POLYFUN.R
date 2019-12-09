@@ -176,15 +176,12 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
  
 
 
-POLYFUN.munge_summ_stats <- function(polyfun="./echolocatoR/tools/polyfun",
-                                     python="python",
+POLYFUN.munge_summ_stats <- function(polyfun="./echolocatoR/tools/polyfun", 
                                      dataset="Nalls23andMe_2019",
                                      sample.size=1474097,
                                      min_INFO=0,
                                      min_MAF=0,
                                      server=F){  
-  reticulate::use_condaenv("polyfun_venv", condaenv = )
-  
   results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
 
   if(server){
@@ -324,17 +321,24 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
                                     allow_missing_SNPs=T,
                                     ref.prefix="/sc/orga/projects/pd-omics/data/1000_Genomes/Phase1/1000G.mac5eur."){
   # Quickstart:
-  # polyfun="./echolocatoR/tools/polyfun"; parametric=T;  weights.path=file.path(polyfun,"example_data/weights."); annotations.path=file.path(polyfun,"example_data/annotations."); munged.path= "./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet"; parametric=T; dataset="Nalls23andMe_2019"; prefix="PD_GWAS"; compute_ldscores=F; allow_missing_SNPs=T; chrom="all"; finemap_DT=NULL; locus="LRRK2"; server=T;
+  # polyfun="./echolocatoR/tools/polyfun"; parametric=T;  weights.path=file.path(polyfun,"example_data/weights."); annotations.path=file.path(polyfun,"example_data/annotations."); munged.path= "./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet"; parametric=T; dataset="Nalls23andMe_2019"; prefix="PD_GWAS"; compute_ldscores=F; allow_missing_SNPs=T; chrom="all"; finemap_DT=NULL; locus="LRRK2"; server=F; ref.prefix="/sc/orga/projects/pd-omics/data/1000_Genomes/Phase1/1000G.mac5eur.";
  
-  annotations.path <-  "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB/baselineLF2.2.UKB."
-  weights.path <-  "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB/weights.UKB."
+  POLYFUN.load_conda(server = server)
+  if(server){
+    annotations.path <-  "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB/baselineLF2.2.UKB."
+    weights.path <-  "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB/weights.UKB."
+  } 
    
   # 0. Create paths
-  results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide")
-  PF.output.path <- file.path(results_path, "PolyFun")
+  results_path <- file.path(dirname(Directory_info(dataset_name = dataset, "fullSS.local")), "_genome_wide") 
+  if(server){
+    PF.output.path <- file.path("/sc/orga/projects/pd-omics/tools/polyfun")
+  } else {
+    PF.output.path <- file.path(results_path, "PolyFun")
+  }
   dir.create(PF.output.path, showWarnings = F, recursive = T) 
   out.path <- file.path(PF.output.path,"output")
-  output_prefix <- file.path(out.path, prefix)
+  output_prefix <- file.path(out.path, prefix, prefix)
   dir.create(out.path, showWarnings = F, recursive = T)
   
   # 1. Munge summary stats
@@ -345,7 +349,7 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
                                            sample.size=1474097, 
                                            min_INFO = 0,
                                            min_MAF = 0.001, 
-                                           server = T)   
+                                           server = server)   
   
   # 2. 
   ## If compute_ldscores == F:
@@ -375,7 +379,7 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
   
   # Computationally intensive: can parallelize by chromosomes
   if(compute_ldscores){
-    # 3.
+    # 3. Computationally intensive step
     printer("PolyFun:: [3] Compute LD-scores for each SNP bin")
     cmd3 <- paste("python",file.path(polyfun,"polyfun.py"),
                   "--compute-ldscores",
@@ -401,8 +405,9 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
     printer("PolyFun:: Results files:")
     printer("          *.snpvar_ridge.gz")
     printer("          *.snpvar_ridge_constrained.gz") 
-    # The output of the partitioned LDSC has the suffix: .snpvar_constrained.gz (one per chrom)
-    LDSC.files <- list.files(out.path, pattern = "*.snpvar_constrained.gz", full.names = T)
+    # The output of the PARTITIONED LDSC has the suffix: .snpvar_constrained.gz (one per chrom)
+    LDSC.files <- list.files(out.path, 
+                             pattern = "*.snpvar_constrained.gz", full.names = T)
     # pd_ldsc <- data.table::fread(PS_LDSC.files[1], nThread = 4) 
     # ldscore <- POLYFUN.read_parquet(file.path(out.path,"PD_GWAS.1.l2.ldscore.parquet")) 
     # bin.1 <- POLYFUN.read_parquet(file.path(out.path,"PD_GWAS.2.bins.parquet"))
@@ -412,14 +417,6 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
 }
 
 
-POLYFUN.merge_ldsc_files <- function(ldsc.files){
-  priors <- lapply(ldsc.files, function(x){
-    printer(x)
-    pri <- data.table::fread(x, nThread = 4) 
-    return(pri)
-  }) %>% data.table::rbindlist()
-  return(priors)
-}
 
 
 # %%%%%%%%%%%%%%%% Run PolyFun+SUSIE %%%%%%%%%%%%%%%% 
@@ -446,16 +443,15 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
   } else if (polyfun_priors=="parametric"){
     ldsc.files <- list.files(out.path, pattern = "*.snpvar_ridge_constrained.gz", full.names = T) %>% 
       grep(pattern = paste0(".",chrom,"."), value = T)
-    priors <- POLYFUN.merge_ldsc_files(ldsc.files) 
+    h2 <- rbind.file.list(ldsc.files) 
     # ~~~~~~~~ Approach 3 ~~~~~~~~ 
   } else if (polyfun_priors=="non-parametric"){
-    ldsc.files <- list.files(out.path, pattern = "*.snpvar_constrained.gz", full.names = T) %>% 
-      grep(pattern = paste0(".",chrom,"."), value = T)
-    priors <- POLYFUN.merge_ldsc_files(ldsc.files) 
+    ldsc.files <- list.files(out.path, pattern = "*.snpvar_constrained.gz", full.names = T) %>%  grep(pattern = paste0(".",chrom,"."), value = T)
+    h2 <- rbind.file.list(ldsc.files) 
   } 
   # Prepare data
   merged_DT <- data.table::merge.data.table(finemap_DT, 
-                                            dplyr::select(priors, SNP, PolyFun.priors=SNPVAR) %>% 
+                                            dplyr::select(h2, SNP, POLYFUN.h2=SNPVAR) %>% 
                                               data.table::data.table(), 
                                             by="SNP")
   # LD_matrix <- readRDS(file.path(results_path,"plink/LD_matrix.RData"))
@@ -470,7 +466,7 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
                      n_causal=5,
                      sample_size=NA, 
                      var_y="estimate",
-                     prior_weights=merged_DT$PolyFun.priors) 
+                     prior_weights=merged_DT$POLYFUN.h2) 
   subset_DT <- subset_DT %>% dplyr::rename(PolyFun_SUSIE.Probability=Probability, 
                                            PolyFun_SUSIE.Credible_Set=Credible_Set) %>% 
     data.table::data.table()

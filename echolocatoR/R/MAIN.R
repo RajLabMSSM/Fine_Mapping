@@ -152,6 +152,16 @@ reload <- function(){
   source("echolocatoR/R/MAIN.R") 
 }
 
+
+rbind.file.list <- function(file.list, verbose=T){
+  merged.dat <- lapply(file.list, function(x){
+    printer(x, v = verbose)
+    dat <- data.table::fread(x, nThread = 4) 
+    return(dat)
+  }) %>% data.table::rbindlist()
+  return(merged.dat)
+}
+
 # data.table::fwrite( subset(subset_DT, SNP != "rs34637584"), "Data/GWAS/Nalls23andMe_2019/LRRK2/LocusZoomData_-rs34637584.txt", sep="\t")
 
 quick_finemap <- function(){
