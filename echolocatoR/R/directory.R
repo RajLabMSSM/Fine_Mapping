@@ -48,7 +48,7 @@ list_Data_dirs <- function(writeCSV = "./Data/directories_table.csv"){
                            topSS="Data/GWAS/Nalls23andMe_2019/Nalls2019_TableS2.xlsx",
                            # fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/23andme/PD_all_post30APRIL2015_5.2_extended.txt")),
                            fullSS=file.path(root,"pd-omics/data/nallsEtAl2019/combined_meta/nallsEtAl2019_allSamples_allVariants.mod.txt"),
-                           fullSS.local="./Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt",
+                           fullSS.local="./Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt.gz",
                            reference="https://www.biorxiv.org/content/10.1101/388165v3"),  
     
     ## IGAP 

@@ -125,28 +125,29 @@ snp_plot <- function(finemap_DT,
                      multi = T,
                      LD_SNP = NA){
   { 
-  # finemap_DT <- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt", sep="\t")
-  score_dict <- setNames(c("-log10(P-value)", "PIP","PP", "PIP", "Conditional Probability","-log10(P-value)"),
-                         c("original","SUSIE", "ABF", "FINEMAP", "COJO","COLOC"))
+  # finemap_DT <- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt", sep="\t"); LD_matrix <- readRDS("Data/GWAS/Nalls23andMe_2019/LRRK2/plink/UKB_LD.RDS")
+  score_dict <- setNames(c("-log10(P-value)", "PIP","PIP","PP", "PIP", "Conditional Probability","-log10(P-value)"),
+                         c("original","SUSIE","POLYFUN_SUSIE", "ABF", "FINEMAP", "COJO","COLOC"))
   # X-tick spacing
-  spacing <- if(length(finemap_DT$SNP)>1000){250000}else{50000}
-  roundBreaks <- seq(plyr::round_any(min(finemap_DT$POS),10000), max(finemap_DT$POS), spacing) 
+  # spacing <- if(length(finemap_DT$SNP)>1000){250000}else{50000}
+  # roundBreaks <- seq(plyr::round_any(min(finemap_DT$POS),10000), max(finemap_DT$POS), spacing) 
   # yLimits2 <- c(0,1.1)
   
   # Merge with LD info
   # If not specified, identify a lead SNP by summing the PPs from each fine-mapping method
-  # if(is.na(LD_SNP)){
-    LD_SNP <- subset(finemap_DT, leadSNP==T)$SNP
-    LD_sub <- LD_with_leadSNP(LD_matrix, LD_SNP)
-    DT <- data.table:::merge.data.table(finemap_DT, LD_sub, by = "SNP")
-  # }  
+  
+  LD_SNP <- subset(finemap_DT, leadSNP==T)$SNP
+  LD_sub <- LD_with_leadSNP(LD_matrix, LD_SNP)
+  DT <- data.table:::merge.data.table(finemap_DT, LD_sub, by = "SNP") %>% 
+    dplyr::mutate(Mb=POS/1000000)
+ 
   
   if(method=="original"){   
     r2_multiply = 150
     is.na(DT$Probability) <- 0
-    p <- ggplot(data = DT, aes(x=POS, y= -log10(P), label=SNP, color= r2)) + 
+    p <- ggplot(data = DT, aes(x=Mb, y= -log10(P), label=SNP, color= r2)) + 
       geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) +
-      stat_smooth(data=DT, aes(x=POS, y=r2*r2_multiply, fill=r2),color="firebrick1", 
+      stat_smooth(data=DT, aes(x=Mb, y=r2*r2_multiply, fill=r2),color="firebrick1", 
                   se = F, formula = y ~ x, 
                   method = 'loess', span=.1) + 
       geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) + 
@@ -252,7 +253,7 @@ multi_finemap_plot <- function(finemap_DT,
   # results_path <- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
   # finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"))
   # load(file.path(results_path, "plink/LD_matrix.RData"))
-  # finemap_method_list=c("SUSIE","FINEMAP")
+  # finemap_method_list=c("SUSIE","POLYFUN+SUSIE")
   
   method_list <- if(original){c("original", finemap_method_list)}else{finemap_method_list} 
   

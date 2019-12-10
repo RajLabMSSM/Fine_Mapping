@@ -147,6 +147,8 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
                                            dataset="Nalls23andMe_2019",
                                            finemap_DT=NULL, 
                                            locus="LRRK2"){
+  dataset <- basename(dirname(results_path))
+  locus <- basename(results_path)
   PF.output.path <- file.path(results_path, "PolyFun")
   finemap_DT <- POLYFUN.initialize(finemap_DT=finemap_DT, 
                                     results_path=results_path, 
@@ -420,33 +422,34 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
 
 
 # %%%%%%%%%%%%%%%% Run PolyFun+SUSIE %%%%%%%%%%%%%%%% 
-POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun", 
-                          dataset="Nalls23andMe_2019",
-                          finemap_DT=NULL, 
-                          polyfun_priors=c("precomputed","parametric","non-parametric"),
-                          locus="LRRK2"){
+POLYFUN.SUSIE <- function(results_path,
+                          polyfun="./echolocatoR/tools/polyfun",
+                          finemap_DT=NULL,
+                          LD_matrix=NULL,
+                          polyfun_approach="non-parametric",
+                          dataset_type="GWAS",
+                          n_causal=5, 
+                          sample_size=NA){
   
   # polyfun="./echolocatoR/tools/polyfun";  results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide"; dataset="Nalls23andMe_2019"; locus="LRRK2"; finemap_DT=NULL; polyfun_priors="parametric"; sample.size=1474097; min_INFO=0; min_MAF=0; server=T;
-  results_path <- file.path(dirname(Directory_info("Nalls23andMe_2019")),locus)
-  out.path <- file.path(dirname(results_path),"_genome_wide/PolyFun/output")
-  finemap_DT <- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
+  out.path <- file.path(dirname(results_path),"_genome_wide/PolyFun/output") 
   chrom <- unique(finemap_DT$CHR)
+
+  
    
   # Import priors
   # ~~~~~~~~ Approach 1 ~~~~~~~~ 
-  if (polyfun_priors=="precomputed"){
-    priors <- POLYFUN.get_precomputed_priors(results_path=results_path,
-                                             dataset=dataset,
-                                             finemap_DT=finemap_DT,
-                                             locus=locus)
+  if (polyfun_approach=="precomputed"){
+    priors <- POLYFUN.get_precomputed_priors(results_path=results_path, 
+                                             finemap_DT=finemap_DT)
     
   # ~~~~~~~~ Approach 2 ~~~~~~~~ 
-  } else if (polyfun_priors=="parametric"){
+  } else if (polyfun_approach=="parametric"){
     ldsc.files <- list.files(out.path, pattern = "*.snpvar_ridge_constrained.gz", full.names = T) %>% 
       grep(pattern = paste0(".",chrom,"."), value = T)
     h2 <- rbind.file.list(ldsc.files) 
     # ~~~~~~~~ Approach 3 ~~~~~~~~ 
-  } else if (polyfun_priors=="non-parametric"){
+  } else if (polyfun_approach=="non-parametric"){
     ldsc.files <- list.files(out.path, pattern = "*.snpvar_constrained.gz", full.names = T) %>%  grep(pattern = paste0(".",chrom,"."), value = T)
     h2 <- rbind.file.list(ldsc.files) 
   } 
@@ -455,22 +458,23 @@ POLYFUN.SUSIE <- function(polyfun="./echolocatoR/tools/polyfun",
                                             dplyr::select(h2, SNP, POLYFUN.h2=SNPVAR) %>% 
                                               data.table::data.table(), 
                                             by="SNP")
-  # LD_matrix <- readRDS(file.path(results_path,"plink/LD_matrix.RData"))
-  LD_matrix <- POLYFUN.ukbb_LD(finemap_DT, 
-                               results_path,
-                               force_new_LD=F)
+  if(is.null(LD_matrix)){
+    # LD_matrix <- readRDS(file.path(results_path,"plink/LD_matrix.RData"))
+    LD_matrix <- POLYFUN.ukbb_LD(finemap_DT, 
+                                 results_path,
+                                 force_new_LD=F)
+  } 
   LD_matrix <- LD_matrix[merged_DT$SNP, merged_DT$SNP]
   # Run SUSIE
   subset_DT <- SUSIE(merged_DT, 
                      LD_matrix, 
-                     dataset_type="GWAS",
-                     n_causal=5,
-                     sample_size=NA, 
+                     dataset_type=dataset_type,
+                     n_causal=n_causal,
+                     sample_size=sample_size, 
                      var_y="estimate",
                      prior_weights=merged_DT$POLYFUN.h2) 
-  subset_DT <- subset_DT %>% dplyr::rename(PolyFun_SUSIE.Probability=Probability, 
-                                           PolyFun_SUSIE.Credible_Set=Credible_Set) %>% 
-    data.table::data.table()
+  # subset_DT <- subset_DT %>% dplyr::rename(POLYFUN_SUSIE.Probability=Probability, 
+  #                                          PolyFun_SUSIE.Credible_Set=Credible_Set) %>%  data.table::data.table()
   return(subset_DT)
 }
 
@@ -513,9 +517,9 @@ POLYFUN.plot <- function(subset_DT,
                          LD_matrix,
                          locus=NULL,
                          subtitle="PolyFun Comparison",
-                         conditions=c("SUSIE","PolyFun_SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")){
+                         conditions=c("SUSIE","POLYFUN_SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")){
   # Quickstart
-  # locus="LRRK2"; subtitle="PolyFun Comparison"; conditions=c("SUSIE","PolyFun_SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")
+  # locus="LRRK2"; subtitle="PolyFun Comparison"; conditions=c("SUSIE","POLYFUN_SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")
   # # Get r2 
   
   if(plot_ld){
@@ -546,11 +550,11 @@ POLYFUN.plot <- function(subset_DT,
     # ylim(0,1) +
     
     # PolyFun+SUSIE PP
-    ggplot(dat, aes(x=Mb, y=PolyFun_SUSIE.Probability, color=PolyFun_SUSIE.Probability)) + 
+    ggplot(dat, aes(x=Mb, y=POLYFUN_SUSIE.Probability, color=POLYFUN_SUSIE.Probability)) + 
     geom_point() + 
-    ggrepel::geom_label_repel(data = subset(dat,PolyFun_SUSIE.Probability>=.5), 
-                              aes(label=SNP),alpha=0.7) +
-    geom_point(data=subset(dat, PolyFun_SUSIE.Credible_Set>0),
+    ggrepel::geom_label_repel(data = subset(dat,POLYFUN_SUSIE.Probability>=.5), 
+                              aes(label=SNP),alpha=0.7, color='green') +
+    geom_point(data=subset(dat, POLYFUN_SUSIE.Credible_Set>0),
                #subset(dat, PolyFun_SUSIE.Probability>=.95), 
                size=5, shape=1, color="green") + 
     scale_y_continuous(breaks = c(0,.5,1), limits = c(0,1.1)) + 
@@ -560,7 +564,7 @@ POLYFUN.plot <- function(subset_DT,
     ggplot(dat, aes(x=Mb, y=SUSIE.Probability, color=SUSIE.Probability)) + 
     geom_point() + 
     ggrepel::geom_label_repel(data = subset(dat,SUSIE.Credible_Set>0), 
-                              aes(label=SNP),alpha=0.8) +
+                              aes(label=SNP),alpha=0.8, color='green') +
     geom_point(data=subset(dat,SUSIE.Probability>=.95), 
                size=5, shape=1, color="green") + 
     scale_y_continuous(breaks = c(0,.5,1), limits = c(0,1.1)) + 
@@ -1081,23 +1085,24 @@ POLYFUN.h2_enrichment_annot_SNPgroups <- function(finemap_DT,
 
 POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT, 
                                             chrom="*", 
-                                            ldsc_suffix="*.snpvar_ridge_constrained.gz",
+                                            ldsc_suffix="*.snpvar_constrained.gz",
                                             subtitle="", 
                                             show_plot=T,
                                             save_plot="./h2_enrichment.png",
                                             out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output"){
   # Quickstart
-  # finemap_DT=quick_finemap(); chrom="*"; ldsc_suffix="*.snpvar_ridge_constrained.gz"; subtitle="";show_plot=T; save_plot="./h2_enrichment.png"; out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output"; conda_path="/hpc/packages/minerva-centos7/anaconda3/2018.12"; polyfun_annots="/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB"
+  # finemap_DT=quick_finemap(); chrom="*"; ldsc_suffix="*.snpvar_constrained.gz"; subtitle="";show_plot=T; save_plot="./h2_enrichment.png"; out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output"; conda_path="/hpc/packages/minerva-centos7/anaconda3/2018.12"; polyfun_annots="/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB"
+  finemap_DT <- merge_finemapping_results(minimum_support = 0)
   # Gather your heritability
   ldsc.files <- list.files(out.path, pattern = ldsc_suffix, full.names = T) %>% 
-    grep(pattern = paste0(".",chrom,"."), value = T)
-  h2_df <- POLYFUN.merge_ldsc_files(ldsc.files) 
+    grep(pattern = paste0(".",chrom,"."), value = T) 
+  h2_df <- rbind.file.list(ldsc.files)  
   # Subset to only common snps: h2 vs. finemap files
-  common.snps <- intersect(h2_df$SNP, finemap_DT$SNP)
-  h2_df <- subset(h2_df, SNP %in% common.snps) 
-  finemap_DT <- subset(finemap_DT, SNP %in% common.snps) 
+  # common.snps <- intersect(h2_df$SNP, finemap_DT$SNP)
+  # h2_sub <- subset(h2_df, SNP %in% common.snps) 
+  # finemap_DT <- subset(finemap_DT, SNP %in% common.snps) 
   
-  
+   
   
   # GWAS nominally sig hits
   GWAS.nom.sig <- POLYFUN.h2_enrichment(h2_df=h2_df, 
@@ -1110,14 +1115,15 @@ POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT,
                                            target_SNPs = subset(finemap_DT, Support>0)$SNP)
   # Consenus SNP
   Finemap.consensus <- POLYFUN.h2_enrichment(h2_df=h2_df,
-                                             target_SNPs = subset(finemap_DT, Consensus_SNP==T)$SNP)
+                                             target_SNPs = subset(finemap_DT, Support>1)$SNP)
+  
   res <- data.frame(SNP.Group=c("GWAS_nom. sig.","GWAS_sig.","Fine-mapped_Credible Set","Fine-mapped_Consensus"),
                     h2.enrichment=c(GWAS.nom.sig,GWAS.sig, Finemap.credset, Finemap.consensus))
   
   if(show_plot){
     gp <- ggplot(data = res, aes(x= gsub("_","\n",SNP.Group), y=h2.enrichment, fill= SNP.Group)) + 
       geom_col(show.legend = F) + 
-      labs(title="PolyFun-LDSC Enrichment",
+      labs(title="PolyFun Heritability Enrichment",
            subtitle=subtitle,
            x="SNP Group") 
     print(gp)

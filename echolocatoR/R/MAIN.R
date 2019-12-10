@@ -531,9 +531,9 @@ finemap_pipeline <- function(gene,
   # Final filtering   
   message("-------------- Step 3: Filter SNPs -------------") 
   ## Subset summary stats to only include SNPs found in query
-  subset_DT <- subset(subset_DT, SNP %in% unique(row.names(LD_matrix), colnames(LD_matrix) ) )
-  subset_DT <- subset_DT[complete.cases(subset_DT),] # Remove any NAs
-  LD_matrix <- LD_matrix[row.names(LD_matrix) %in% subset_DT$SNP,  colnames(LD_matrix) %in% subset_DT$SNP]
+  # subset_DT <- subset(subset_DT, SNP %in% unique(row.names(LD_matrix), colnames(LD_matrix) ) )
+  # subset_DT <- subset_DT[complete.cases(subset_DT),] # Remove any NAs
+  # LD_matrix <- LD_matrix[row.names(LD_matrix) %in% subset_DT$SNP,  colnames(LD_matrix) %in% subset_DT$SNP]
   
   # finemap 
   finemap_DT <- finemap_handler(results_path = results_path, 
@@ -563,25 +563,28 @@ finemap_pipeline <- function(gene,
   # Plot    
   message("--------------- Step 7: Visualize --------------") 
   if("simple" %in% plot_types){
-    mf_plot <- multi_finemap_plot(finemap_DT = finemap_DT,
-                                  LD_matrix = LD_matrix,
-                                  results_path = results_path,
-                                  finemap_method_list = finemap_methods,
-                                  conditioned_snps = conditioned_snps,
-                                  gene = gene,
-                                  original = T,
-                                  save = T)
-    print(mf_plot)
+    try({
+      mf_plot <- multi_finemap_plot(finemap_DT = finemap_DT,
+                                    LD_matrix = LD_matrix,
+                                    results_path = results_path,
+                                    finemap_method_list = finemap_methods,
+                                    conditioned_snps = conditioned_snps,
+                                    gene = gene,
+                                    original = T,
+                                    save = T)
+      print(mf_plot)
+    }) 
   }
   if("fancy" %in% plot_types){
-    trx <- ggbio_plot(finemap_DT = finemap_DT,
-                      gene = gene,
-                      LD_matrix = LD_matrix,
-                      results_path = results_path,
-                      method_list = finemap_methods, #c("SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")
-                      XGR_libnames = c("ENCODE_TFBS_ClusteredV3_CellTypes",
-                                       "ENCODE_DNaseI_ClusteredV3_CellTypes")#
-                                      ) 
+    try({
+      trx <- ggbio_plot(finemap_DT = finemap_DT,
+                        gene = gene,
+                        LD_matrix = LD_matrix,
+                        results_path = results_path,
+                        method_list = finemap_methods, #c("SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")
+                        XGR_libnames = c("ENCODE_TFBS_ClusteredV3_CellTypes",
+                                         "ENCODE_DNaseI_ClusteredV3_CellTypes")) 
+    }) 
   }
 
  
@@ -613,6 +616,7 @@ arg_list_handler <- function(arg, i){
   output <- if(length(arg)>1){arg[i]}else{arg}
   return(output)
 }
+
 snps_to_condition <- function(conditioned_snps, top_SNPs, gene_list){ 
   if(conditioned_snps=="auto"){
     lead_SNPs_DT <- subset(top_SNPs, Gene %in% gene_list)

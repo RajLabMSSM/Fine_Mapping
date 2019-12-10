@@ -151,9 +151,9 @@ finemap_method_handler <- function(results_path,
                                    dataset_type="GWAS",
                                    force_new_finemap=T,
                                    LD_matrix=NULL, 
-                                   n_causal=5, 
-                                   sample_size,
+                                   n_causal=5,
                                    conditioned_snps,
+                                   sample_size=NA,
                                    snp_col="SNP",
                                    freq_col="Freq",
                                    effect_col="Effect",
@@ -175,7 +175,17 @@ finemap_method_handler <- function(results_path,
                         sample_size = sample_size)
     
     
-  } else if(finemap_method=="ABF"){
+  } else if(finemap_method=="POLYFUN_SUSIE"){
+    # PolyFun+SUSIE 
+    finemap_DT <- POLYFUN.SUSIE(results_path = results_path,  
+                                finemap_DT = subset_DT, 
+                                LD_matrix = LD_matrix, 
+                                dataset_type = dataset_type,
+                                n_causal = n_causal,
+                                sample_size = sample_size,
+                                polyfun_approach = "non-parametric") 
+    
+  }else if(finemap_method=="ABF"){
     # coloc - finemap.abf
     finemap_DT <- ABF(subset_DT = subset_DT,
                       PP_threshold = .5)

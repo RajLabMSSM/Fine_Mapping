@@ -30,31 +30,38 @@ LD.load_or_create <- function(results_path,
                               remove_correlates=F,
                               fillNA=0,
                               verbose=T){
-  LD_path <- file.path(results_path,"plink/LD_matrix.RData")
-  if(!file.exists(LD_path) | force_new_LD==T){
-    printer("+ Computing LD matrix...", verbose) 
-    LD_matrix <- compute_LD_matrix(results_path = results_path, 
-                                   subset_DT = subset_DT, 
-                                   gene = gene,
-                                   reference = LD_reference,
-                                   superpopulation = superpopulation, 
-                                   download_reference = download_reference,
-                                   
-                                   min_r2 = min_r2,
-                                   LD_block = LD_block,
-                                   block_size = block_size,
-                                   min_Dprime = min_Dprime,
-                                   remove_correlates = remove_correlates,
-                                   fillNA = fillNA) 
-    # Save LD matrix 
-    # data.table::fwrite(LD_matrix, LD_path, sep="\t") 
-    printer("+ Saving LD matrix to:",LD_path, v=verbose) 
-    saveRDS(LD_matrix, file = LD_path) 
-    # write.table(LD_matrix, LD_path, sep="\t", quote = F) 
-  } else { 
-    printer("+ Previously computed LD matrix detected. Importing...",LD_path, v=verbose) 
-    # LD_matrix <- data.table::fread(LD_path, sep="\t", stringsAsFactors = F)  
-    LD_matrix <- readRDS(LD_path)
+  if(LD_reference=="UKB"){
+    printer("LD:: Using UK Biobank LD reference panel...")
+    LD_matrix <- UKBiobank_LD(finemap_DT = subset_DT, 
+                              results_path = results_path, 
+                              force_new_LD = F)
+  } else {
+    LD_path <- file.path(results_path,"plink/LD_matrix.RData")
+    if(!file.exists(LD_path) | force_new_LD==T){
+      printer("+ Computing LD matrix...", verbose) 
+      LD_matrix <- compute_LD_matrix(results_path = results_path, 
+                                     subset_DT = subset_DT, 
+                                     gene = gene,
+                                     reference = LD_reference,
+                                     superpopulation = superpopulation, 
+                                     download_reference = download_reference,
+                                     
+                                     min_r2 = min_r2,
+                                     LD_block = LD_block,
+                                     block_size = block_size,
+                                     min_Dprime = min_Dprime,
+                                     remove_correlates = remove_correlates,
+                                     fillNA = fillNA) 
+      # Save LD matrix 
+      # data.table::fwrite(LD_matrix, LD_path, sep="\t") 
+      printer("+ Saving LD matrix to:",LD_path, v=verbose) 
+      saveRDS(LD_matrix, file = LD_path) 
+      # write.table(LD_matrix, LD_path, sep="\t", quote = F) 
+    } else { 
+      printer("+ Previously computed LD matrix detected. Importing...",LD_path, v=verbose) 
+      # LD_matrix <- data.table::fread(LD_path, sep="\t", stringsAsFactors = F)  
+      LD_matrix <- readRDS(LD_path)
+    } 
   } 
   return(LD_matrix)
 }
@@ -101,7 +108,7 @@ LD_plot <- function(LD_matrix, subset_DT, span=10){
 } 
 
  
-download_vcf <- function(subset_DT, 
+ThousandGenomes_LD <- function(subset_DT, 
                          reference="1KG_Phase3", 
                          vcf_folder="./Data/Reference/1000_Genomes", 
                          gene, 
@@ -176,7 +183,54 @@ download_vcf <- function(subset_DT,
               popDat = popDat))
 }
  
-
+UKBiobank_LD <- function(finemap_DT, 
+                         results_path,
+                         force_new_LD=F,
+                         polyfun="./echolocatoR/tools/polyfun"){ 
+  # base_url  <- "./echolocatoR/tools/polyfun/LD_temp"
+  alkes_url <- "https://data.broadinstitute.org/alkesgroup/UKBB_LD"
+  chr <- unique(finemap_DT$CHR)
+  min.pos <- min(finemap_DT$POS) 
+  bp_starts <- seq(1,252000001, by = 1000000)
+  bp_ends <- bp_starts+3000000
+  i <- max(which(bp_starts<=min.pos)) 
+  file.name <- paste0("chr",chr,"_", bp_starts[i],"_", bp_ends[i]) 
+  gz.path <- file.path(alkes_url, paste0(file.name,".gz")) 
+  npz.path <- file.path(alkes_url, paste0(file.name,".npz"))
+  UKBB.LD.file <- file.path(results_path,"plink/UKB_LD.RDS")
+     
+   
+  # Download all UKBB LD files
+  # "wget -nc -r -A '*.gz|*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD"
+  # "wget https://data.broadinstitute.org/alkesgroup/UKBB_LD/chr12_40000001_43000001.npz" # For some reason, way faster withOUT the --no-parent flag
+  # RSIDs file
+  # rsids <- data.table::fread(gz.path, nThread = 4) 
+  if(file.exists(UKBB.LD.file) & force_new_LD!=T){
+    printer("POLYFUN:: Pre-existing UKBB LD file detected. Importing.")
+    ld_R <- readRDS(UKBB.LD.file)
+  } else {
+    POLYFUN.load_conda()
+    reticulate::source_python(file.path(polyfun,"load_ld.py"))
+    ld.out <- load_ld(ld_prefix = file.path(alkes_url,file.name))
+    # LD matrix
+    ld_R <- ld.out[[1]]
+    head(ld_R)[1:10]
+    # SNP info
+    ld_snps <- data.table::data.table(ld.out[[2]]) 
+    remove(ld.out)
+    
+    # Subset LD to only overlapping SNPs 
+    rsids <- subset(ld_snps, position %in% finemap_DT$POS)
+    ld.indices <- as.integer(row.names(rsids))
+    ld_R <- ld_R[ld.indices, ld.indices]
+    row.names(ld_R) <- rsids$rsid
+    colnames(ld_R) <- rsids$rsid
+    printer("LD matrix dimensions", paste(dim(ld_R),collapse=" x "))
+    printer("+ POLYFUN:: Saving LD =>",UKBB.LD.file)
+    saveRDS(ld_R, UKBB.LD.file)
+  } 
+  return(ld_R) 
+}
  
  
 BCFTOOLS.filter_vcf <- function(subset_vcf, 
@@ -313,50 +367,48 @@ compute_LD_matrix <- function(results_path,
                               fillNA=0){   
   # Quickstart
   # gene <- "LRRK2"; results_path <- file.path("./Data/GWAS/Nalls23andMe_2019",gene); reference="1KG_Phase1"; vcf_folder="./Data/Reference/1000_Genomes"; superpopulation="EUR"; vcf_folder="./Data/Reference/1000_Genomes"; min_r2=F; LD_block=F; block_size=.7; min_Dprime=F;  remove_correlates=F; download_reference=T; subset_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"))
-  vcf_info <- download_vcf(subset_DT=subset_DT, 
-                             reference=reference, 
-                             vcf_folder=vcf_folder, 
-                             gene=gene, 
-                             download_reference=download_reference)
-  subset_vcf <- vcf_info$subset_vcf
-  popDat <- vcf_info$popDat
-  
-  # bed <- filter_vcf(subset_vcf=subset_vcf,
-  #                   subset_DT=subset_DT, 
-  #                   results_path=results_path, 
-  #                   superpopulation=superpopulation,
-  #                   popDat=popDat) 
-  vcf.gz.path <- BCFTOOLS.filter_vcf(subset_vcf = subset_vcf,
-                                      popDat = popDat, 
-                                      superpopulation = superpopulation,
-                                      remove_tmp = F)
-  PLINK.vcf_to_bed(vcf.gz.subset = vcf.gz.path, 
-                   results_path = results_path)
-  # Calculate pairwise LD for all SNP combinations
-  #### "Caution that the LD matrix has to be correlation matrix" -SuSiER documentation
-  ### https://stephenslab.github.io/susieR/articles/finemapping_summary_statistics.html  
-  # Gaston LD method
-  # LD_matrix <- gaston::LD(bed, lim = c(1,ncol(bed)), measure ="r") #"D"
-  # LD_matrix[!is.finite(LD_matrix)] <- 0
-  
-  # Get lead SNP rsid 
-  leadSNP = subset(subset_DT, leadSNP==T)$SNP #rs76904798
-  # Plink LD method
-  LD_matrix <- plink_LD(plink_folder = file.path(results_path,"plink"),
-                            leadSNP = leadSNP, 
-                            min_r2 = min_r2,
-                            min_Dprime = min_Dprime,
-                            remove_correlates = remove_correlates, 
-                            fillNA = fillNA)  
-  # Filter out SNPs not in the same LD block as the lead SNP
-  if(LD_block){
-    block_snps <- leadSNP_block(leadSNP, "./plink_tmp", block_size)
-    LD_matrix <- LD_matrix[row.names(LD_matrix) %in% block_snps, colnames(LD_matrix) %in% block_snps]
-  } 
-  # IMPORTANT! Remove large data.ld file after you're done with it
-  if(remove_tmps){ 
-    suppressWarnings(file.remove(subset_vcf))
-  }
+    printer("LD:: Using 1000Genomes LD reference panel...")
+    vcf_info <- ThousandGenomes_LD(subset_DT=subset_DT, 
+                                   reference=reference, 
+                                   vcf_folder=vcf_folder, 
+                                   gene=gene, 
+                                   download_reference=download_reference)
+    subset_vcf <- vcf_info$subset_vcf
+    popDat <- vcf_info$popDat
+    vcf.gz.path <- BCFTOOLS.filter_vcf(subset_vcf = subset_vcf,
+                                       popDat = popDat, 
+                                       superpopulation = superpopulation,
+                                       remove_tmp = F)
+    PLINK.vcf_to_bed(vcf.gz.subset = vcf.gz.path, 
+                     results_path = results_path)
+    
+    
+    
+    # Calculate pairwise LD for all SNP combinations
+    #### "Caution that the LD matrix has to be correlation matrix" -SuSiER documentation
+    ### https://stephenslab.github.io/susieR/articles/finemapping_summary_statistics.html  
+    # Gaston LD method
+    # LD_matrix <- gaston::LD(bed, lim = c(1,ncol(bed)), measure ="r") #"D"
+    # LD_matrix[!is.finite(LD_matrix)] <- 0
+    
+    # Get lead SNP rsid 
+    leadSNP = subset(subset_DT, leadSNP==T)$SNP #rs76904798
+    # Plink LD method
+    LD_matrix <- plink_LD(plink_folder = file.path(results_path,"plink"),
+                          leadSNP = leadSNP, 
+                          min_r2 = min_r2,
+                          min_Dprime = min_Dprime,
+                          remove_correlates = remove_correlates, 
+                          fillNA = fillNA)  
+    # Filter out SNPs not in the same LD block as the lead SNP
+    if(LD_block){
+      block_snps <- leadSNP_block(leadSNP, "./plink_tmp", block_size)
+      LD_matrix <- LD_matrix[row.names(LD_matrix) %in% block_snps, colnames(LD_matrix) %in% block_snps]
+    } 
+    # IMPORTANT! Remove large data.ld file after you're done with it
+    if(remove_tmps){ 
+      suppressWarnings(file.remove(subset_vcf))
+    } 
   return(LD_matrix)
   printer("Saving LD matrix of size:", dim(LD_matrix)[1],"rows x",dim(LD_matrix)[2],"columns.")
 }
