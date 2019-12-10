@@ -418,6 +418,12 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
   return(LDSC.files)
 }
 
+POLYFUN.run_S_LDSC <- function(polyfun="./echolocatoR/tools/polyfun"){
+  cmd <- paste("python",file.path(polyfun,"ldsc_polyfun/ldsc.py"))
+  system(cmd)
+  
+}
+
 
 
 

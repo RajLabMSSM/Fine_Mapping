@@ -7,6 +7,18 @@
 
 <hr><hr>
 
+## Download
+### Clone github repo
+`git clone https://github.com/RajLabMSSM/Fine_Mapping.git`  
+
+## Clone submodule repos  
+```
+git submodule init 
+git submodule update
+```
+
+
+
 ## Current Results  
 
 ### Parkinson's Disease  
