@@ -4,7 +4,9 @@
 # ***************** #
 ####   FINEMAP   ####   
 # ***************** # 
-construct_FINEMAP_data <- function(results_path, subset_DT){
+construct_FINEMAP_data <- function(results_path, 
+                                   subset_DT,
+                                   LD_matrix){
   ####### data.z ####### 
   printer("\n++ Formatting data.z file for FINEMAP")
   data.z <- subset_DT %>% dplyr::select(rsid=SNP, 
@@ -21,7 +23,7 @@ construct_FINEMAP_data <- function(results_path, subset_DT){
   ####### data.ld #######
   printer("\n++ Formatting LD Matrix for FINEMAP")
   ## The order of the SNPs in the dataset.ld must correspond to the order of variants in dataset.z.
-  load(file.path(results_path,"plink","LD_matrix.RData")) 
+  # load(file.path(results_path,"plink","LD_matrix.RData")) 
   
   # Filter 
   data.z <- subset(data.z, rsid %in% rownames(LD_matrix))
@@ -86,6 +88,7 @@ process_FINEMAP_results <- function(results_path, subset_DT){
 
 FINEMAP <- function(subset_DT,
                     results_path,
+                    LD_matrix,
                     FINEMAP_path="./echolocatoR/tools/FINEMAP/finemap_v1.3_MacOSX",
                     n_samples=NA,
                     n_causal=5,# Max number of allowed causal SNPs
@@ -100,7 +103,7 @@ FINEMAP <- function(subset_DT,
   }
   # Setup files
   construct_FINEMAP_master(results_path = results_path, n_samples = n_samples)
-  construct_FINEMAP_data(results_path = results_path, subset_DT = subset_DT) 
+  construct_FINEMAP_data(results_path = results_path, subset_DT = subset_DT, LD_matrix = LD_matrix) 
   # Command line
   ## Example: 
   ## cmd <- paste(FINEMAP_path," --sss --in-files",file.path(dirname(FINEMAP_path),"example","master"), "--dataset 1 --n-causal-snps 5") 

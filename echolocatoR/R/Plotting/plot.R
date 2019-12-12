@@ -228,7 +228,7 @@ snp_plot <- function(finemap_DT,
     theme(plot.title = element_text(hjust = 0.5), 
           plot.subtitle = element_text(hjust = 0.5),
           rect = element_rect(fill = "transparent") ) +
-    scale_x_continuous(breaks = roundBreaks) +
+    # scale_x_continuous(breaks = roundBreaks) +
     scale_color_gradient(low="blue", high="red", limits = c(0,1))
   if(show_plot){print(p)} else{ return(p) }
   }
@@ -249,12 +249,12 @@ multi_finemap_plot <- function(finemap_DT,
                                width=500, #500,
                                height=1000 #1000
                                  ){ 
-  # gene <- "BST1"
+  # gene <- "LRRK2"
   # results_path <- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
-  # finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"))
-  # load(file.path(results_path, "plink/LD_matrix.RData"))
-  # finemap_method_list=c("SUSIE","POLYFUN+SUSIE")
-  
+  # finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt")) 
+  # LD_matrix <- readRDS(file.path(results_path,"plink/UKB_LD.RDS"))
+  # method_list=c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP")
+
   method_list <- if(original){c("original", finemap_method_list)}else{finemap_method_list} 
   
   # Assemble plots in list 

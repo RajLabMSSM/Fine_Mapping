@@ -284,8 +284,7 @@ calculate.tstat <- function(finemap_DT, tstat_col="t_stat"){
     printer("+ Calculating t-statistic from Effect and StdErr...")
     finemap_DT <- finemap_DT %>% dplyr::mutate(t_stat =  Effect/StdErr)
   } else {
-    printer("+ Could not calculate t-stat due to missing Effect and/or StdErr columns.")
-    print("++ Returning input data.") 
+    printer("+ Could not calculate t-stat due to missing Effect and/or StdErr columns. Returning input data.") 
   }
   return(data.table::data.table(finemap_DT))
 }

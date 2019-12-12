@@ -32,9 +32,9 @@ LD.load_or_create <- function(results_path,
                               verbose=T){
   if(LD_reference=="UKB"){
     printer("LD:: Using UK Biobank LD reference panel...")
-    LD_matrix <- UKBiobank_LD(finemap_DT = subset_DT, 
+    LD_matrix <- LD.UKBiobank(finemap_DT = subset_DT, 
                               results_path = results_path, 
-                              force_new_LD = F)
+                              force_new_LD = force_new_LD)
   } else {
     LD_path <- file.path(results_path,"plink/LD_matrix.RData")
     if(!file.exists(LD_path) | force_new_LD==T){
@@ -183,12 +183,14 @@ ThousandGenomes_LD <- function(subset_DT,
               popDat = popDat))
 }
  
-UKBiobank_LD <- function(finemap_DT, 
+
+LD.UKBiobank <- function(finemap_DT, 
                          results_path,
                          force_new_LD=F,
-                         polyfun="./echolocatoR/tools/polyfun"){ 
-  # base_url  <- "./echolocatoR/tools/polyfun/LD_temp"
+                         polyfun="./echolocatoR/tools/polyfun",
+                         server=F){  
   alkes_url <- "https://data.broadinstitute.org/alkesgroup/UKBB_LD"
+  URL <- alkes_url
   chr <- unique(finemap_DT$CHR)
   min.pos <- min(finemap_DT$POS) 
   bp_starts <- seq(1,252000001, by = 1000000)
@@ -197,39 +199,54 @@ UKBiobank_LD <- function(finemap_DT,
   file.name <- paste0("chr",chr,"_", bp_starts[i],"_", bp_ends[i]) 
   gz.path <- file.path(alkes_url, paste0(file.name,".gz")) 
   npz.path <- file.path(alkes_url, paste0(file.name,".npz"))
+  
+  chimera.path <- file.path("/sc/orga/projects/pd-omics/tools/polyfun/UKBB_LD")
   UKBB.LD.file <- file.path(results_path,"plink/UKB_LD.RDS")
-     
    
+  if(server){ 
+    URL <- chimera.path
+    if(file.exists(file.path(chimera.path, paste0(file.name,".gz")))  & 
+       file.exists(file.path(chimera.path, paste0(file.name,".npz"))) ){
+       printer("+LD:: Pre-exisiting UKB LD gz/npz files detected. Importing...") 
+    } else {
+      printer("+ LD:: Downloading .gz and saving to disk.")
+      download.file(file.path(alkes_url,gz.path), file.path(chimera.path, paste0(file.name,".gz")))
+      printer("+ LD:: Downloading .npz and saving to disk.")
+      download.file(file.path(alkes_url,npz.path), file.path(chimera.path, paste0(file.name,".npz"))) 
+    }  
+  } else {
+    printer("+ LD:: Importing UKB LD file from alkes group server directly to R.") 
+  }  
   # Download all UKBB LD files
-  # "wget -nc -r -A '*.gz|*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD"
-  # "wget https://data.broadinstitute.org/alkesgroup/UKBB_LD/chr12_40000001_43000001.npz" # For some reason, way faster withOUT the --no-parent flag
+  # wget -r -np -A '*.gz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
+  # wget -r -np -A '*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
+   
   # RSIDs file
   # rsids <- data.table::fread(gz.path, nThread = 4) 
   if(file.exists(UKBB.LD.file) & force_new_LD!=T){
-    printer("POLYFUN:: Pre-existing UKBB LD file detected. Importing.")
-    ld_R <- readRDS(UKBB.LD.file)
+    printer("POLYFUN:: Pre-existing UKB_LD.RDS file detected. Importing...")
+    LD_matrix <- readRDS(UKBB.LD.file)
   } else {
     POLYFUN.load_conda()
     reticulate::source_python(file.path(polyfun,"load_ld.py"))
-    ld.out <- load_ld(ld_prefix = file.path(alkes_url,file.name))
+    ld.out <- load_ld(ld_prefix = file.path(URL, file.name))
     # LD matrix
-    ld_R <- ld.out[[1]]
-    head(ld_R)[1:10]
+    ld_R <- ld.out[[1]] 
+    # head(ld_R)[1:10]
     # SNP info
-    ld_snps <- data.table::data.table(ld.out[[2]]) 
-    remove(ld.out)
-    
-    # Subset LD to only overlapping SNPs 
-    rsids <- subset(ld_snps, position %in% finemap_DT$POS)
-    ld.indices <- as.integer(row.names(rsids))
-    ld_R <- ld_R[ld.indices, ld.indices]
-    row.names(ld_R) <- rsids$rsid
-    colnames(ld_R) <- rsids$rsid
-    printer("LD matrix dimensions", paste(dim(ld_R),collapse=" x "))
+    ld_snps <- data.table::data.table(ld.out[[2]])
+    # remove(ld.out) 
+    # ld_snps.sub <- subset(ld_snps, position %in% finemap_DT$POS)
+    indices <- which(ld_snps$position %in% finemap_DT$POS)
+    ld_snps.sub <- ld_snps[indices,]
+    LD_matrix <- ld_R[indices, indices]
+    row.names(LD_matrix) <- ld_snps.sub$rsid
+    colnames(LD_matrix) <- ld_snps.sub$rsid 
+    printer("LD matrix dimensions", paste(dim(LD_matrix),collapse=" x "))
     printer("+ POLYFUN:: Saving LD =>",UKBB.LD.file)
-    saveRDS(ld_R, UKBB.LD.file)
-  } 
-  return(ld_R) 
+    saveRDS(LD_matrix, UKBB.LD.file)
+  }  
+  return(LD_matrix) 
 }
  
  

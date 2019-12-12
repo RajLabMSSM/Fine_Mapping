@@ -244,6 +244,7 @@ ggbio_plot <- function(finemap_DT,
                        XGR_libnames=c("ENCODE_TFBS_ClusteredV3_CellTypes",
                                       "ENCODE_DNaseI_ClusteredV3_CellTypes",
                                       "Broad_Histone"),
+                       ROADMAP=F,
                        annot_overlap_threshold=5
                        ){
   # http://bioconductor.org/packages/release/bioc/vignettes/ggbio/inst/doc/ggbio.pdf
@@ -251,9 +252,8 @@ ggbio_plot <- function(finemap_DT,
   require(GenomicRanges)
   require(biovizBase)
  
-  # finemap_DT <- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt", sep="\t")
-  # load("Data/GWAS/Nalls23andMe_2019/LRRK2/plink/LD_matrix.RData")
-  ## To merge a GRangesList into a single GRanges object:
+  # finemap_DT <- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt", sep="\t") 
+  # # To merge a GRangesList into a single GRanges object:
   # GR.merged <- unlist(grl)
   
   # Set up data 
@@ -355,57 +355,64 @@ ggbio_plot <- function(finemap_DT,
  
   # Track 4: Roadmap Chromatin Marks API
   ## Download 
-  lib <- "Roadmap_ChromatinMarks_CellTypes"
-  anno_path <- file.path(results_path, "Annotation",paste0("GRanges_",lib,".rds"))
-  if(file.exists(anno_path)){
-    printer("+ Saved annotation file detected. Loading...")
-    grl.roadmap <- readRDS(anno_path)
-  } else {
-    grl.roadmap <- ROADMAP_track(results_path = results_path,
-                                 gr.snp = gr.snp, 
-                                 limit_files=NA)
-    save_annotations(gr = grl.roadmap, anno_path = anno_path, libName = lib)
-  } 
-  ## Make track 
-  library(IRanges)   
-  grl.roadmap.merged <- unlist(grl.roadmap)
-  grl.roadmap.merged$Source <- names(grl.roadmap.merged)
-  grl.roadmap.merged$Source <- gsub("_"," ", grl.roadmap.merged$Source)
-  grl.roadmap.merged$ChromState <- lapply(grl.roadmap.merged$State, function(ROW){strsplit(ROW, "_")[[1]][2]})%>% unlist()
-  # Tally ChromStates
-  # chromState_key <- data.table::fread(file.path("./echolocatoR/tools/Annotations/ROADMAP/ROADMAP_chromatinState_HMM.tsv"))
-  # snp.pos <- subset(gr.snp, SNP %in% c("rs7294619"))$POS
-  # snp.sub <- subset(grl.roadmap.merged, Start<=snp.pos & End>=snp.pos) %>%  data.frame() 
-  # chrom_tally <- snp.sub %>% 
-  #   dplyr::group_by(ChromState) %>% 
-  #   tally(sort = T) %>% 
-  #   merge(y=chromState_key[,c("MNEMONIC","DESCRIPTION")], 
-  #         by.x="ChromState", by.y="MNEMONIC", all.x=T, sort=F) %>% arrange(desc(n))
-  # createDT(chrom_tally)
-  
-  grl.roadmap.filt <- grl.roadmap.merged[unlist( lapply(grl.roadmap, function(e){overlapsAny(e, gr.snp, minoverlap = 1)}) )]   
-  top_tissues <- grl.roadmap.filt %>% data.frame() %>% dplyr::group_by(Source) %>% tally(sort = T)
-  grl.roadmap.filt <- subset(grl.roadmap.filt, Source %in% unique(top_tissues$Source[1:10]))
-  
-  track.roadmap <- autoplot(grl.roadmap.filt, which = gr.snp, 
-                            aes(fill=ChromState),
-                            color="white",
-                            size=.1,
-                            geom = "density",# density 
-                            adjust = 1, 
-                            # bins=10,
-                            position="stack",# stack, fill, dodge
-                            facets=Source~.,
-                            alpha=1) + 
-  theme_bw() + 
-  theme(strip.text.y = element_text(angle = 0), 
-        strip.text = element_text(size=9 ))
-  TRACKS_list <- append(TRACKS_list, track.roadmap)
-  names(TRACKS_list)[length(TRACKS_list)] <- "ROADMAP\nChromatinMarks\nCellTypes"
+  if(ROADMAP){
+    printer("+ GGBIO:: Creating ROADMAP track")
+    lib <- "Roadmap_ChromatinMarks_CellTypes"
+    anno_path <- file.path(results_path, "Annotation",paste0("GRanges_",lib,".rds"))
+    if(file.exists(anno_path)){
+      printer("+ Saved annotation file detected. Loading...")
+      grl.roadmap <- readRDS(anno_path)
+    } else {
+      grl.roadmap <- ROADMAP_track(results_path = results_path,
+                                   gr.snp = gr.snp, 
+                                   limit_files=NA)
+      save_annotations(gr = grl.roadmap, anno_path = anno_path, libName = lib)
+    } 
+    ## Make track 
+    library(IRanges)   
+    grl.roadmap.merged <- unlist(grl.roadmap)
+    grl.roadmap.merged$Source <- names(grl.roadmap.merged)
+    grl.roadmap.merged$Source <- gsub("_"," ", grl.roadmap.merged$Source)
+    grl.roadmap.merged$ChromState <- lapply(grl.roadmap.merged$State, function(ROW){strsplit(ROW, "_")[[1]][2]})%>% unlist()
+    # Tally ChromStates
+    # chromState_key <- data.table::fread(file.path("./echolocatoR/tools/Annotations/ROADMAP/ROADMAP_chromatinState_HMM.tsv"))
+    # snp.pos <- subset(gr.snp, SNP %in% c("rs7294619"))$POS
+    # snp.sub <- subset(grl.roadmap.merged, Start<=snp.pos & End>=snp.pos) %>%  data.frame() 
+    # chrom_tally <- snp.sub %>% 
+    #   dplyr::group_by(ChromState) %>% 
+    #   tally(sort = T) %>% 
+    #   merge(y=chromState_key[,c("MNEMONIC","DESCRIPTION")], 
+    #         by.x="ChromState", by.y="MNEMONIC", all.x=T, sort=F) %>% arrange(desc(n))
+    # createDT(chrom_tally)
+    
+    grl.roadmap.filt <- grl.roadmap.merged[unlist( lapply(grl.roadmap, function(e){overlapsAny(e, gr.snp, minoverlap = 1)}) )]   
+    top_tissues <- grl.roadmap.filt %>% data.frame() %>% dplyr::group_by(Source) %>% tally(sort = T)
+    grl.roadmap.filt <- subset(grl.roadmap.filt, Source %in% unique(top_tissues$Source[1:10]))
+    
+    track.roadmap <- autoplot(grl.roadmap.filt, which = gr.snp, 
+                              aes(fill=ChromState),
+                              color="white",
+                              size=.1,
+                              geom = "density",# density 
+                              adjust = 1, 
+                              # bins=10,
+                              position="stack",# stack, fill, dodge
+                              facets=Source~.,
+                              alpha=1) + 
+      theme_bw() + 
+      theme(strip.text.y = element_text(angle = 0), 
+            strip.text = element_text(size=9 ))
+    TRACKS_list <- append(TRACKS_list, track.roadmap)
+    names(TRACKS_list)[length(TRACKS_list)] <- "ROADMAP\nChromatinMarks\nCellTypes"
+  }
+ 
   
    
   # Fuse all tracks  
-  params_list <- list(title = paste0(gene," [",length(seqnames(gr.snp))," SNPs]"), 
+  n_roadmap <- ifelse(ROADMAP,1,0)
+  heights <- c(rep(.33,length(method_list)+2), 
+               rep(1,length(XGR_libnames)+n_roadmap) )
+  params_list <- list(title = paste0(gene,"locus [",length(seqnames(gr.snp))," SNPs]"), 
                       track.bg.color = "transparent",
                       track.plot.color = "transparent",
                       label.text.cex = .7, 
@@ -414,12 +421,12 @@ ggbio_plot <- function(finemap_DT,
                       label.text.angle = 0,
                       label.width = unit(5.5, "lines"),
                       xlim = c(min(gr.snp$POS), max(gr.snp$POS)), 
-                      heights = c(rep(.33,6), rep(1,4)) )
+                      heights = heights)
   TRACKS_list <- append(TRACKS_list, params_list)
   trks <- suppressWarnings(do.call("tracks", TRACKS_list)) 
   
-  #
-  lead.pos <- subset(finemap_DT,SNP=="rs76904798")$POS
+  # 
+  lead.pos <- subset(finemap_DT, leadSNP)$POS
   consensus.pos <- subset(finemap_DT, Consensus_SNP==T)$POS
   trks_plus_lines <- trks + 
     geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') +
@@ -428,9 +435,11 @@ ggbio_plot <- function(finemap_DT,
   # Save
   ggsave(filename = file.path(results_path,"Multi-finemap",paste0(gene,"_ggbio.png")), 
          plot = trks_plus_lines,
-         height = 23, width = 13, dpi = 1000, bg = "transparent")
-  return(trks)
-}
+         height = 15+length(XGR_libnames)+n_roadmap, 
+         width = 10, dpi = 400, bg = "transparent")
+  return(trks_plus_lines)
+} 
+
 
 
 

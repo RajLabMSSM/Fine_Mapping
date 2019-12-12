@@ -366,12 +366,25 @@ dt.replace <- function(DT, target, replacement){
 }
 
 
+subset_common_snps <- function(LD_matrix, finemap_DT){
+  ld.snps <- unique(row.names(LD_matrix))
+  fm.snps <- unique(finemap_DT$SNP)
+  common.snps <- intersect(ld.snps, fm.snps)
+  printer("+ LD_matrix =",length(ld.snps),"SNPs.")
+  printer("+ finemap_DT =",length(fm.snps),"SNPs.")
+  printer("+",length(common.snps),"SNPs in common.")
+  LD_matrix <- LD_matrix[common.snps, common.snps] 
+  finemap_DT <- subset(finemap_DT, SNP %in% common.snps)
+  return(list(LD_matrix=LD_matrix,
+              finemap_DT=finemap_DT))
+}
+
 gene_trimmer <- function(subset_DT, 
                          gene, 
                          trim_gene_limits=T, 
                          min_POS=NULL, 
                          max_POS=NULL){
-  printer("BiomaRt:: Trimming data to only include SNPs within gene coordinates.")
+  printer("BIOMART:: Trimming data to only include SNPs within gene coordinates.")
   if(trim_gene_limits){
     gene_info <- biomart_geneInfo(gene)
     gene_info_sub <- subset(gene_info, hgnc_symbol==gene)
@@ -379,7 +392,10 @@ gene_trimmer <- function(subset_DT,
     min_POS <- max(min_POS, gene_info_sub$start_position, na.rm = T) 
     # Take most limiting max position
     max_POS <- min(max_POS, gene_info_sub$end_position, na.rm = T)  
-    return(subset(subset_DT, CHR==gene_info$chromosome_name[1] & POS>=min_POS & POS<=max_POS))
+    subset_DT <- subset(subset_DT, CHR==gene_info$chromosome_name[1] & POS>=min_POS & POS<=max_POS)
+    printer("BIOMART::",nrow(subset_DT),"SNPs left after trimming.")
+    return(subset_DT)
+   
   } else{return(subset_DT)} 
 }
 
@@ -519,6 +535,11 @@ finemap_pipeline <- function(gene,
                                  min_Dprime=min_Dprime,
                                  remove_correlates=remove_correlates,
                                  verbose=verbose)
+  # Subset LD and df to only overlapping SNPs 
+  sub.out <- subset_common_snps(LD_matrix, subset_DT)
+  LD_matrix <- sub.out$LD_matrix
+  subset_DT <- sub.out$finemap_DT 
+  
    
   # Plot LD 
   if(plot_LD){
@@ -557,6 +578,7 @@ finemap_pipeline <- function(gene,
                                 A1_col = A1_col,
                                 A2_col = A2_col,
                                 PAINTOR_QTL_datasets = PAINTOR_QTL_datasets)  
+  finemap_DT <- find_consensus_SNPs(finemap_DT)
   # Step 6: COLOCALIZE
   # Step 7: Functionally Fine-map
   
@@ -564,14 +586,20 @@ finemap_pipeline <- function(gene,
   message("--------------- Step 7: Visualize --------------") 
   if("simple" %in% plot_types){
     try({
-      mf_plot <- multi_finemap_plot(finemap_DT = finemap_DT,
-                                    LD_matrix = LD_matrix,
-                                    results_path = results_path,
-                                    finemap_method_list = finemap_methods,
-                                    conditioned_snps = conditioned_snps,
-                                    gene = gene,
-                                    original = T,
-                                    save = T)
+      # mf_plot <- multi_finemap_plot(finemap_DT = finemap_DT,
+      #                               LD_matrix = LD_matrix,
+      #                               results_path = results_path,
+      #                               finemap_method_list = finemap_methods,
+      #                               conditioned_snps = conditioned_snps,
+      #                               gene = gene,
+      #                               original = T,
+      #                               save = T)
+      mf_plot <- ggbio_plot(finemap_DT=finemap_DT, 
+                            LD_matrix=LD_matrix, 
+                            gene=gene, 
+                            results_path=results_path, 
+                            method_list=finemap_methods,
+                            XGR_libnames = NULL)
       print(mf_plot)
     }) 
   }

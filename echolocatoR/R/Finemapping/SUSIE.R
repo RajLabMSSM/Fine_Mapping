@@ -67,8 +67,7 @@ SUSIE <- function(subset_DT,
   # https://stephenslab.github.io/susieR/
   vars <- get_var_y(subset_DT, dataset_type)
   sample_size <- get_sample_size(subset_DT, sample_size)
-  
-  printer("+ Fine-mapping with SUSIE")
+  printer("+ Fine-mapping...")
   fitted_bhat <- susieR::susie_bhat(bhat = subset_DT$Effect,
                                     shat = subset_DT$StdErr,
                                     R = LD_matrix,
@@ -88,7 +87,7 @@ SUSIE <- function(subset_DT,
                                     
                                     verbose = FALSE ) 
   # try({susieR::susie_plot_iteration(fitted_bhat, n_causal, 'test_track_fit')})
-  
+  printer("")
   printer("++ Extracting Credible Sets...") 
   susie_snps <- names(fitted_bhat$X_column_scale_factors)
   CS_indices <- susieR::susie_get_cs(fitted_bhat)$cs

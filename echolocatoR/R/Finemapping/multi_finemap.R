@@ -4,19 +4,20 @@
 
 find_consensus_SNPs <- function(finemap_DT, 
                                 verbose=T, 
-                                support_thresh="all", 
+                                credset_thresh=.95,
+                                consensus_thresh=2, 
                                 sort_by_support=T){
   printer("+ Identifying Consensus SNPs...",v=verbose)
   # Find SNPs that are in the credible set for all fine-mapping tools
   CS_cols <- colnames(finemap_DT)[endsWith(colnames(finemap_DT),".Credible_Set")] 
-  if(support_thresh=="all"){support_thresh=length(CS_cols)}
-  printer("++ support_thresh =",support_thresh)
+  if(consensus_thresh=="all"){consensus_thresh<-length(CS_cols)}
+  printer("++ support_thresh =",consensus_thresh)
   # Get the number of tools supporting each SNP
   ## Make sure each CS is set to 1
   support_sub <- subset(finemap_DT, select = CS_cols) %>% data.frame()
   support_sub[sapply(support_sub, function(e){e>1})] <- 1
   finemap_DT$Support <- rowSums(support_sub, na.rm = T) 
-  finemap_DT$Consensus_SNP <- finemap_DT$Support >= support_thresh
+  finemap_DT$Consensus_SNP <- finemap_DT$Support >= consensus_thresh
   # Sort
   if(sort_by_support){
     finemap_DT <- finemap_DT %>% arrange(desc(Consensus_SNP), desc(Support))
@@ -67,8 +68,12 @@ multi_finemap <- function(results_path,
                           A2_col="A2",
                           PAINTOR_QTL_datasets=NULL){
   printer("++ Fine-mapping using multiple tools:", paste(finemap_method_list, collapse=", "))
-  # finemap_method_list <- finemap_method_list[finemap_method_list!="COJO"] 
- 
+  # finemap_method_list <- finemap_method_list[finemap_method_list!="COJO"]  
+  # Check overlap
+  sub.out <- subset_common_snps(LD_matrix, subset_DT)
+  LD_matrix <- sub.out$LD_matrix
+  subset_DT <- sub.out$finemap_DT 
+  
   select_cols <- colnames(subset_DT)[!grepl(colnames(subset_DT), 
                                             pattern = paste(c(finemap_method_list,"Support","Consensus_SNP"),collapse = "|"))]
   merged_DT <- subset(subset_DT, select = select_cols)
@@ -123,8 +128,7 @@ multi_finemap <- function(results_path,
                                                  data.table::as.data.table(DT_select),
                                                  by="SNP", all = T);
 
-  }  
-  finemap_DT <- find_consensus_SNPs(merged_DT)  
+  }   
   return(finemap_DT)
 }
  
@@ -163,8 +167,7 @@ finemap_method_handler <- function(results_path,
                                    N_controls_col="N_controls",
                                    A1_col="A1",
                                    A2_col="A2",
-                                   PAINTOR_QTL_datasets=NULL){
-  printer("\n",finemap_method)  
+                                   PAINTOR_QTL_datasets=NULL){ 
   # INITIATE FINE-MAPPING 
   if(finemap_method=="SUSIE"){ 
     # SUSIE
@@ -195,6 +198,7 @@ finemap_method_handler <- function(results_path,
     # FINEMAP
     finemap_DT <- FINEMAP(subset_DT = subset_DT,
                           results_path = results_path, 
+                          LD_matrix = LD_matrix,
                           n_samples = sample_size,   
                           n_causal = n_causal)
     
