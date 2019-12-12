@@ -150,7 +150,7 @@ fGWAS.prepare_input <- function(FM_annot,
     }
     if(group=="Multi-finemap"){
       dat.fgwas <- FM_annot
-      dat.fgwas$Effect <- rowMeans(subset(FM_annot, select=grep(".Probability",colnames(FM_annot))))
+      dat.fgwas$Effect <- rowMeans(subset(FM_annot, select=grep(".PP",colnames(FM_annot))))
       # FM_merge$Adjusted.Effect <- FM_merge$Effect * FM_merge$mean.PP
     }
     # Subset according to which group we're looking at

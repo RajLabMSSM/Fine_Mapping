@@ -353,7 +353,7 @@ COLOC.iterate_QTL <- function(GTEx_version="GTEx_V7",
     ## WARNING: Probably not valid to apply PP in this way since the model isn't intended to handle this. 
     ## Instead, use something like PAINTOR that takes SNP-level PPs.
     ## Create measures adjusted by Posterior Probabilities from fine-mapping
-    # FM_merge$mean.PP <- rowMeans(subset(FM_merge, select=grep(".Probability",colnames(FM_merge))))
+    # FM_merge$mean.PP <- rowMeans(subset(FM_merge, select=grep(".PP",colnames(FM_merge))))
     # FM_merge$Adjusted.Effect <- FM_merge$Effect * FM_merge$mean.PP
     
     coloc_dt <- lapply(unique(FM_merge$Gene), function(gene){

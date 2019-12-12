@@ -4,41 +4,47 @@
 * (C) 2010-2019, The University of Queensland
 * Please report bugs to: Jian Yang <jian.yang@uq.edu.au>
 *******************************************************************
-Analysis started at 15:31:01 EDT on Mon Jun 24 2019.
-Hostname: brians-mbp.19e98.mountsinai.org
+Analysis started at 22:42:22 EST on Wed Dec 11 2019.
+Hostname: Brians-MacBook-Pro-2.local
 
 Accepted options:
 --bfile Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink
 --cojo-file Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo-file.ma
 --maf 0
---cojo-slct
+--diff-freq 0.1
+--cojo-cond Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo-cond.txt
 --exclude Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/excluded_snps.txt
 --out Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo
 
 
 Reading PLINK FAM file from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.fam].
-1092 individuals to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.fam].
+379 individuals to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.fam].
 Reading PLINK BIM file from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bim].
-560 SNPs to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bim].
-Reading a list of SNPs from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/excluded_snps.txt].
-0 SNPs are excluded from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/excluded_snps.txt] and there are 560 SNPs remaining.
+2372 SNPs to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bim].
+Warning: Duplicated SNP ID "." has been changed to "._558"
+.Warning: Duplicated SNP ID "." has been changed to "._621"
+.Warning: Duplicated SNP ID "." has been changed to "._1276"
+.Warning: Duplicated SNP ID "." has been changed to "._1665"
+.Warning: Duplicated SNP ID "." has been changed to "._2168"
+.Warning: Duplicated SNP ID "." has been changed to "._2243"
+.Reading a list of SNPs from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/excluded_snps.txt].
+0 SNPs are excluded from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/excluded_snps.txt] and there are 2372 SNPs remaining.
 Reading PLINK BED file from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bed] in SNP-major format ...
-Genotype data for 1092 individuals and 560 SNPs to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bed].
+Genotype data for 379 individuals and 2372 SNPs to be included from [Data/GWAS/Nalls23andMe_2019/LRRK2/plink/plink.bed].
 
 Reading GWAS summary-level statistics from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo-file.ma] ...
-GWAS summary statistics of 7798414 SNPs read from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo-file.ma].
-Phenotypic variance estimated from summary statistics of all 7798414 SNPs: 74.6684 (variance of logit for case-control studies).
+GWAS summary statistics of 690 SNPs read from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo-file.ma].
+Phenotypic variance estimated from summary statistics of all 690 SNPs: 65.1788 (variance of logit for case-control studies).
 Matching the GWAS meta-analysis results to the genotype data ...
 Calculating allele frequencies ...
-560 SNPs are matched to the genotype data.
+373 SNPs are matched to the genotype data.
 Calculating the variance of SNP genotypes ...
-
-Performing stepwise model selection on 560 SNPs to select association signals ... (p cutoff = 5e-08; collinearity cutoff = 0.9)
+Reading a list of given SNPs from [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo-cond.txt].
+1 of them are matched to the genotype and summary data.
+Performing single-SNP association analysis conditional on the 1 given SNPs ... (collinearity cutoff = 0.9)
 (Assuming complete linkage equilibrium between SNPs which are more than 10Mb away from each other)
-Finally, 4 associated SNPs are selected.
-Performing joint analysis on all the 4 selected signals ...
-Saving the 4 independent signals to [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo.jma.cojo] ...
-Saving the LD structure of 4 independent signals to [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo.ldr.cojo] ...
+Saving the summary statistics of the given SNPs in the file [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo.given.cojo] ...
+Saving the conditional analysis results of 372 remaining SNPs to [Data/GWAS/Nalls23andMe_2019/LRRK2/COJO/cojo.cma.cojo] ...
 
-Analysis finished at 15:31:13 EDT on Mon Jun 24 2019
-Computational time: 11.240787 second(s).
+Analysis finished at 22:42:22 EST on Wed Dec 11 2019
+Computational time: 0.047419 second(s).

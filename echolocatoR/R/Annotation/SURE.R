@@ -19,7 +19,7 @@ SURE.preprocess_data <- function(results_path="./Data/GWAS/Nalls23andMe_2019/LRR
   
   
   # sure.dat %>% arrange(desc(mean.PP))
-  prob.cols <- grep(".Probability",colnames(sure), value = T)
+  prob.cols <- grep(".PP",colnames(sure), value = T)
   sure.cols <- grep("_mean",colnames(sure), value = T)
   # Corrplot
   if(cor.plot){
@@ -83,7 +83,7 @@ SURE.track_plot <- function(sure.dat=NULL,
   if(is.null(sure.dat)){
     sure.dat <- SURE.preprocess_data(results_path=results_path)  
   }
-  prob.cols <- grep(".Probability",unique(sure.dat$Metric), value = T)
+  prob.cols <- grep(".PP",unique(sure.dat$Metric), value = T)
   snp.labels <- construct_SNPs_labels(sure.dat) %>%  
     dplyr::group_by(SNP) %>%  
     remove_missing(vars = c("Value")) %>% 

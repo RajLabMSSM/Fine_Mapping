@@ -109,8 +109,9 @@ LD_plot <- function(LD_matrix, subset_DT, span=10){
 
  
 ThousandGenomes_LD <- function(subset_DT, 
-                         reference="1KG_Phase3", 
+                         reference="1KG_Phase1", 
                          vcf_folder="./Data/Reference/1000_Genomes", 
+                         results_path,
                          gene, 
                          download_reference=T, 
                          whole_vcf=F){ 
@@ -229,6 +230,7 @@ LD.UKBiobank <- function(finemap_DT,
   } else {
     POLYFUN.load_conda()
     reticulate::source_python(file.path(polyfun,"load_ld.py"))
+    printer("+ LD:: ...this could take some time...")
     ld.out <- load_ld(ld_prefix = file.path(URL, file.name))
     # LD matrix
     ld_R <- ld.out[[1]] 
@@ -386,6 +388,7 @@ compute_LD_matrix <- function(results_path,
   # gene <- "LRRK2"; results_path <- file.path("./Data/GWAS/Nalls23andMe_2019",gene); reference="1KG_Phase1"; vcf_folder="./Data/Reference/1000_Genomes"; superpopulation="EUR"; vcf_folder="./Data/Reference/1000_Genomes"; min_r2=F; LD_block=F; block_size=.7; min_Dprime=F;  remove_correlates=F; download_reference=T; subset_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"))
     printer("LD:: Using 1000Genomes LD reference panel...")
     vcf_info <- ThousandGenomes_LD(subset_DT=subset_DT, 
+                                   results_path,
                                    reference=reference, 
                                    vcf_folder=vcf_folder, 
                                    gene=gene, 

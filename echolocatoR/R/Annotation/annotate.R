@@ -108,7 +108,7 @@ top_finemapped_loci <- function(dataset="./Data/GWAS/Nalls23andMe_2019",
     dplyr::group_by(Gene) %>% 
     dplyr::summarise(CredSet.size=n(), CredSet=paste(SNP,collapse=", ")) 
   FM_all <- data.frame(FM_all) %>% subset(Dataset==dataset)
-  prob.cols <- grep(".Probability", colnames(FM_all), value = T)
+  prob.cols <- grep(".PP", colnames(FM_all), value = T)
   FM_all$PP.sum <- rowSums(FM_all[,prob.cols], na.rm = T)
   FM_all$GWAS.Lead = ifelse(FM_all$leadSNP==T, "Y","N")
   # FM_all <- subset(FM_all, !(Gene %in%c("ATG14","SP1","LMNB1","ATP6V0A1")) )
@@ -138,8 +138,8 @@ top_finemapped_loci <- function(dataset="./Data/GWAS/Nalls23andMe_2019",
   top_loci <- FM_biomart %>% 
     subset(Consensus_SNP==T) %>%
     dplyr::group_by(Gene) %>% 
-    dplyr::summarise(SUSIE.PPs = paste(round(SUSIE.Probability,3), collapse=", "),
-                     FINEMAP.PPs = paste(round(FINEMAP.Probability,3), collapse=", "),
+    dplyr::summarise(SUSIE.PPs = paste(round(SUSIE.PP,3), collapse=", "),
+                     FINEMAP.PPs = paste(round(FINEMAP.PP,3), collapse=", "),
                      PP.mean.sum = round(mean(PP.sum, na.rm=T),3), 
                      Effect.mean=mean(abs(Effect)),
                      GWAS.Lead = paste(GWAS.Lead,collapse=", "),

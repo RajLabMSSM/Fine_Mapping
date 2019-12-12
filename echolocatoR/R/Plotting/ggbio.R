@@ -50,7 +50,11 @@ SNP_track <- function(gr.snp,
                       show.legend=T){
   # Format data
   if(method!="original"){
-    mcols(gr.snp)[,"PP"] <- mcols(gr.snp)[,paste0(method,".Probability")] 
+    if(method=="COJO"){
+      mcols(gr.snp)[,"PP"] <- mcols(gr.snp)[,paste0(method,".Conditioned_Effect")]  
+    } else{
+      mcols(gr.snp)[,"PP"] <- mcols(gr.snp)[,paste0(method,".PP")] 
+    } 
   }
   dat <- as.data.frame(gr.snp)
   ### Label set
@@ -83,6 +87,7 @@ SNP_track <- function(gr.snp,
                    legend = F, 
                    facets=SEQnames~.) + 
       ylim(c(0,1.1)) # PP is always 0-1 scale
+    if(method=="COJO"){a1 <- a1 + labs(y="Conditioned Effect")}
   }
   
   a1 <- a1 + 

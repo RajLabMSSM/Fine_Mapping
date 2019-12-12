@@ -25,7 +25,7 @@ find_consensus_SNPs <- function(finemap_DT,
   
   # Calculate mean PP
   printer("+ Calculating mean Posterior Probability (mean.PP)...")
-  PP.cols <- grep(".Probability",colnames(finemap_DT), value = T)  
+  PP.cols <- grep(".PP",colnames(finemap_DT), value = T)  
   PP.sub <- subset(finemap_DT, select=c("SNP",PP.cols)) %>% data.frame()# %>% unique() 
   PP.sub[is.na(PP.sub)] <- 0
   if(NCOL(PP.sub[,-1]) > 1){
@@ -78,7 +78,6 @@ multi_finemap <- function(results_path,
                                             pattern = paste(c(finemap_method_list,"Support","Consensus_SNP"),collapse = "|"))]
   merged_DT <- subset(subset_DT, select = select_cols)
   
-  
   for(i in 1:length(finemap_method_list)){  
     m <- finemap_method_list[i];
     message("Multi-finemap:: ",m)
@@ -114,10 +113,10 @@ multi_finemap <- function(results_path,
       #   return(null_DT)
       #   } 
       # ) ## End tryCatch
-      try({printer("++ SUSIE: Credible Set SNPS identified =",sum(!is.na(DT$Credible_Set)) )})
+      try({printer("++ Credible Set SNPS identified =",nrow(subset(DT,Credible_Set>0)) )})
       # Add results to method-specific columns
       printer("+++ Merging",m,"results with multi-finemap data.");
-      value_var <- if(m=="COJO"){"Conditioned_Effect"}else{"Probability"};
+      value_var <- if(m=="COJO"){"Conditioned_Effect"}else{"PP"};
       DT_select <- subset(DT, select = c("SNP","Credible_Set",value_var) );
       # Rename columns according to method name
       cols <- colnames(DT_select);
@@ -126,10 +125,10 @@ multi_finemap <- function(results_path,
       # Merge new columns into DT
       merged_DT <- data.table:::merge.data.table(data.table::as.data.table(merged_DT),
                                                  data.table::as.data.table(DT_select),
-                                                 by="SNP", all = T);
+                                                 by="SNP", all = T); 
 
-  }   
-  return(finemap_DT)
+  }    
+  return(merged_DT)
 }
  
 
@@ -224,19 +223,17 @@ finemap_method_handler <- function(results_path,
                        A2_col = A2_col) 
     
   } else if("PAINTOR" %in% finemap_method) {
-    finemap_DT <- PAINTOR(finemap_DT = subset_DT,
-                          paintor_path = "./echolocatoR/tools/PAINTOR_V3.0",
-                          GWAS_dataset_name=NA,
-                          QTL_datasets=QTL_datasets,#c("Fairfax_2014_CD14","Fairfax_2014_IFN", "Fairfax_2014_LPS2","Fairfax_2014_LPS24")
-                          gene=basename(results_path),
-                          locus_name=NA,
-                          n_causal=n_causal,
-                          XGR_dataset=NA,
-                          ROADMAP_search=NA,
-                          chromatin_state="TssA",
-                          use_annotations=F,
-                          PP_threshold=.5,
-                          multi_finemap_col_name="PAINTOR")
+    finemap_DT <- PAINTOR(finemap_DT=subset_DT, 
+                           GWAS_datasets=ifelse(dataset_type=="GWAS", 
+                                                basename(dirname(results_path)),NULL),
+                           QTL_datasets=NULL,
+                           gene=basename(results_path), 
+                           n_causal=n_causal,   
+                           use_annotations=F,
+                           PP_threshold=.95,
+                           GWAS_populations="EUR",
+                           LD_matrix=LD_matrix,
+                           force_new_LD=F)
   } else {
     stop("[::ERROR::] Enter valid finemap_method: 'SUSIE', 'ABF', 'FINEMAP', 'COJO', and 'PAINTOR' are currently available.")
   }

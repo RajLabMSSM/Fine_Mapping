@@ -173,12 +173,12 @@ snp_plot <- function(finemap_DT,
     # Fine-mapping methods
     } else if (multi){
       title <- method #paste0(gene," : After fine-mapping (",method,")") 
-      DT <- DT %>% dplyr::rename(Probability = paste0(method,".Probability"), 
+      DT <- DT %>% dplyr::rename(Probability = paste0(method,".PP"), 
                                  Credible_Set = paste0(method,".Credible_Set")) 
       is.na(DT$Probability) <- 0 
       p <- ggplot(data = DT, aes(x=POS, y=Probability, color= r2 )) + 
 # =======
-#       DT <- finemap_DT %>% dplyr::rename(Probability = paste0(method,".Probability"), 
+#       DT <- finemap_DT %>% dplyr::rename(Probability = paste0(method,".PP"), 
 #                                          Credible_Set = paste0(method,".Credible_Set")) 
 #       is.na(DT$Probability) <- 0 
 #       p <- ggplot(data = DT, aes(x=POS, y=Probability, label=SNP, color= -log10(P) )) + 

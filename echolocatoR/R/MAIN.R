@@ -173,9 +173,7 @@ quick_finemap <- function(){
 
 # quick_start
 quickstart <- function(){ 
-  reload()
-  
-  Data_dirs <<- read.csv("./Data/directories_table.csv")
+  # reload()
   allResults <<- list()
   gene <<- "LRRK2"
   leadSNP <<- "rs76904798" 
@@ -210,11 +208,11 @@ quickstart <- function(){
   plink_folder <<- "./Data/GWAS/Nalls23andMe_2019/LRRK2/plink" 
   reference <<- "1KG_Phase1"
   LD_reference <<- "1KG_Phase1"
-  bp_distance <<- 500000
-  n_causal <<- 5
+  bp_distance <<- 100000
+  n_causal <<- 10
   vcf_URL <<- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr8.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
   popDat_URL <<- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel"
-  chr <<- 8
+  # chr <<- 12
   vcf_name <<- "ALL.chr8.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
   vcf_folder <<- "./Data/Reference/1000_Genomes"
   query_by <<- "coordinates"
@@ -231,7 +229,7 @@ quickstart <- function(){
   
   
   top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
-    topSS_path = Directory_info(Data_dirs, dataset_name, "topSumStats"),
+    topSS_path = Directory_info(dataset_name, "topSS"),
     chrom_col = "CHR", position_col = "BP", snp_col="SNP",
     pval_col="P, all studies", effect_col="Beta, all studies", gene_col="Nearest Gene",
     caption= "Nalls et al. (2018) w/ 23andMe PD GWAS Summary Stats",
@@ -250,7 +248,7 @@ quickstart <- function(){
   # subset_DT <<- data.table::fread(subset_path, sep="\t")
   LD_path <<- file.path(results_path, "plink/LD_matrix.RData")
   
-  fullSS_path <<- file.path("Data",dataset_type,dataset_name,"nallsEtAl2019_allSamples_allVariants.mod.txt")
+  fullSS_path <<- Directory_info(dataset_name, "fullSS.local")
   show_plot<<-T
   subtitle<<-NA
   multi<<-T
@@ -267,8 +265,8 @@ quickstart <- function(){
   min_MAF <<- 0
   GCTA_path <<- "echolocatoR/tools/gcta_1.92.1beta5_mac/bin/gcta64"
   bfiles <<- "plink_tmp/plink"
-  load("Data/GWAS/Nalls23andMe_2019/LRRK2/plink/LD_matrix.RData")
-  LD_matrix <<- LD_matrix
+  # load("Data/GWAS/Nalls23andMe_2019/LRRK2/plink/LD_matrix.RData")
+  LD_matrix <<- readRDS(file.path(results_path,"plink/UKB_LD.RDS"))
   # subset_DT <- subset(subset_DT, SNP %in% unique(row.names(LD_matrix), colnames(LD_matrix) ) )
   # subset_DT <- subset_DT[complete.cases(subset_DT),] # Remove any NAs
   # LD_matrix <- LD_matrix[row.names(LD_matrix) %in% subset_DT$SNP,  colnames(LD_matrix) %in% subset_DT$SNP]
@@ -283,7 +281,7 @@ quickstart <- function(){
   
   dataset1_path <<- "./Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_Nalls23andMe_2019_subset_500kb.txt"
   dataset2_path <<- "./Data/eQTL/MESA_CAU/LRRK2/LRRK2_MESA_CAU_subset.txt"
-  shared_MAF <<- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_Nalls23andMe_2019_subset_500kb.txt", sep="\t")$MAF
+  # shared_MAF <<- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_Nalls23andMe_2019_subset_500kb.txt.gz", sep="\t")$MAF
   plot_subtitle <<- "Fairfax (2014) + CD14 eQTL"
   dataset2_proportion_cases <<- 5e-324
   PP_threshold <<- 0.8
@@ -299,6 +297,13 @@ quickstart <- function(){
   remove_tmps <<- T
   chromatin_states <<- c("TssA","EnhA1","EnhA2")
   diff_freq <<- 0.1
+  
+  paintor_path <<- "./echolocatoR/tools/PAINTOR_V3.0"
+  locus_name<<- NULL
+  GWAS_datasets <<- dataset_name
+  QTL_datasets <<- NULL
+  populations <<- "EUR"
+  use_annotations <<- F 
 }
 # quickstart()
 
@@ -307,7 +312,7 @@ quickstart <- function(){
 #   # Assign global variables to test functions
 #   gene <<- "LRRK2"
 #   leadSNP <<- "rs76904798"
-#   gene_list <<- c("LRRK2")
+#   loci <<- c("LRRK2")
 #   chrom_col <<- "chr"
 #   position_col <<- "pos_snps"
 #   snp_col <<- "snps"
@@ -381,11 +386,11 @@ subset_common_snps <- function(LD_matrix, finemap_DT){
 
 gene_trimmer <- function(subset_DT, 
                          gene, 
-                         trim_gene_limits=T, 
+                         trim_gene_limits=F, 
                          min_POS=NULL, 
                          max_POS=NULL){
-  printer("BIOMART:: Trimming data to only include SNPs within gene coordinates.")
   if(trim_gene_limits){
+    printer("BIOMART:: Trimming data to only include SNPs within gene coordinates.")
     gene_info <- biomart_geneInfo(gene)
     gene_info_sub <- subset(gene_info, hgnc_symbol==gene)
     # Take most limiting min position
@@ -397,6 +402,22 @@ gene_trimmer <- function(subset_DT,
     return(subset_DT)
    
   } else{return(subset_DT)} 
+}
+
+limit_SNPs <- function(max_snps=500, subset_DT){
+  orig_n <- nrow(subset_DT) 
+  lead.index <- which(subset_DT$leadSNP==T) 
+  i=1
+  tmp.sub<-data.frame() 
+  while(nrow(tmp.sub)<max_snps){
+    # print(i)
+    snp.start <- max(1, lead.index-i)
+    snp.end <- min(nrow(subset_DT), lead.index+i)
+    tmp.sub <- subset_DT[snp.start:snp.end]
+    i=i+1
+  }
+  printer("+ Reduced number of SNPs:",orig_n,"==>",nrow(tmp.sub))
+  return(tmp.sub)
 }
 
 printer <- function(..., v=T){if(v){print(paste(...))}}
@@ -454,7 +475,9 @@ finemap_pipeline <- function(gene,
                              min_POS=NA, 
                              max_POS=NA,
                              min_MAF=NA,
-                             trim_gene_limits=T,
+                             trim_gene_limits=F,
+                             max_snps=NULL,
+                             
                              file_sep="\t", 
                              min_r2=0, 
                              LD_block=F,
@@ -469,8 +492,7 @@ finemap_pipeline <- function(gene,
                              verbose=T,
                              remove_tmps=T,
                              plot_types=c("simple","fancy"),
-                             PAINTOR_QTL_datasets=NULL
-                          ){
+                             PAINTOR_QTL_datasets=NULL){
    # Create paths 
    results_path <- make_results_path(dataset_name, dataset_type, gene)
    subset_path <- get_subset_path(results_path=results_path, gene=gene, subset_path="auto")
@@ -503,8 +525,7 @@ finemap_pipeline <- function(gene,
                       file_sep = file_sep, 
                       query_by = query_by,
                       probe_path = probe_path,
-                      remove_tmps = remove_tmps
-                      ) 
+                      remove_tmps = remove_tmps) 
    # Remove pre-specified SNPs
    if(remove_variants!=F){
      printer("Removing specified variants:",paste(remove_variants, collapse=','), v=verbose)
@@ -540,6 +561,12 @@ finemap_pipeline <- function(gene,
   LD_matrix <- sub.out$LD_matrix
   subset_DT <- sub.out$finemap_DT 
   
+  if(!is.null(max_snps)){
+    subset_DT <- limit_SNPs(max_snps = max_snps, subset_DT = subset_DT)
+    sub.out <- subset_common_snps(LD_matrix, subset_DT)
+    LD_matrix <- sub.out$LD_matrix
+    subset_DT <- sub.out$finemap_DT
+  }
    
   # Plot LD 
   if(plot_LD){
@@ -645,17 +672,17 @@ arg_list_handler <- function(arg, i){
   return(output)
 }
 
-snps_to_condition <- function(conditioned_snps, top_SNPs, gene_list){ 
+snps_to_condition <- function(conditioned_snps, top_SNPs, loci){ 
   if(conditioned_snps=="auto"){
-    lead_SNPs_DT <- subset(top_SNPs, Gene %in% gene_list)
+    lead_SNPs_DT <- subset(top_SNPs, Gene %in% loci)
     # Reorder
-    lead_SNPs_DT[order(factor(lead_SNPs_DT$Gene,levels= gene_list)),] 
+    lead_SNPs_DT[order(factor(lead_SNPs_DT$Gene,levels= loci)),] 
     return(lead_SNPs_DT$SNP)
   } else {return(conditioned_snps)}
 }
 
 # Fine-ap iteratively over genes/loci
-finemap_gene_list <- function(gene_list, fullSS_path, 
+finemap_loci <- function(loci, fullSS_path, 
                              dataset_name,
                              dataset_type="general",
                              force_new_subset=F, 
@@ -686,7 +713,8 @@ finemap_gene_list <- function(gene_list, fullSS_path,
                              min_POS=NA, 
                              max_POS=NA,
                              min_MAF=NA,
-                             trim_gene_limits=T,
+                             trim_gene_limits=F,
+                             max_snps=NULL,
                              file_sep="\t",
                              min_r2=0, LD_block=F, block_size=.7, min_Dprime=F, 
                              query_by="coordinates", 
@@ -698,15 +726,14 @@ finemap_gene_list <- function(gene_list, fullSS_path,
                              verbose=T,
                              remove_tmps=T,
                              plot_types = c("simple","fancy"),
-                             PAINTOR_QTL_datasets=NULL
-                             ){ 
+                             PAINTOR_QTL_datasets=NULL ){ 
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
-  lead_SNPs <- snps_to_condition(conditioned_snps, top_SNPs, gene_list)
+  lead_SNPs <- snps_to_condition(conditioned_snps, top_SNPs, loci)
   
-  for (i in 1:length(gene_list)){
+  for (i in 1:length(loci)){
     try({ 
-      gene <- gene_list[i]
+      gene <- loci[i]
       lead_SNP <- arg_list_handler(lead_SNPs, i) 
       gene_limits <- arg_list_handler(trim_gene_limits, i) 
       conditioned_snp <- arg_list_handler(conditioned_snps, i)  
@@ -746,6 +773,7 @@ finemap_gene_list <- function(gene_list, fullSS_path,
                                      min_MAF=min_MAF,
                                      
                                      trim_gene_limits=gene_limits,
+                                     max_snps=max_snps,
                                      file_sep=file_sep, 
                                      min_r2=min_r2,
                                      LD_block=LD_block, 

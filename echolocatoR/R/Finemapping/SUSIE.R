@@ -97,10 +97,10 @@ SUSIE <- function(subset_DT,
   # Create coordinates col
   # subset_DT$Coord <- paste(subset_DT$CHR, subset_DT$POS, sep=":")  
   res_DT <- data.table::data.table(SNP = names(fitted_bhat$X_column_scale_factors), 
-                                   Probability = fitted_bhat$pip )
+                                   PP = fitted_bhat$pip )
   finemap_DT <- data.table:::merge.data.table(x = data.table::data.table(subset_DT, key="SNP"), 
                                               y = data.table::data.table(res_DT, key="SNP"), all.x = T) 
-  finemap_DT <- finemap_DT %>% arrange(desc(Probability))
+  finemap_DT <- finemap_DT %>% arrange(desc(PP))
   # Assign credible set #, or 0 to denote that it's not part of any credible set
   ## NOTE: if a SNP is part of more than one list, the top-ranked group to which is belong is used
   CS_dict <- list() 
