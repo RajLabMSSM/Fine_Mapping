@@ -72,10 +72,10 @@ POLYFUN.load_conda <- function(server=F){
   printer("POLYFUN:: Activating polyfun_venv...")
   if(server){ 
     reticulate::use_condaenv("polyfun_venv")
-  }
-  reticulate::use_condaenv("polyfun_venv",
-                           conda = "/usr/local/anaconda3/condabin/conda")
+  } else {
+     reticulate::use_condaenv("polyfun_venv", conda = "/usr/local/anaconda3/condabin/conda")
   # conda_list("/usr/local/anaconda3/condabin/conda")
+  } 
 }
 
 
@@ -321,7 +321,8 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
                                     chrom="all",
                                     compute_ldscores=F, 
                                     allow_missing_SNPs=T,
-                                    ref.prefix="/sc/orga/projects/pd-omics/data/1000_Genomes/Phase1/1000G.mac5eur."){
+                                    ref.prefix="/sc/orga/projects/pd-omics/data/1000_Genomes/Phase1/1000G.mac5eur.", 
+                                    server=F){
   # Quickstart:
   # polyfun="./echolocatoR/tools/polyfun"; parametric=T;  weights.path=file.path(polyfun,"example_data/weights."); annotations.path=file.path(polyfun,"example_data/annotations."); munged.path= "./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet"; parametric=T; dataset="Nalls23andMe_2019"; prefix="PD_GWAS"; compute_ldscores=F; allow_missing_SNPs=T; chrom="all"; finemap_DT=NULL; locus="LRRK2"; server=F; ref.prefix="/sc/orga/projects/pd-omics/data/1000_Genomes/Phase1/1000G.mac5eur.";
  
@@ -438,7 +439,8 @@ POLYFUN.run_ldsc <- function(polyfun="./echolocatoR/tools/polyfun",
                              allow_missing_SNPs=T,
                              munged_path="/sc/orga/projects/pd-omics/tools/polyfun/Nalls23andMe_2019.sumstats_munged.parquet",
                              ref.prefix="/sc/orga/projects/pd-omics/data/1000_Genomes/Phase1/1000G.mac5eur.",
-                             freq.prefix="/sc/orga/projects/pd-omics/tools/polyfun/1000G_frq/1000G.mac5eur."){
+                             freq.prefix="/sc/orga/projects/pd-omics/tools/polyfun/1000G_frq/1000G.mac5eur.", 
+                             server=F){
   
   POLYFUN.load_conda(server = server)
   if(server){
@@ -485,7 +487,8 @@ POLYFUN.SUSIE <- function(results_path,
                           polyfun_approach="non-parametric",
                           dataset_type="GWAS",
                           n_causal=5, 
-                          sample_size=NA){
+                          sample_size=NA, 
+                          server=F){
   
   # polyfun="./echolocatoR/tools/polyfun";  results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide"; dataset="Nalls23andMe_2019"; locus="LRRK2"; finemap_DT=NULL; polyfun_priors="parametric"; sample.size=1474097; min_INFO=0; min_MAF=0; server=T;
   out.path <- file.path(dirname(results_path),"_genome_wide/PolyFun/output") 
@@ -509,16 +512,16 @@ POLYFUN.SUSIE <- function(results_path,
     ldsc.files <- list.files(out.path, pattern = "*.snpvar_constrained.gz", full.names = T) %>%  grep(pattern = paste0(".",chrom,"."), value = T)
     h2 <- rbind.file.list(ldsc.files) 
   } 
-  # Prepare data
-  merged_DT <- data.table::merge.data.table(finemap_DT, 
+  # Prepare data  
+  merged_DT <- data.table:::merge.data.table(finemap_DT, 
                                             dplyr::select(h2, SNP, POLYFUN.h2=SNPVAR) %>% 
                                               data.table::data.table(), 
                                             by="SNP")
   if(is.null(LD_matrix)){
     # LD_matrix <- readRDS(file.path(results_path,"plink/LD_matrix.RData"))
-    LD_matrix <- POLYFUN.ukbb_LD(finemap_DT, 
-                                 results_path,
-                                 force_new_LD=F)
+    LD_matrix <- LD.UKBiobank(finemap_DT, 
+                              results_path,
+                              force_new_LD=F,)
   } 
   LD_matrix <- LD_matrix[merged_DT$SNP, merged_DT$SNP]
   # Run SUSIE
@@ -582,7 +585,7 @@ POLYFUN.plot <- function(subset_DT,
     lead.snp <- top_n(subset_DT,1,-P)$SNP #subset(subset_DT, leadSNP==T)$SNP
     r2 <- data.table::data.table(SNP=names(LD_matrix[lead.snp,]), 
                                  r2=LD_matrix[lead.snp,]^2)
-    dat <- data.table::merge.data.table(subset_DT, r2, by="SNP") 
+    dat <- data.table:::merge.data.table(subset_DT, r2, by="SNP") 
   } else{dat <- dplyr::mutate(subset_DT, r2=1)}
   dat <- dplyr::mutate(dat, Mb=round(POS/1000000,3)) 
  
@@ -768,7 +771,7 @@ NOTT_2019.superenhancers <- function(s6_path="./echolocatoR/annotations/Glass_la
   s6 <- readxl::read_excel( , skip = 2)  
   annot_sub <- subset(s6, chr== paste0("chr",unique(finemap_DT$CHR)) & start>=min(finemap_DT$POS) & end<=max(finemap_DT$POS) )
   if(nrow(annot_sub)>0){
-    merged_DT <- data.table::merge.data.table(finemap_DT %>% 
+    merged_DT <- data.table:::merge.data.table(finemap_DT %>% 
                                                 dplyr::mutate(chr=paste0("chr",CHR), 
                                                               start=as.numeric(POS)) %>% 
                                                 data.table::data.table(),
@@ -1077,11 +1080,11 @@ POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT,
 }
 # merged_results <- merge_finemapping_results(minimum_support=0,
 #                                             include_leadSNPs=T)
-merged_results <- readxl::read_excel("./Data/annotated_finemapping_results.xlsx")
-h2.enrich.df <- POLYFUN.h2_enrichment_SNPgroups(finemap_DT = merged_results,
-                                         subtitle = "Genome-wide")
-h2.enrich.annot.df <- POLYFUN.h2_enrichment_annot(finemap_DT = merged_results,
-                                                  h2_df = h2_df)
+# merged_results <- readxl::read_excel("./Data/annotated_finemapping_results.xlsx")
+# h2.enrich.df <- POLYFUN.h2_enrichment_SNPgroups(finemap_DT = merged_results,
+#                                          subtitle = "Genome-wide")
+# h2.enrich.annot.df <- POLYFUN.h2_enrichment_annot(finemap_DT = merged_results,
+#                                                   h2_df = h2_df)
 
 
 # 

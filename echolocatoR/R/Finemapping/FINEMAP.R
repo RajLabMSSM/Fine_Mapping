@@ -94,7 +94,8 @@ FINEMAP <- function(subset_DT,
                     n_samples=NA,
                     n_causal=5,# Max number of allowed causal SNPs
                     model="cond", # cond (stepwise conditional search) vs. sss (stochastic shotgun search)
-                    remove_tmps=T){ 
+                    remove_tmps=T, 
+                    server=F){ 
   # The stepwise conditional search starts with a causal configuration containing the 
   ## SNP with the lowest P-value alone and then iteratively adds to the causal configuration 
   ## the SNP given the highest posterior model probability until no further SNP yields
@@ -111,9 +112,16 @@ FINEMAP <- function(subset_DT,
   # Command line
   ## Example: 
   ## cmd <- paste(FINEMAP_path," --sss --in-files",file.path(dirname(FINEMAP_path),"example","master"), "--dataset 1 --n-causal-snps 5") 
-  file.copy(from=FINEMAP_path, to=file.path(results_path))
+  if(startsWith(getwd(),"/sc/")){server<-T}
+  if(server){ 
+    FINEMAP_path <- "ml finemap && finemap"
+  } else {
+    file.copy(from=FINEMAP_path, to=file.path(results_path))
+    FINEMAP_path <- "./finemap_v1.3_MacOSX"
+  }
+ 
   cmd <- paste("cd",results_path,"&&",
-               "./finemap_v1.3_MacOSX",
+               FINEMAP_path,
                paste0("--",model),
                "--in-files",file.path("FINEMAP/master"),
                "--log",

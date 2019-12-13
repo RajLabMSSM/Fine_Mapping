@@ -68,24 +68,28 @@ SUSIE <- function(subset_DT,
   vars <- get_var_y(subset_DT, dataset_type)
   sample_size <- get_sample_size(subset_DT, sample_size)
   printer("+ Fine-mapping...")
-  fitted_bhat <- susieR::susie_bhat(bhat = subset_DT$Effect,
-                                    shat = subset_DT$StdErr,
-                                    R = LD_matrix,
-                                    n = sample_size, # Number of samples/individuals in the dataset
-                                    L = n_causal, # we assume there are at *most* 'L' causal variables
-                                    ## NOTE: setting L == 1 has a strong tendency to simply return the SNP with the largest effect size.
-                                    
-                                    estimate_prior_variance = TRUE, # default = FALSE
-                                    scaled_prior_variance = 0.1, # 0.1: Equates to "proportion of variance explained"
-                                    
-                                    standardize = TRUE,
-                                    estimate_residual_variance = TRUE, # TRUE
-                                    var_y = vars$phenotype_variance, # Variance of the phenotype (e.g. gene expression, or disease status)
-                                    
-                                    # A p vector of prior probability that each element is non-zero
-                                    prior_weights = prior_weights,
-                                    
-                                    verbose = FALSE ) 
+  
+  # SUSIE's authors "merge[d] susie_ss and susie_bhat to susie_suff_stat" in 11/2019.
+  susie_func <- ifelse(length(find("susie_bhat"))==0, susieR::susie_suff_stat, susieR::susie_bhat) 
+  
+  fitted_bhat <- susie_func(bhat = subset_DT$Effect,
+                            shat = subset_DT$StdErr,
+                            R = LD_matrix,
+                            n = sample_size, # Number of samples/individuals in the dataset
+                            L = n_causal, # we assume there are at *most* 'L' causal variables
+                            ## NOTE: setting L == 1 has a strong tendency to simply return the SNP with the largest effect size.
+                            
+                            estimate_prior_variance = TRUE, # default = FALSE
+                            scaled_prior_variance = 0.1, # 0.1: Equates to "proportion of variance explained"
+                            
+                            standardize = TRUE,
+                            estimate_residual_variance = TRUE, # TRUE
+                            var_y = vars$phenotype_variance, # Variance of the phenotype (e.g. gene expression, or disease status)
+                            
+                            # A p vector of prior probability that each element is non-zero
+                            prior_weights = prior_weights,
+                            
+                            verbose = FALSE ) 
   # try({susieR::susie_plot_iteration(fitted_bhat, n_causal, 'test_track_fit')})
   printer("")
   printer("++ Extracting Credible Sets...") 

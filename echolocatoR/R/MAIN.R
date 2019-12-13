@@ -37,7 +37,7 @@
 #   Test Package:              'Cmd + Shift + T'
  
 # Load libraries
-.libPaths()  
+# .libPaths()  
 
 library(R.utils)
 library(devtools)
@@ -64,7 +64,7 @@ library(crayon)
 #   system("git clone https://github.com/wzhy2000/fGWAS.git & cd fGWAS & R CMD INSTALL pkg")
 # }
 # library(fGWAS) 
-# library(snpStats)  #BiocManager::install("snpStats") 
+# library(snpStats) #BiocManager::install("snpStats") 
 # library(coloc)
 
 
@@ -167,8 +167,8 @@ rbind.file.list <- function(file.list, verbose=T){
 quick_finemap <- function(){
   gene <- "LRRK2"
   results_path <<- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
-  finemap_DT <- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
-  return(finemap_DT)
+  finemap_DT <<- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
+  # return(finemap_DT)
 }
 
 # quick_start
@@ -405,19 +405,25 @@ gene_trimmer <- function(subset_DT,
 }
 
 limit_SNPs <- function(max_snps=500, subset_DT){
-  orig_n <- nrow(subset_DT) 
-  lead.index <- which(subset_DT$leadSNP==T) 
-  i=1
-  tmp.sub<-data.frame() 
-  while(nrow(tmp.sub)<max_snps){
-    # print(i)
-    snp.start <- max(1, lead.index-i)
-    snp.end <- min(nrow(subset_DT), lead.index+i)
-    tmp.sub <- subset_DT[snp.start:snp.end]
-    i=i+1
-  }
+  printer("echolocator:: Limiting to only",max_snps,"SNPs.")
+  if(nrow(subset_DT)>max_snps){
+    orig_n <- nrow(subset_DT) 
+    lead.index <- which(subset_DT$leadSNP==T) 
+    i=1
+    tmp.sub<-data.frame() 
+    while(nrow(tmp.sub)<max_snps){
+      # print(i)
+      snp.start <- max(1, lead.index-i)
+      snp.end <- min(nrow(subset_DT), lead.index+i)
+      tmp.sub <- subset_DT[snp.start:snp.end]
+      i=i+1
+    }
   printer("+ Reduced number of SNPs:",orig_n,"==>",nrow(tmp.sub))
   return(tmp.sub)
+  } else {
+    printer("+ Data already contains less SNPs than limit (",nrow(subset_DT),"<",max_snps,")")
+    return(subset_DT)
+  }
 }
 
 printer <- function(..., v=T){if(v){print(paste(...))}}
@@ -492,7 +498,8 @@ finemap_pipeline <- function(gene,
                              verbose=T,
                              remove_tmps=T,
                              plot_types=c("simple","fancy"),
-                             PAINTOR_QTL_datasets=NULL){
+                             PAINTOR_QTL_datasets=NULL,
+                             server=F){
    # Create paths 
    results_path <- make_results_path(dataset_name, dataset_type, gene)
    subset_path <- get_subset_path(results_path=results_path, gene=gene, subset_path="auto")
@@ -555,7 +562,8 @@ finemap_pipeline <- function(gene,
                                  block_size=block_size,
                                  min_Dprime=min_Dprime,
                                  remove_correlates=remove_correlates,
-                                 verbose=verbose)
+                                 verbose=verbose, 
+                                 server=server)
   # Subset LD and df to only overlapping SNPs 
   sub.out <- subset_common_snps(LD_matrix, subset_DT)
   LD_matrix <- sub.out$LD_matrix
@@ -726,7 +734,8 @@ finemap_loci <- function(loci, fullSS_path,
                              verbose=T,
                              remove_tmps=T,
                              plot_types = c("simple","fancy"),
-                             PAINTOR_QTL_datasets=NULL ){ 
+                             PAINTOR_QTL_datasets=NULL,
+                             server=F){ 
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
   lead_SNPs <- snps_to_condition(conditioned_snps, top_SNPs, loci)
@@ -787,7 +796,8 @@ finemap_loci <- function(loci, fullSS_path,
                                      plot_LD=plot_LD,
                                      remove_tmps=remove_tmps,
                                      plot_types=plot_types,
-                                     PAINTOR_QTL_datasets=PAINTOR_QTL_datasets)  
+                                     PAINTOR_QTL_datasets=PAINTOR_QTL_datasets, 
+                                     server=server)  
       
       # Create summary table for all genes
       printer("Generating summary table...", v=verbose)

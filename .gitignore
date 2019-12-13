@@ -22,6 +22,7 @@ core.*
 Manuscripts/
 /Data/**/**/**/FINEMAP/data.ld
 /Data/**/**/**/plink/LD_matrix.RData
+/Data/**/**/**/plink/*.RDS
 
 # Annotations
 /echolocatoR/tools/Annotations/*.rds

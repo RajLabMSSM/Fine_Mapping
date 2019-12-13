@@ -29,12 +29,14 @@ LD.load_or_create <- function(results_path,
                               min_Dprime=F,
                               remove_correlates=F,
                               fillNA=0,
-                              verbose=T){
+                              verbose=T,
+                              server=F){
   if(LD_reference=="UKB"){
     printer("LD:: Using UK Biobank LD reference panel...")
     LD_matrix <- LD.UKBiobank(finemap_DT = subset_DT, 
                               results_path = results_path, 
-                              force_new_LD = force_new_LD)
+                              force_new_LD = force_new_LD,
+                              server = server)
   } else {
     LD_path <- file.path(results_path,"plink/LD_matrix.RData")
     if(!file.exists(LD_path) | force_new_LD==T){
@@ -185,19 +187,26 @@ ThousandGenomes_LD <- function(subset_DT,
 }
  
 
+ LD.find_ld_prefix <- function(chrom, min_pos){
+    bp_starts <- seq(1,252000001, by = 1000000)
+    bp_ends <- bp_starts+3000000
+    i <- max(which(bp_starts<=min_pos)) 
+    file.name <- paste0("chr",chrom,"_", bp_starts[i],"_", bp_ends[i])
+    return(file.name)
+ }
+ 
+ 
 LD.UKBiobank <- function(finemap_DT, 
                          results_path,
                          force_new_LD=F,
                          polyfun="./echolocatoR/tools/polyfun",
                          server=F){  
   alkes_url <- "https://data.broadinstitute.org/alkesgroup/UKBB_LD"
-  URL <- alkes_url
-  chr <- unique(finemap_DT$CHR)
-  min.pos <- min(finemap_DT$POS) 
-  bp_starts <- seq(1,252000001, by = 1000000)
-  bp_ends <- bp_starts+3000000
-  i <- max(which(bp_starts<=min.pos)) 
-  file.name <- paste0("chr",chr,"_", bp_starts[i],"_", bp_ends[i]) 
+  URL <- alkes_url 
+  chrom <- unique(finemap_DT$CHR)
+  min_pos <- min(finemap_DT$POS) 
+  file.name <- LD.find_ld_prefix(chrom=chrom, min_pos=min_pos)
+   
   gz.path <- file.path(alkes_url, paste0(file.name,".gz")) 
   npz.path <- file.path(alkes_url, paste0(file.name,".npz"))
   
@@ -208,19 +217,16 @@ LD.UKBiobank <- function(finemap_DT,
     URL <- chimera.path
     if(file.exists(file.path(chimera.path, paste0(file.name,".gz")))  & 
        file.exists(file.path(chimera.path, paste0(file.name,".npz"))) ){
-       printer("+LD:: Pre-exisiting UKB LD gz/npz files detected. Importing...") 
+       printer("+LD:: Pre-existing UKB LD gz/npz files detected. Importing...") 
     } else {
-      printer("+ LD:: Downloading .gz and saving to disk.")
-      download.file(file.path(alkes_url,gz.path), file.path(chimera.path, paste0(file.name,".gz")))
-      printer("+ LD:: Downloading .npz and saving to disk.")
-      download.file(file.path(alkes_url,npz.path), file.path(chimera.path, paste0(file.name,".npz"))) 
+      printer("+ LD:: Downloading .gz/.npz and saving to disk.")
+      LD.download_UKB_LD(LD.file.list = file.path(alkes_url, file.name),
+                         out.path = chimera.path, 
+                         background = F)
     }  
   } else {
-    printer("+ LD:: Importing UKB LD file from alkes group server directly to R.") 
+    printer("+ LD:: Importing UKB LD file from alkesgroup database directly to R.") 
   }  
-  # Download all UKBB LD files
-  # wget -r -np -A '*.gz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
-  # wget -r -np -A '*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
    
   # RSIDs file
   # rsids <- data.table::fread(gz.path, nThread = 4) 
@@ -228,15 +234,15 @@ LD.UKBiobank <- function(finemap_DT,
     printer("POLYFUN:: Pre-existing UKB_LD.RDS file detected. Importing...")
     LD_matrix <- readRDS(UKBB.LD.file)
   } else {
-    POLYFUN.load_conda()
+    POLYFUN.load_conda(server = server)
     reticulate::source_python(file.path(polyfun,"load_ld.py"))
     printer("+ LD:: ...this could take some time...")
     ld.out <- load_ld(ld_prefix = file.path(URL, file.name))
     # LD matrix
     ld_R <- ld.out[[1]] 
     # head(ld_R)[1:10]
-    # SNP info
-    ld_snps <- data.table::data.table(ld.out[[2]])
+    # SNP info 
+    ld_snps <- data.table::data.table(reticulate::py_to_r(ld.out[[2]]))
     # remove(ld.out) 
     # ld_snps.sub <- subset(ld_snps, position %in% finemap_DT$POS)
     indices <- which(ld_snps$position %in% finemap_DT$POS)
@@ -246,11 +252,46 @@ LD.UKBiobank <- function(finemap_DT,
     colnames(LD_matrix) <- ld_snps.sub$rsid 
     printer("LD matrix dimensions", paste(dim(LD_matrix),collapse=" x "))
     printer("+ POLYFUN:: Saving LD =>",UKBB.LD.file)
+    dir.create(dirname(UKBB.LD.file), showWarnings = F, recursive = T)
     saveRDS(LD_matrix, UKBB.LD.file)
   }  
   return(LD_matrix) 
 }
- 
+
+
+LD.download_UKB_LD <- function(LD.file.list, 
+                               out.path="/sc/orga/projects/pd-omics/tools/polyfun/UKBB_LD/",
+                               background=T){
+    flags <- ifelse(background,"-bqc","qc")
+    for(f in LD.file.list){ 
+      gz.path <- file.path(alkes_url,paste0(f,".gz"))
+      npz.path <- file.path(alkes_url,paste0(f,".npz"))
+      # https://stackoverflow.com/questions/21365251/how-to-run-wget-in-background-for-an-unattended-download-of-files
+      ## -bqc makes wget run in the background quietly
+      system(paste("wget",gz.path,"-np",flags,"-P",out.path))
+      cmd <- paste("wget",npz.path,"-np",flags,"-P",out.path)
+      print(cmd)
+      system(cmd)
+    }
+  }
+
+LD.UKBiobank_multi_download <- function(out.path = "/sc/orga/projects/pd-omics/tools/polyfun/UKBB_LD/"){
+  # Download all UKBB LD files
+  # wget -r -np -A '*.gz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
+  # wget -r -np -A '*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
+  alkes_url <- "https://data.broadinstitute.org/alkesgroup/UKBB_LD"
+  # Figure out the names of LD files you'll need
+  merged_DT <- merge_finemapping_results(minimum_support = 0)
+  locus_coords <- merged_DT %>% dplyr::group_by(Gene) %>% 
+    dplyr::summarise(chrom=unique(CHR), min_pos=min(POS), max_pos=max(POS))
+  LD.file.list <- lapply(1:nrow(locus_coords), function(i){
+    return(LD.find_ld_prefix(chrom = locus_coords$chrom[i], min_pos=locus_coords$min_pos[i]))
+  }) %>% unlist()
+  
+  LD.download_UKB_LD(LD.file.list = LD.file.list,
+                     out.path = out.path)
+  return(LD.file.list)
+}
  
 BCFTOOLS.filter_vcf <- function(subset_vcf, 
                                 popDat, 

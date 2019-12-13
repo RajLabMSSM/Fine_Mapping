@@ -107,7 +107,7 @@ query_by_coordinates <- function(top_SNPs,
                                  min_POS, 
                                  max_POS, 
                                  bp_distance){
-  gz.reader <- ifelse(endsWith(fullSS_path,".gz"), " gzcat ","")
+  gz.reader <- ifelse(endsWith(fullSS_path,".gz"), " zcat ","")
   topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),]
   if(is.na(min_POS)){min_POS <- topSNP_sub$POS - bp_distance}
   if(is.na(max_POS)){max_POS <- topSNP_sub$POS + bp_distance}
@@ -144,7 +144,7 @@ query_by_coordinates_merged <- function(top_SNPs, fullSS_path, subset_path, gene
 
 query_by_gene <- function(fullSS_path, subset_path, gene, gene_col, file_sep){
   colDict <- column_dictionary(fullSS_path)
-  # if(endsWith(fullSS_path,".gz")){fullSS_path <- paste("<(gzcat",fullSS_path,")")} 
+  # if(endsWith(fullSS_path,".gz")){fullSS_path <- paste("<(zcat",fullSS_path,")")} 
   awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1{print $0} NR>1{if($",colDict[[gene_col]]," == \"",gene,"\"){print $0}}' ",fullSS_path,
                    "| tr -s '",file_sep,"' '\t'  > ",subset_path, sep="")
   printer("\n",awk_cmd,"\n")
