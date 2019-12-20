@@ -95,7 +95,10 @@ FINEMAP <- function(subset_DT,
                     n_causal=5,# Max number of allowed causal SNPs
                     model="cond", # cond (stepwise conditional search) vs. sss (stochastic shotgun search)
                     remove_tmps=T, 
-                    server=F){ 
+                    server=F,
+                    credset_thresh=.95){ 
+  # http://www.christianbenner.com
+  
   # The stepwise conditional search starts with a causal configuration containing the 
   ## SNP with the lowest P-value alone and then iteratively adds to the causal configuration 
   ## the SNP given the highest posterior model probability until no further SNP yields
@@ -132,7 +135,9 @@ FINEMAP <- function(subset_DT,
   system(cmd) 
   file.remove(file.path(results_path,"finemap_v1.3_MacOSX"))
   # Process results
-  finemap_DT <- process_FINEMAP_results(results_path, subset_DT)
+  finemap_DT <- process_FINEMAP_results(results_path, 
+                                        subset_DT, 
+                                        credset_thresh = credset_thresh)
   
   # Remove tmp files
   if(remove_tmps){

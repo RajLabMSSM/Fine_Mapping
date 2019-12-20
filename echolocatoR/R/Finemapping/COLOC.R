@@ -78,7 +78,7 @@ COLOC <- function(gene,
                   PP_threshold=0.8,
                   save_results=T,
                   show_plot=T){
-  printer("\n******** Step 5: COLOCALIZE ********\n")  
+  printer("******** Step 5: COLOCALIZE ********")  
   # The Approximate Bayes Factor colocalisation analysis described in the next section 
   ## essentially works by fine mapping each trait under a single causal variant assumption 
   ##and then integrating over those two posterior distributions to calculate probabilities that 
@@ -101,7 +101,7 @@ COLOC <- function(gene,
     dataset1$MAF <- dataset2$MAF
   }
   ## NOTES: MESA and Fairfax: No sample size (SNP-level), proportion of cases, or freq/MAF info available?   
-  printer("\n\n")
+  # printer("\n\n")
   coloc.res <- coloc::coloc.abf(dataset1 = dataset1,
                                 dataset2 = dataset2)
                                     # MAF = dataset1$MAF) 
@@ -118,10 +118,10 @@ COLOC <- function(gene,
   for(h in names(hypothesis_key)){
     if(coloc.res$summary[h]>=PP_threshold){
       hyp <- hypothesis_key[h]
-      printer("\n    ",h,"== TRUE: **",hyp )
+      printer("    ",h,"== TRUE: **",hyp )
       true_hyp <- paste0(names(hyp),": ", hyp)
     } else{
-      printer("\n    ",h,"== FALSE: ")
+      printer("    ",h,"== FALSE: ")
     } 
   } 
   
@@ -357,7 +357,7 @@ COLOC.iterate_QTL <- function(GTEx_version="GTEx_V7",
     # FM_merge$Adjusted.Effect <- FM_merge$Effect * FM_merge$mean.PP
     
     coloc_dt <- lapply(unique(FM_merge$Gene), function(gene){
-          printer("+COLOC::",gene)  
+          printer("+ COLOC::",gene)  
           FM_gene <- subset(FM_merge, Gene==gene) 
           FM_gene <- FM_gene[!is.na(FM_gene$QTL.Effect),]
           default_results <- data.table::data.table(Locus=gene,

@@ -47,9 +47,10 @@ SNP_track <- function(gr.snp,
                       method = "original",
                       labels_subset = c("Lead SNP", "Credible Set", "Consensus SNP"), 
                       r2=NULL, 
-                      show.legend=T){
+                      show.legend=T,
+                      PP_threshold=.95){
   # Format data
-  if(method!="original"){
+  if(!(method %in% c("original"))){
     if(method=="COJO"){
       mcols(gr.snp)[,"PP"] <- mcols(gr.snp)[,paste0(method,".Conditioned_Effect")]  
     } else{
@@ -66,6 +67,7 @@ SNP_track <- function(gr.snp,
   ## Make track
   if(method=="original"){
     cutoff <- -log10(5e-8)
+    cutoff_lab <- paste("P < 5e-8")
     ymax <- max(-log10(gr.snp$P))
     r2_multiply <- 150
     a1 <- plotGrandLinear(gr.snp, 
@@ -76,8 +78,9 @@ SNP_track <- function(gr.snp,
       labs(y="-log10(P-value)") +  
       ylim(c(0,ymax*1.1))
   } else {
-    cutoff <- 0.5
-    r2_multiply <- 5 
+    cutoff <- PP_threshold
+    cutoff_lab <- paste0(PP_threshold*100,"% probability")
+    r2_multiply <- 5
     # Further filter label tags if plotting fine-mapping results
     label_tags <- label_tags[ (label_tags[paste0(method,".Credible_Set")]>0),] # IMPORTANT!: >0 (not TRUE)
     a1 <- plotGrandLinear(gr.snp, 
@@ -93,10 +96,14 @@ SNP_track <- function(gr.snp,
   a1 <- a1 + 
     scale_color_gradient(low="blue", high="red", limits = c(0,1)) + 
     geom_hline(yintercept=0,alpha=.5, linetype=1, size=.5) + 
-    geom_hline(yintercept=cutoff, alpha=.5, linetype=2, size=.5, color="black")
+    geom_hline(yintercept=cutoff, alpha=.5, linetype=2, size=.5, color="black") +
+    geom_text(aes(x=min(POS), y=cutoff*1.1), 
+              label=cutoff_lab,
+              size=3,color="grey", hjust = 0)
   # Only draw LD line on the first track
   if(is.null(r2) & method=="original"){
-    a1 <- a1 + geom_line(data=dat, stat="smooth", aes(x=POS, y=r2*r2_multiply), 
+    a1 <- a1 + geom_line(data=dat, stat="smooth", 
+                         aes(x=POS,y=r2*r2_multiply), #y=scales::rescale(gr.snp$r2, to=c(0,20))), 
                          se = F, formula = y ~ x,  method = 'loess', 
                          span=.1, size=.5, color="firebrick1")
   }
@@ -104,7 +111,7 @@ SNP_track <- function(gr.snp,
     # Add diamond overtop leadSNP
     geom_point(data=leader_SNP, pch=18, fill=NA, size=4, color=leader_SNP$color) +
     # Green rings aronud Credible Set SNPs
-    geom_point(data=CS_set, pch=21, fill=NA, size=4, color=CS_set$color, stroke=2, alpha=0.8) +
+    geom_point(data=CS_set, pch=21, fill=NA, size=4, color=CS_set$color, stroke=1, alpha=0.8) +
     ### Background color label
     geom_label_repel(data=label_tags, 
                      aes(label=SNP),
@@ -173,7 +180,8 @@ ROADMAP_track <- function(results_path, gr.snp, limit_files=NA){
   gr.roadmap <- lapply(unique(RoadMap_ref$EID), function(eid, 
                                                          gr.snp.=gr.snp, 
                                                          results_path.=results_path){
-    printer("+ Querying subset from Roadmap API:", eid," - ",counter,"/",length(unique(RoadMap_ref$EID)))
+    printer("+ Querying subset from Roadmap API:", 
+            eid," - ",counter,"/",length(unique(RoadMap_ref$EID)))
     counter <<- counter+1
     dat <- GRanges()
     try({
@@ -238,30 +246,44 @@ save_annotations <- function(gr, anno_path, libName){
 }
 
 
-
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 ############ PLOT ALL TRACKS TOGETHER ############
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 
-ggbio_plot <- function(finemap_DT, 
+GGBIO.plot <- function(finemap_DT, 
                        LD_matrix,
                        gene,
                        results_path,
-                       method_list=c("SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax"),
+                       method_list=c("SUSIE","FINEMAP","PAINTOR",
+                                     "PAINTOR_Fairfax"),
+                       mean.PP=T,
                        XGR_libnames=c("ENCODE_TFBS_ClusteredV3_CellTypes",
                                       "ENCODE_DNaseI_ClusteredV3_CellTypes",
                                       "Broad_Histone"),
                        ROADMAP=F,
-                       annot_overlap_threshold=5
-                       ){
+                       annot_overlap_threshold=5,
+                       PP_threshold=.95,
+                       Nott_sn_epigenome=F, 
+                       save_plot=T, 
+                       show_plot=T){
   # http://bioconductor.org/packages/release/bioc/vignettes/ggbio/inst/doc/ggbio.pdf
   library(ggbio)
   require(GenomicRanges)
-  require(biovizBase)
- 
-  # finemap_DT <- data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/Multi-finemap_results.txt", sep="\t") 
-  # # To merge a GRangesList into a single GRanges object:
-  # GR.merged <- unlist(grl)
+  require(biovizBase) 
+  # finemap_DT <-  quick_finemap("LRRK2"); XGR_libnames=NULL; mean.PP=T; ROADMAP=F; PP_threshold=.95;  Nott_sn_epigenome=T;  save_plot=T; show_plot=T; method_list=c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP") 
   
   # Set up data 
+  finemap_DT <- find_consensus_SNPs(finemap_DT = finemap_DT, 
+                                    credset_thresh = PP_threshold)
+  
+  available_methods <- gsub("\\.PP$","",grep("*\\.PP$",colnames(finemap_DT), value = T))
+  method_list <- method_list[method_list %in% available_methods]
+  if(mean.PP){
+    printer("+ GGBIO:: mean.PP Track");
+    method_list <- append(method_list, "mean")
+  }
   TRACKS_list <- NULL
   # Add LD into the DT
   LD_SNP <- subset(finemap_DT, leadSNP==T)$SNP
@@ -274,24 +296,29 @@ ggbio_plot <- function(finemap_DT,
   gr.snp_CHR <- biovizBase::transformDfToGr(DT, seqnames = "CHR", start = "POS", end = "POS")
   
   # Track 1: GWAS
-  track.gwas <- SNP_track(gr.snp, 
+  track.gwas <- SNP_track(gr.snp = gr.snp, 
                           method = "original", 
                           labels_subset = c("Lead SNP", "Consensus SNP"))
   TRACKS_list <- append(TRACKS_list, track.gwas)
   names(TRACKS_list)[1] <- "GWAS"
-  
+   
   # Tracks 2n: Fine-mapping
   for(m in method_list){
+    printer("++ GGBIO::",m,"Track")
     track.finemapping <- SNP_track(gr.snp, method = m, 
                              labels_subset = c("Lead SNP", "Credible Set"), 
-                             show.legend = F) 
-   
+                             show.legend = F)  
     TRACKS_list <- append(TRACKS_list, track.finemapping)
     names(TRACKS_list)[length(TRACKS_list)] <- m
-  }
+  } 
   
   # Track 3: Gene Model Track 
-  track.genes <- autoplot(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75, which = gr.snp_CHR, 
+  printer("++ GGBIO:: Gene Model Track")
+  lead.index <- which(gr.snp_CHR$leadSNP==T) 
+  lw <- 10
+  track.genes <- autoplot(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75, 
+                          # Have to limit (can only handle depth < 1000)
+                          which = gr.snp_CHR[(lead.index-lw):(lead.index+lw),], 
                           names.expr = "gene_name",
                           facets=seqnames~., 
                           aes(fill=seqnames), 
@@ -309,6 +336,7 @@ ggbio_plot <- function(finemap_DT,
   library(RColorBrewer)
   palettes <- c("Spectral","BrBG","PiYG", "PuOr")
   counter <- 1
+  if(any(!is.null(XGR_libnames))){printer("++ GGBIO:: Gene Model Track")}
   for(lib in XGR_libnames){
     anno_data_path <- file.path("echolocatoR/tools/Annotations", paste0("XGR_",lib,".rds"))  
     grl.xgr <- XGR_track(gr.snp, 
@@ -412,12 +440,20 @@ ggbio_plot <- function(finemap_DT,
   }
  
   
-   
+  if(Nott_sn_epigenome){
+    track.Nott <- GGBIO.nott_etal_2019(finemap_DT, locus=gene, 
+                                       return_interaction_track = T) 
+    TRACKS_list <- append(TRACKS_list, track.Nott)
+    names(TRACKS_list)[length(TRACKS_list)] <- "Nott (2019)\nPLAC-seq"
+  }
+
+  
   # Fuse all tracks  
   n_roadmap <- ifelse(ROADMAP,1,0)
-  heights <- c(rep(.33,length(method_list)+2), 
-               rep(1,length(XGR_libnames)+n_roadmap) )
-  params_list <- list(title = paste0(gene,"locus [",length(seqnames(gr.snp))," SNPs]"), 
+  n_Nott <- ifelse(Nott_sn_epigenome,1,0)
+  heights <- c(rep(.33,length(method_list)+2+n_Nott), 
+               rep(1,length(XGR_libnames)+n_roadmap))
+  params_list <- list(title = paste0(gene," locus [",length(seqnames(gr.snp))," SNPs]"), 
                       track.bg.color = "transparent",
                       track.plot.color = "transparent",
                       label.text.cex = .7, 
@@ -430,20 +466,28 @@ ggbio_plot <- function(finemap_DT,
   TRACKS_list <- append(TRACKS_list, params_list)
   trks <- suppressWarnings(do.call("tracks", TRACKS_list)) 
   
-  # 
+  # Add lines
   lead.pos <- subset(finemap_DT, leadSNP)$POS
   consensus.pos <- subset(finemap_DT, Consensus_SNP==T)$POS
   trks_plus_lines <- trks + 
     geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') +
-    geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=1, size=.3, linetype='solid')
-  # print(trks_plus_lines)
+    geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=1, size=.3, linetype='solid') +
+    theme(legend.key.width=unit(.5,"line"),                                                                    legend.key.height=unit(.5,"line"))
+    
+  if(show_plot){print(trks_plus_lines)}
   # Save
-  ggsave(filename = file.path(results_path,"Multi-finemap",paste0(gene,"_ggbio.png")), 
-         plot = trks_plus_lines,
-         height = 15+length(XGR_libnames)+n_roadmap, 
-         width = 10, dpi = 400, bg = "transparent")
+  if(save_plot){
+    plot.path <- file.path(results_path,"Multi-finemap",paste0(gene,"_ggbio.png"))
+    printer("+ GGBIO:: Saving plot ==>",plot.path)
+    ggsave(filename = plot.path, 
+           plot = trks_plus_lines,
+           height = 12+length(XGR_libnames)+n_roadmap, 
+           width = 8, dpi = 400, bg = "transparent")
+  } 
   return(trks_plus_lines)
 } 
+
+
 
 
 

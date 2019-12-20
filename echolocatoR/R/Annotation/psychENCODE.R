@@ -96,7 +96,7 @@ psychENCODE.assay_summary <- function(){
 
   # Import annotated fine-mapping results across all loci
   # FM_results <- data.table::as.data.table(readxl::read_excel("Data/annotated_results_table.xlsx"))
-  FM_results <- merge_finemapping_results()
+  FM_results <- merge_finemapping_results(minimum_support = 0)
   FM_results$SNP_id <- paste0(FM_results$CHR,":",FM_results$POS)
   # assay_type = names(ASSAY_files)[1]
   percent_df <- lapply(names(ASSAY_files), function(assay_type){

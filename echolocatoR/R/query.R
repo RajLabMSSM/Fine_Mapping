@@ -107,7 +107,7 @@ query_by_coordinates <- function(top_SNPs,
                                  min_POS, 
                                  max_POS, 
                                  bp_distance){
-  gz.reader <- ifelse(endsWith(fullSS_path,".gz"), " zcat ","")
+  gz.reader <- ifelse(endsWith(fullSS_path,".gz"), " gzcat ","")
   topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),]
   if(is.na(min_POS)){min_POS <- topSNP_sub$POS - bp_distance}
   if(is.na(max_POS)){max_POS <- topSNP_sub$POS + bp_distance}
@@ -116,7 +116,7 @@ query_by_coordinates <- function(top_SNPs,
   colDict <- column_dictionary(fullSS_path)
   awk_cmd <- paste0(gz.reader,fullSS_path," | awk -F '",file_sep,"' 'NR==1 {print $0} NR>1 { if($",colDict[[chrom_col]]," == ",topSNP_sub$CHR,
                    " && ($", colDict[[position_col]]," >= ",min_POS," && $",colDict[[position_col]]," <= ",max_POS,")) {print $0} }'"," > ",subset_path)
-  printer("\n",awk_cmd,"\n")
+  printer(awk_cmd)
   system(awk_cmd)
 }
 
@@ -138,16 +138,16 @@ query_by_coordinates_merged <- function(top_SNPs, fullSS_path, subset_path, gene
   #                  " | awk -F '",file_sep,"' 'NR==1 {print \"CHR POS \" $2\" \" $3\" \" $4\" \" $5\" \" $6 }",
   #                  " NR>1 {if($1 == 1 && ($2 >=",min_POS,"&& $2 <=",max_POS,")) {print $0}}'",
   #                  " | tr -s '",location_sep,"' '\t' > ",subset_path, sep="")
-  printer("\n",awk_cmd,"\n")
+  printer(awk_cmd)
   system(awk_cmd)
 }
 
 query_by_gene <- function(fullSS_path, subset_path, gene, gene_col, file_sep){
   colDict <- column_dictionary(fullSS_path)
-  # if(endsWith(fullSS_path,".gz")){fullSS_path <- paste("<(zcat",fullSS_path,")")} 
+  # if(endsWith(fullSS_path,".gz")){fullSS_path <- paste("<(gzcat",fullSS_path,")")} 
   awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1{print $0} NR>1{if($",colDict[[gene_col]]," == \"",gene,"\"){print $0}}' ",fullSS_path,
                    "| tr -s '",file_sep,"' '\t'  > ",subset_path, sep="")
-  printer("\n",awk_cmd,"\n")
+  printer(awk_cmd)
   system(awk_cmd)
 }
 
@@ -165,7 +165,7 @@ query_by_probe <- function(fullSS_path, subset_path, gene, gene_col, chrom_col,
   
   awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1 {print $0} NR>1 if(" ,probe_string,") {print}' ",fullSS_path,
                    " > ",subset_path, sep="")
-  printer("\n",awk_cmd,"\n")
+  printer(awk_cmd)
   system(awk_cmd)
   
   if(coordinates_merged){
@@ -175,7 +175,7 @@ query_by_probe <- function(fullSS_path, subset_path, gene, gene_col, chrom_col,
     awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1{print \"Coord\",\"CHR\",\"POS\",$2,$3,$4,$5,$6 }",
                      "NR>1{split($",colDict[[chrom_col]],",a,\":\"); print $1, a[1], a[2], $2, $3, $4, $5, $6}' ",
                      subset_path, " | tr -s ' ' '\t' > tmp.txt && mv tmp.txt ",subset_path, sep="")
-    printer("\n",awk_cmd,"\n")
+    printer(awk_cmd)
     system(awk_cmd)
   }
   
@@ -222,7 +222,7 @@ coordinates_to_SNPs <- function(){
 #     awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1 {print $0} NR>1{if(" ,probe_string,") {print $0}}' ",fullSS_path,
 #                      " > ",subset_path, sep="")
 #     # awk_cmd <- paste("awk '/ILMN_2226015/'",fullSS_path,">",subset_path)
-#     printer("\n",awk_cmd,"\n")
+#     printer(awk_cmd)
 #     system(awk_cmd)
 #   }
 #   query_by_probe(fullSS_path, subset_path, gene, gene_col, file_sep)
@@ -244,7 +244,7 @@ query_handler <- function(gene,
                           file_sep="\t",
                           query_by="coordinates", 
                           probe_path = "./Data/eQTL/gene.ILMN.map"){ 
-  printer("\n ++ Query Method: '",query_by,"'\n", sep="")
+  printer("++ Query Method: '",query_by, sep="")
   if(query_by=="coordinates"){
     query_by_coordinates(top_SNPs=top_SNPs, gene=gene,
                          subset_path=subset_path, fullSS_path=fullSS_path,
@@ -311,7 +311,7 @@ preprocess_subset <- function(gene,
                               return_dt=T,
                               verbose=T){
   printer("",v=verbose)
-  message("---------------- Step 1.5: Standarize ----------")
+  message("---------------- Step 1.5: Standardize ----------")
   query_check <- data.table::fread(subset_path, nrows = 2)
   
   if(dim(query_check)[1]==0){
@@ -399,7 +399,7 @@ check_if_empty <- function(file_path, file_sep="\t"){
   rowCheck <- dim(data.table::fread(file_path, nrows = 2, sep = file_sep))[1]
   if(rowCheck==0){
     stop("No SNPs identified within the summary stats file that met your criterion. :o")
-  } else {printer("\n Subset file looks good! :)")}
+  } else {printer("+ Subset file looks good! :)")}
 }
 
 

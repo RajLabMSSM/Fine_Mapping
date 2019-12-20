@@ -48,7 +48,7 @@ mergeQTL.psychENCODE <- function(FM_all=merge_finemapping_results(minimum_suppor
       # Drop duplicate columns (Peak_center)
       QTL.sub <- QTL.sub[,unique(names(QTL.sub)),with=F] 
     } else {
-      server_file <- Directory_info(dataset_name = paste0("psychENCODE_",assay), "fullSumStats")
+      server_file <- Directory_info(dataset_name = paste0("psychENCODE_",assay), "fullSS.local")
       QTL <- data.table::fread(server_file, nThread = 4)
       fullSS_nrow <- get_nrows(server_file)
       # Subset QTL data
@@ -164,7 +164,7 @@ mergeQTL.Fairfax <- function(FM_all, CONDITIONS=c("CD14","IFN","LPS2","LPS24"), 
   for(condition in CONDITIONS){
     dataset <- paste0("Fairfax_2014_",condition)
     printer("mergeQTL::Fairfax:: Processing:",dataset)
-    server_path <- Directory_info(paste0("Fairfax_2014_", condition),variable = "fullSumStats") 
+    server_path <- Directory_info(paste0("Fairfax_2014_", condition),variable = "fullSS.local") 
     output_path <- file.path("./Data/QTL/Fairfax_2014",condition,paste0(dataset,".finemap.txt"))
     output_path_gz <- paste0(output_path,".gz")
     dir.create(dirname(output_path), showWarnings = F, recursive = T)
@@ -243,7 +243,7 @@ mergeQTL.MESA <- function(FM_all, force_new_subset=F, POPULATIONS=c("AFA","CAU",
                                col.names = c("snps","gene","statistic","pvalue","FDR","beta",
                                              "chr","gene_name","start","end","gene_type","pos_snps","ref","alt"))
     } else {
-      server_path <- Directory_info(paste0("MESA_",pop), "fullSumStats")
+      server_path <- Directory_info(paste0("MESA_",pop), "fullSS.local")
       output_path_txt <- gsub(".gz","",output_path)
       system(paste0("grep -E '", paste(unique(FM_all$Gene), collapse="|"),"' " ,server_path," > ",output_path_txt))
       # Import data 
@@ -301,7 +301,7 @@ mergeQTL.Cardiogenics <- function(FM_all,
       print("Cardiogenics:: Pre-existing file detected. Importing...")
       dat.sub <- data.table::fread(output_path_gz, nThread = 4)
     } else{ 
-      server_path <- Directory_info(paste0("Cardiogenics_",celltype), "fullSumStats")
+      server_path <- Directory_info(paste0("Cardiogenics_",celltype), "fullSS.local")
       dir.create(dirname(output_path), recursive = T, showWarnings = F)
       DAT <- data.table::fread(server_path,  nThread = 4)
       dat.sub <- subset(DAT, SNPID %in% unique(FM_all$SNP))
@@ -336,7 +336,11 @@ mergeQTL.Cardiogenics <- function(FM_all,
 }
 
 
-mergeQTL.GTEx_list_files <- function(output_dir, server_path, GTEx_version="GTEx_V7", fuzzy_search=F, local_files=T){ 
+mergeQTL.GTEx_list_files <- function(output_dir, 
+                                     server_path, 
+                                     GTEx_version="GTEx_V7", 
+                                     fuzzy_search=F, 
+                                     local_files=T){ 
   printer("GTEx:: Constructing reference file of available single-tissue eQTL files...")
   if(local_files){
     SS_files <- list.files(output_dir, pattern="*.finemap.txt.gz")
@@ -352,7 +356,7 @@ mergeQTL.GTEx_list_files <- function(output_dir, server_path, GTEx_version="GTEx
   dir.create(output_dir, showWarnings = F, recursive = T)
   tissues_df <- data.frame(tissue=all_tissues, sum_stats=SS_files)
   if(fuzzy_search!=F){
-    tissues_df = tissues_df[grep(fuzzy_search, tissues_df$tissue),]
+    tissues_df = tissues_df[base::grep(fuzzy_search, tissues_df$tissue),]
   }
   return(tissues_df)
 }
@@ -378,7 +382,7 @@ mergeQTL.GTEx_snp_dict <- function(snp_list){
 ## All fields complete for coloc!
 mergeQTL.GTEx <- function(FM_all, fuzzy_search="Brain", GTEx_version="GTEx_V7", force_new_subset=F, local_files=T){
   FM_all <- mergeQTL.add_SNP_id(FM_all)
-  server_path <- Directory_info(GTEx_version, "fullSumStats")
+  server_path <- Directory_info(GTEx_version, "fullSS.local")
   output_dir <- file.path("./Data/QTL",GTEx_version)
   tissues_df <- mergeQTL.GTEx_list_files(output_dir, server_path, GTEx_version, fuzzy_search, local_files = local_files)
  
@@ -447,7 +451,7 @@ mergeQTL.Brain_xQTL_Serve <- function(FM_all,
     } else {
       printer("+ Brain_xQTL_Serve:: Importing and subsettting full",assay,"dataset...")
       dir.create(dirname(output_path), showWarnings = F, recursive = T)
-      server_file <- Directory_info(paste0("Brain.xQTL.Serve_",assay), "fullSumStats")
+      server_file <- Directory_info(paste0("Brain.xQTL.Serve_",assay), "fullSS.local")
       header <- get_header(server_file)
       col1 <- strsplit(header, "\t")[[1]][1]
       
@@ -528,8 +532,8 @@ mergeQTL.Brain_xQTL_Serve <- function(FM_all,
 
 mergeQTL.melt_FDR <- function(FM_merge){ 
   dim(FM_merge) 
-  Effect.cols <- grep(".Effect", colnames(FM_merge), value = T)
-  FDR.cols <- grep(".FDR", colnames(FM_merge), value = T)
+  Effect.cols <- base::grep(".Effect", colnames(FM_merge), value = T)
+  FDR.cols <- base::grep(".FDR", colnames(FM_merge), value = T)
   id.vars <- c("Gene","SNP","CHR","POS","P","Consensus_SNP","Support","leadSNP")
   FM_sub <- subset(FM_merge, select=c(id.vars, FDR.cols))
   colnames(FM_sub)[colnames(FM_sub) %in% FDR.cols] <- gsub(".FDR","",FDR.cols)
@@ -550,7 +554,8 @@ mergeQTL.count_overlap <- function(){
   library(dplyr)
   # FM_merge <- FM_all
   FM_merge <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
-                                          "Nalls23andMe_2019.QTL_overlaps.txt.gz"), nThread = 4)
+                                          "Nalls23andMe_2019.QTL_overlaps.txt.gz"),
+                                nThread = 4)
   FM_melt <- mergeQTL.melt_FDR(FM_merge) 
   
   mergedQTL.get_count <- function(SNP.subset){
@@ -677,37 +682,53 @@ mergeQTL.flip_alleles <- function(FM_merge){
 }
 
 
-mergeQTL.merge_handler <- function(FM_all, qtl_file){
+mergeQTL.merge_handler <- function(FM_all, qtl_file, force_new_subset=F){
     qtl_name <- gsub(".finemap.txt.gz","",basename(qtl_file))
-    printer("mergeQTL:: Gathering data for:",qtl_name,"...") 
+    message("mergeQTL::",qtl_name) 
     
     if(grepl("GTEx_V7",qtl_name)){
       tissue <- gsub("GTEx_V7_","",qtl_name)
-      FM_merge <- mergeQTL.GTEx(FM_all, GTEx_version="GTEx_V7", fuzzy_search=tissue) 
-    }
-    if(grepl("GTEx_V8",qtl_name)){
+      FM_merge <- mergeQTL.GTEx(FM_all, 
+                                GTEx_version="GTEx_V7", 
+                                fuzzy_search=tissue, 
+                                force_new_subset=force_new_subset) 
+      
+    } else if(grepl("GTEx_V8",qtl_name)){
       tissue <- gsub("GTEx_V8_","",qtl_name)
-      FM_merge <- mergeQTL.GTEx(FM_all, GTEx_version="GTEx_V8", fuzzy_search=tissue) 
-    }
-    if(grepl("psychENCODE",qtl_name)){
+      FM_merge <- mergeQTL.GTEx(FM_all, 
+                                GTEx_version="GTEx_V8", 
+                                fuzzy_search=tissue, 
+                                force_new_subset=force_new_subset) 
+    
+    } else if(grepl("psychENCODE",qtl_name)){
       assay = strsplit(qtl_name,"_")[[1]][2]
-      FM_merge <- mergeQTL.psychENCODE(FM_all, ASSAYS = assay) 
-    }
-    if(grepl("Brain_xQTL_Serve",qtl_name)){
+      FM_merge <- mergeQTL.psychENCODE(FM_all, 
+                                       ASSAYS=assay, 
+                                       force_new_subset=force_new_subset) 
+      
+    } else if(grepl("Brain_xQTL_Serve",qtl_name)){
       assay = strsplit(qtl_name, "[.]")[[1]][2]
-      FM_merge <- mergeQTL.Brain_xQTL_Serve(FM_all, ASSAYS = assay) 
-    }
-    if(grepl("MESA",qtl_name)){
+      FM_merge <- mergeQTL.Brain_xQTL_Serve(FM_all, 
+                                            ASSAYS=assay, 
+                                            force_new_subset=force_new_subset) 
+      
+    } else if(grepl("MESA",qtl_name)){
       pop <- strsplit(qtl_name,"_")[[1]][2]
-      FM_merge <- mergeQTL.MESA(FM_all, POPULATIONS = pop) 
-    }
-    if(grepl("Fairfax_2014",qtl_name)){
+      FM_merge <- mergeQTL.MESA(FM_all, 
+                                POPULATIONS=pop, 
+                                force_new_subset=force_new_subset) 
+      
+    } else if(grepl("Fairfax_2014",qtl_name)){
       condition <- strsplit(qtl_name,"_")[[1]][3]
-      FM_merge <- mergeQTL.Fairfax(FM_all, CONDITIONS = condition) 
-    }
-    if(grepl("Cardiogenics",qtl_name)){
+      FM_merge <- mergeQTL.Fairfax(FM_all, 
+                                   CONDITIONS=condition, 
+                                   force_new_subset=force_new_subset) 
+      
+    } else if(grepl("Cardiogenics",qtl_name)){
       celltype <- strsplit(qtl_name,"_")[[1]][2]
-      FM_merge <- mergeQTL.Cardiogenics(FM_all, CELLTYPES = celltype) 
+      FM_merge <- mergeQTL.Cardiogenics(FM_all, 
+                                        CELLTYPES=celltype, 
+                                        force_new_subset=force_new_subset) 
     } 
     return(FM_merge)
 }
@@ -716,12 +737,15 @@ mergeQTL <- function(dataset = "./Data/GWAS/Nalls23andMe_2019"){
   # Gather all Fine-mapping results
   FM_all <- merge_finemapping_results(minimum_support = 0, 
                                       include_leadSNPs = T, 
-                                      dataset = "./Data/GWAS/Nalls23andMe_2019")
-  
-  FM_orig <- FM_all
+                                      dataset = "./Data/GWAS/Nalls23andMe_2019") 
+  FM_orig <- FM_all 
+  # List all datasets
+  printer("+ mergeQTL:: Listing available QTL datasets:")
+  list_Data_dirs() %>% dplyr::filter(grepl("QTL",type)) %>% dplyr::select(Dataset, type)
   
   # psychENCODE eQTL, cQTL, isoQTL, tQTL, fQTL, HiC: DLPFC
-  FM_merge <- mergeQTL.psychENCODE(FM_all=FM_all, local_files = T,  force_new_subset = T)
+  FM_merge <- mergeQTL.merge_handler(FM_all = FM_all, )
+  # FM_merge <- mergeQTL.psychENCODE(FM_all=FM_all, local_files = T,  force_new_subset = T)
   # Fairfax eQTL: monocytes
   FM_merge <- mergeQTL.Fairfax(FM_all, force_new_subset = F)
   # MESA eQTL: monocytes in AFA, CAU, HIS

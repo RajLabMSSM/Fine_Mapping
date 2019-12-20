@@ -93,78 +93,182 @@ lead.SNP.coords <- function(){
 }
 
 
+
+
+
+compare_finemapping_methods <- function(dataset="./Data/GWAS/Nalls23andMe_2019"){
+  FM_orig <- merge_finemapping_results(minimum_support = 0, 
+                                       dataset = dataset, 
+                                       exclude_methods = NULL)   
+  # counts <- (FM_orig %>% group_by(Gene) %>% count()) 
+  # plotrix::std.error(counts$n)
+  # min(counts$n)
+  # max(counts$n)
+  
+  # Remove loci that were manually added
+  ## Also remove TRIM40 for now bc I'm having issues getting its LD
+  FM_all <- subset(FM_orig, !(Gene %in%c("ATG14","SP1","LMNB1","ATP6V0A1","TRIM40")) )  
+  # Identify any un-finemapped loci
+  FM_all %>% group_by(Gene) %>% summarise(leadGWAS=sum(leadSNP==T)) %>% arrange(leadGWAS)
+  
+  # Proportion of CS SNPs that are the leadSNP (by tool)
+  dat <- FM_all %>%  
+    summarise_at(vars(ends_with(".Credible_Set")), 
+                          funs(CS.sum=sum(.>0, na.rm = T),
+                               leadGWAS.sum=sum(leadSNP==T, na.rm = T),
+                               leadGWAS.CS.sum=sum(leadSNP==T & .>0, na.rm = T),
+                               PROP.SNPS=sum(leadSNP==T & .>0, na.rm = T)/sum(.>0, na.rm = T)) )
+  colnames(dat) <- gsub("\\.Credible_Set","", colnames(dat))
+  dat
+  
+  # Proportion of loci in which the CS contains the leadSNP (by tool)
+  # dat3.1 <- FM_all %>% group_by(Gene) %>% 
+  #   summarise_at(vars(ends_with(".Credible_Set")), 
+  #                funs(leadGWAS.CS.size=sum(leadSNP==T & .>0, na.rm = T)))
+  # dat3.2 <- FM_all %>% group_by(Gene) %>% 
+  #   summarise_at(vars(ends_with(".Credible_Set")), 
+  #                funs(leadGWAS.CS.size=sum(.>0, na.rm = T)))
+  # colSums(dat3.1[,-1]) / colSums(dat3.2[,-1])
+  
+  # Number of CS SNPs (by tool)
+  dat2 <- FM_all %>% group_by(Gene) %>% summarise_at(vars(ends_with(".Credible_Set")), 
+                          funs(CS=sum(.,na.rm=T)))
+  colnames(dat2) <- gsub("\\.Credible_Set","", colnames(dat2))
+  # Proportion of loci with at least one CS SNP (by tool)
+  colSums(dat2[,-1]>0) / nrow(dat2) 
+  
+  
+   
+  
+  # subset(dat, ABF._CS.size>0) %>%
+  
+  # dat %>% dplyr::select(ends_with("_SUM")) 
+  # 
+  # dat %>%  summarise_at(vars(ends_with("_SUM")), 
+  #                       funs(PROP_LOCI=sum(.,na.rm = T)/ sum(.>0) ) )
+  #  
+}
+
+
+plot_snpGroupPP_by_tool <- function(FM_all){ 
+  
+  dat <- FM_all %>% summarise_at(vars(ends_with(".PP")), 
+                            funs(Overall=mean(.,na.rm=T), 
+                                 GWAS.nom.sig=mean(subset(.,P<.05),na.rm=T),
+                                 GWAS.sig=mean(subset(.,P<5e-8),na.rm=T), 
+                                 GWAS.lead=mean(subset(.,leadSNP==T),na.rm=T),
+                                 Credible.Set=mean(subset(.,Support>0),na.rm=T),
+                                 Consensus=mean(subset(.,Consensus_SNP==T),na.rm=T)
+                                 )) 
+  pdat <- data.frame(PP=t(dat))
+  pdat$Method <- gsub("\\.PP_.*", "", rownames(pdat))
+  pdat$SNP.Group <- gsub(".*\\.PP_", "", rownames(pdat))
+  pdat$SNP.Group <- factor(pdat$SNP.Group, levels = unique(pdat$SNP.Group), ordered = T)
+  
+  ggplot(pdat, aes(x=SNP.Group, y=PP, fill=Method)) + 
+    geom_col(position = "dodge") + 
+    labs(y="mean PP") +
+    theme_bw() 
+}
+
+
 top_finemapped_loci <- function(dataset="./Data/GWAS/Nalls23andMe_2019",
-                                save_results=T){
-  FM_all <- merge_finemapping_results(minimum_support = 0) 
-  ALL.count <- FM_all %>%  
-    dplyr::group_by(Gene) %>% 
-    count(name = "Total.size") 
-  sigGWAS.count <- FM_all %>%  
-    subset(P<=0.05) %>%
-    dplyr::group_by(Gene) %>% 
-    count(name = "sig_GWAS.size")  
-  CS.count <- FM_all %>% 
-    subset(Support>0) %>% 
-    dplyr::group_by(Gene) %>% 
-    dplyr::summarise(CredSet.size=n(), CredSet=paste(SNP,collapse=", ")) 
-  FM_all <- data.frame(FM_all) %>% subset(Dataset==dataset)
-  prob.cols <- grep(".PP", colnames(FM_all), value = T)
-  FM_all$PP.sum <- rowSums(FM_all[,prob.cols], na.rm = T)
-  FM_all$GWAS.Lead = ifelse(FM_all$leadSNP==T, "Y","N")
-  # FM_all <- subset(FM_all, !(Gene %in%c("ATG14","SP1","LMNB1","ATP6V0A1")) )
+                                save_results=T, 
+                                biomart=T){ 
+  FM_orig <- merge_finemapping_results(minimum_support = 0, 
+                                      dataset = dataset, 
+                                      exclude_methods = NULL)   
+  FM_all <- FM_orig 
+  # missing.loci <- unique(subset(FM_all, !is.na(FINEMAP.Probability))$Gene)
+  # FM_all <- subset(FM_all, !(Gene %in% missing.loci))  
+    # dplyr::group_by(FM_all, Gene) %>% 
+    # summarise(n_consensus = sum(Consensus_SNP == T), 
+    #           n_CS = sum(Support)) %>% 
+    #   subset(n_consensus>0) %>% arrange(n_consensus, n_CS)  
+  FM_all <- subset(FM_all, !(Gene %in%c("ATG14","SP1","LMNB1","ATP6V0A1")) )
   
-  # Find loci that have:
-  ## At least 1 Consensus SNP
-  ## High mean.PP.sum (summed across fine-mapped methods, and then averaged across Consensus SNPs)
-  ## The smallest number of Consensus SNPs
-  ## Large absolute Effect sizes from the GWAS 
+  # List all available QTL datasets
+  list_Data_dirs() %>% dplyr::filter(grepl("QTL",type)) %>% dplyr::select(Dataset, type)
+  qlt.list <- c("psychENCODE_eQTL",
+                "Fairfax_2014_CD14",
+                "Fairfax_2014_IFN",
+                "Fairfax_2014_LPS2",
+                "Fairfax_2014_LPS24",
+                "Cardiogenics_macrophages",
+                "Cardiogenics_monocytes",
+                "MESA_CAU"
+                # "Brain.xQTL.Serve_eQTL",
+                # "Brain.xQTL.Serve_haQTL",
+                # "Brain.xQTL.Serve_mQTL"
+                ) 
+  FM_tmp <- FM_all
+  for(qtl in qlt.list){
+    FM_tmp <- mergeQTL.merge_handler(FM_all = FM_tmp,  
+                                     qtl_file = qtl, 
+                                     force_new_subset = F)
+    FM_tmp$QTL.sig <- ifelse(data.frame(FM_tmp)[,"QTL.P"]<=5e-8,"Y","N") 
+    colnames(FM_tmp) <- gsub("^QTL\\.",paste0(qtl,"."), colnames(FM_tmp))  
+  } 
+  FM_all <- FM_tmp
+  qtl.sig.cols <- grep("\\.sig$",colnames(FM_all),value = T)
+  FM_all$QTL.count <- rowSums(data.frame(FM_all)[,qtl.sig.cols]=="Y", na.rm = T)
   
-  FM_all <- psychENCODE.QTL_overlap(FM_all, consensus_only=T)
-  FM_all$QTL.count <- rowSums(FM_all[,c("psychENCODE.isoQTL","psychENCODE.eQTL","psychENCODE.cQTL")]=="Y")
+  # FM_all %>% dplyr::mutate()
   # Biomart Annotations
-  SNP.info <- biomart_snp_info(snp_list = unique(FM_all$SNP)) 
-  SNP.info.collapse <- SNP.info %>% 
-    dplyr::rename(SNP=refsnp_id) %>% 
-    dplyr::select(SNP, consequence_type_tv, reg_consequence_types) %>% 
-    dplyr::group_by(SNP) %>% 
-    dplyr::summarise(consequence_type_tv= paste0(unique(consequence_type_tv), collapse = "/"),
-                     reg_consequence_types= paste0(unique(reg_consequence_types), collapse = "/") ) %>% 
-    dplyr::mutate(consequence_type_tv=gsub(", ,|NA, ", "",consequence_type_tv),
-                  reg_consequence_types=gsub(", ,|NA, ", "",reg_consequence_types)) 
-  FM_biomart <- data.table:::merge.data.table(FM_all, 
-                                              SNP.info.collapse, 
-                                              by = "SNP")
+  if(biomart){
+    query_snps <- unique(subset(FM_all, Consensus_SNP)$SNP)
+    printer("+ BIOMART:: Gathering annotations for",length(query_snps),"SNPs...")
+    SNP.info <- biomart_snp_info(snp_list = query_snps) 
+    SNP.info.collapse <- SNP.info %>% 
+      dplyr::rename(SNP=refsnp_id) %>% 
+      dplyr::select(SNP, consequence_type_tv, reg_consequence_types) %>% 
+      dplyr::group_by(SNP) %>% 
+      dplyr::summarise(consequence_type_tv= paste0(unique(consequence_type_tv), collapse = "/"),
+                       reg_consequence_types= paste0(unique(reg_consequence_types), collapse = "/") ) %>% 
+      dplyr::mutate(consequence_type_tv=gsub(", ,|NA, ", "",consequence_type_tv),
+                    reg_consequence_types=gsub(", ,|NA, ", "",reg_consequence_types)) 
+    FM_all <- data.table:::merge.data.table(FM_all, 
+                                            SNP.info.collapse, 
+                                            by = "SNP")
+  }
   
-  top_loci <- FM_biomart %>% 
-    subset(Consensus_SNP==T) %>%
-    dplyr::group_by(Gene) %>% 
-    dplyr::summarise(SUSIE.PPs = paste(round(SUSIE.PP,3), collapse=", "),
-                     FINEMAP.PPs = paste(round(FINEMAP.PP,3), collapse=", "),
-                     PP.mean.sum = round(mean(PP.sum, na.rm=T),3), 
-                     Effect.mean=mean(abs(Effect)),
-                     GWAS.Lead = paste(GWAS.Lead,collapse=", "),
-                     psychENCODE.isoQTL = paste(psychENCODE.isoQTL, collapse=", "),
-                     psychENCODE.eQTL = paste(psychENCODE.eQTL, collapse=", "),
-                     psychENCODE.cQTL = paste(psychENCODE.cQTL, collapse=", "),
-                     QTL.mean.count = round( mean(QTL.count), 3),
-                     seq.ontology = paste(consequence_type_tv, collapse=", "),
-                     Consensus.size=n(),   
-                     Consensus.SNPs = paste(SNP,collapse=", ")) 
-  
-  # Add size info
-  # Credible Set size
-  top_loci <- data.table:::merge.data.table(data.table::data.table(top_loci), 
-                                            data.table::data.table(CS.count), 
-                                            by="Gene")
-  # Sig GWAS size
-  top_loci <- data.table:::merge.data.table(data.table::data.table(top_loci), 
-                                            data.table::data.table(sigGWAS.count), 
-                                            by="Gene")
-  # Total size
-  top_loci <- data.table:::merge.data.table(data.table::data.table(top_loci), 
-                                            data.table::data.table(ALL.count), 
-                                            by="Gene")
-  
+  # Create summary data.frame 
+  library(tidyverse) 
+  FM_all$GWAS.lead <- ifelse(FM_all$leadSNP==T,"Y","N")
+  grouped.dat <- FM_all %>% group_by(Gene) 
+  cols <- list( 
+    ## SNP Group counts
+    grouped.dat %>% 
+      summarise(Consensus.RSID=paste(SNP[Consensus_SNP==T], collapse=", "),
+                Consensus.ID=paste(SNP_id[Consensus_SNP==T], collapse=", "),
+                CredSet.RSID=paste(SNP[Support>0], collapse=", "),
+                Total.size=n(), 
+                GWAS.nom.sig.size=sum(P<0.05),
+                GWAS.sig.size=sum(P<5e-8), 
+                CredSet.size=sum(Support>0), 
+                Consensus.size=sum(Consensus_SNP==T)) %>%
+      dplyr::select(-Gene),
+    ## Text cols
+    ### Is the Consensus SNP the GWAS lead?
+    grouped.dat %>%
+      summarise_at(vars(GWAS.lead, ends_with(".sig")), 
+                     funs(Consensus=paste(replace_na(subset(., Consensus_SNP), "N"),collapse=", "),
+                          CredSet=paste(replace_na(subset(., Support>0), "N"),collapse=", ")) ),
+     
+    # Numeric cols
+    ## As separated text
+    grouped.dat %>%  
+        summarise_at(vars(ends_with(".PP"), ends_with("QTL.count"),ends_with("Effect"), MAF),
+                     funs(paste(round(subset(., Consensus_SNP),3),collapse=", ")) ) %>%
+      dplyr::select(-Gene),
+    # As means 
+    grouped.dat %>%
+      summarise_at(vars(mean.PP, ends_with("QTL.count")),
+                   funs(avg=mean(subset(., Consensus_SNP), na.rm=T)) ) %>%
+      dplyr::select(-Gene)  
+  )
+  top_loci <- do.call(cbind, cols)
+    
   # Check whether the locus is novel according to the most recent Nalls et al (2019) PD GWAS
   ## `Known GWAS locus within 1MB` (locus-level)***
   ## `Locus within 250KB` (SNP-level?)
@@ -175,18 +279,34 @@ top_finemapped_loci <- function(dataset="./Data/GWAS/Nalls23andMe_2019",
   #   summarise_each(funs(paste(., collapse = ", ")))
   top_loci <- data.table:::merge.data.table(data.table::data.table(top_loci), 
                                             data.table::data.table(Nalls.novel), 
-                                            by="Gene")
+                                            by="Gene") %>% dplyr::rename(Locus=Gene)
+  top_loci <- top_loci %>% 
+    dplyr::mutate(GWAS.lead_Consensus.any = grepl("Y",GWAS.lead_Consensus) ,
+                  GWAS.lead_CredSet.any = grepl("Y",GWAS.lead_CredSet))
+ 
+  # Sort/filter by criterion
+  top_loci_filt <- top_loci %>% 
+    ## [0] It's one of the PD GWAS loci
+    subset(GWAS.sig.size>0) %>%
+    ## [1] There is at least one consensus SNP
+    subset(Consensus.size==1) %>% 
+    ## [2] None of the consensus SNPs are the lead GWAS SNP
+    # dplyr::filter(grepl("N",GWAS.lead) & !grepl("Y",GWAS.lead)) %>%
+    subset(GWAS.lead_Consensus.any==F) %>%
+    ## [3] There's at least one QTL
+    subset(QTL.count_avg>0) %>%
+    ## [3] Just one consensus SNP and small Credible Set
+    arrange(Consensus.size, desc(QTL.count), CredSet.size)  
+  top_loci_filt <- rbind(top_loci_filt, subset(top_loci, Locus %in% c("LRRK2")))
   
-  # Sort to get "best" loci
-  top_loci <- top_loci %>%  
-    arrange(desc(Novel.Locus), 
-            desc(PP.mean.sum), 
-            desc(QTL.mean.count), 
-            CredSet.size,
-            Consensus.size) # desc(Effect.mean)
+  top_loci_sort <- subset(top_loci, GWAS.sig.size>0 & Consensus.size>0) %>% 
+    arrange(Consensus.size, GWAS.lead_Consensus.any, desc(QTL.count_avg))
+  
   if(save_results){
-    data.table::fwrite(top_loci, file.path(dataset,"_genome_wide/top_loci.csv"))
-  }
+    topLoci.path <- file.path(dataset,"_genome_wide/top_loci.csv")
+    printer("+ Saving top loci ==>",topLoci.path)
+    data.table::fwrite(top_loci, topLoci.path)
+  } 
   
   return(top_loci) 
 }
@@ -194,44 +314,44 @@ top_finemapped_loci <- function(dataset="./Data/GWAS/Nalls23andMe_2019",
 
 
 
-multi_finemap_results_table <- function(multi_finemap_DT, 
-                                        finemap_method_list, 
-                                        fancy_table=F, 
-                                        minimum_support=1,
-                                        include_leadSNPs=T){ 
-  # finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"),stringsAsFactors = F)
-  CS_cols <- colnames(multi_finemap_DT)[endsWith(colnames(multi_finemap_DT), ".Credible_Set")]
-  if(include_leadSNPs){
-    support_DT <- subset(multi_finemap_DT, Support >= minimum_support | leadSNP==T)
-  } else {
-    support_DT <- subset(multi_finemap_DT, Support >= minimum_support)
-  } 
-  # support_DT <- subset(support_DT, select=c("Gene","SNP","CHR","POS","P","leadSNP",CS_cols,"Support"))  %>%
-  #   arrange(desc(Support))
-  support_DT <- dplyr::select(support_DT, -dplyr::one_of(c("Dataset"))) %>%
-      arrange(desc(Support))
-  # Plot table 
-  if(fancy_table){
-    customGreen0 = "#DeF7E9" 
-    customGreen = "#71CA97" 
-    customRed = "#ff7f7f" 
-    CS_formatter <- 
-      formattable::formatter("span", 
-                             style = x ~ style( 
-                               color = ifelse(x > 0, customGreen, ifelse(x == 0, "black", "black")))) 
-    formattable::formattable(support_DT, 
-                             align =c("l","c","c","c","c", "c", "c", "c", "r"), 
-                             list( P = formattable::color_tile(customGreen, customGreen0),
-                                   SUSIE.Credible_Set = CS_formatter,
-                                   ABF.Credible_Set = CS_formatter,
-                                   FINEMAP.Credible_Set = CS_formatter,
-                                   COJO.Credible_Set = CS_formatter,
-                                   Support = formattable::color_tile("white", "green")) 
-    )
-    
-  }
-  return(support_DT)
-}
+# multi_finemap_results_table <- function(multi_finemap_DT, 
+#                                         finemap_method_list, 
+#                                         fancy_table=F, 
+#                                         minimum_support=0,
+#                                         include_leadSNPs=T){ 
+#   # finemap_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"),stringsAsFactors = F)
+#   CS_cols <- colnames(multi_finemap_DT)[endsWith(colnames(multi_finemap_DT), ".Credible_Set")]
+#   if(include_leadSNPs){
+#     support_DT <- subset(multi_finemap_DT, Support >= minimum_support | leadSNP==T)
+#   } else {
+#     support_DT <- subset(multi_finemap_DT, Support >= minimum_support)
+#   } 
+#   # support_DT <- subset(support_DT, select=c("Gene","SNP","CHR","POS","P","leadSNP",CS_cols,"Support"))  %>%
+#   #   arrange(desc(Support))
+#   support_DT <- dplyr::select(support_DT, -dplyr::one_of(c("Dataset"))) %>%
+#       arrange(desc(Support))
+#   # Plot table 
+#   if(fancy_table){
+#     customGreen0 = "#DeF7E9" 
+#     customGreen = "#71CA97" 
+#     customRed = "#ff7f7f" 
+#     CS_formatter <- 
+#       formattable::formatter("span", 
+#                              style = x ~ style( 
+#                                color = ifelse(x > 0, customGreen, ifelse(x == 0, "black", "black")))) 
+#     formattable::formattable(support_DT, 
+#                              align =c("l","c","c","c","c", "c", "c", "c", "r"), 
+#                              list( P = formattable::color_tile(customGreen, customGreen0),
+#                                    SUSIE.Credible_Set = CS_formatter,
+#                                    ABF.Credible_Set = CS_formatter,
+#                                    FINEMAP.Credible_Set = CS_formatter,
+#                                    COJO.Credible_Set = CS_formatter,
+#                                    Support = formattable::color_tile("white", "green")) 
+#     )
+#     
+#   }
+#   return(support_DT)
+# }
 
 
 leadSNP_comparison <- function(top_SNPs, merged_results){
@@ -250,7 +370,7 @@ leadSNP_comparison <- function(top_SNPs, merged_results){
 }
 
 
-merge_finemapping_results <- function(minimum_support=1, 
+merge_finemapping_results <- function(minimum_support=0, 
                                       include_leadSNPs=T,
                                       xlsx_path="./Data/annotated_finemapping_results.xlsx",
                                       from_storage=T,
@@ -258,8 +378,10 @@ merge_finemapping_results <- function(minimum_support=1,
                                       regulomeDB_annotation=F,
                                       biomart_annotation=F,
                                       verbose=T,
-                                      dataset="./Data/GWAS"#NA
-                                      ){ 
+                                      dataset="./Data/GWAS",
+                                      PP_threshold=.95, 
+                                      consensus_thresh=2, 
+                                      exclude_methods=NULL){ 
   if(from_storage){
     printer("+ Gathering all fine-mapping results from storage...", v=verbose)
     # Find all multi-finemap_results files
@@ -282,24 +404,29 @@ merge_finemapping_results <- function(minimum_support=1,
     }) %>% data.table::rbindlist(fill=TRUE) # Bind datasets    
   }
   
-  # Loop through each DATASET
-  merged_results <- lapply(unique(finemap_results$Dataset), function(dname, include_leadSNPs.=include_leadSNPs){ 
-    multi_finemap_DT <- subset(finemap_results, Dataset==dname) 
-    CS_cols <- colnames(multi_finemap_DT)[endsWith(colnames(multi_finemap_DT), ".Credible_Set")]
-    finemap_method_list <- gsub(".Credible_Set","",CS_cols) 
-    # Create support table
-    support_DT <- multi_finemap_results_table(multi_finemap_DT,
-                                              finemap_method_list,
-                                              fancy_table = F,
-                                              minimum_support = minimum_support,
-                                              include_leadSNPs = include_leadSNPs.)
-    support_DT <- cbind(Dataset = dname, support_DT) %>% arrange(Gene, desc(Support)) 
-  }) %>% data.table::rbindlist() 
   
-  # Add Consensus SNP col if not already there
-  if(!("Consensus_SNP" %in% colnames(merged_results))){
-    merged_results <- find_consensus_SNPs(merged_results)
-  }
+  # Add/Update Support/Consensus cols 
+  merged_results <- find_consensus_SNPs(finemap_DT = finemap_results, 
+                                        credset_thresh = PP_threshold, 
+                                        consensus_thresh = consensus_thresh, 
+                                        exclude_methods = exclude_methods)
+  
+  # Loop through each DATASET
+  # merged_results <- lapply(unique(finemap_results$Dataset), function(dname, include_leadSNPs.=include_leadSNPs){ 
+  #   multi_finemap_DT <- subset(finemap_results, Dataset==dname) 
+  #   CS_cols <- colnames(multi_finemap_DT)[endsWith(colnames(multi_finemap_DT), ".Credible_Set")]
+  #   finemap_method_list <- gsub(".Credible_Set","",CS_cols) 
+  #   # Create support table
+  #   support_DT <- multi_finemap_results_table(multi_finemap_DT,
+  #                                             finemap_method_list,
+  #                                             fancy_table = F,
+  #                                             minimum_support = minimum_support,
+  #                                             include_leadSNPs = include_leadSNPs.)
+  #   support_DT <- cbind(Dataset = dname, support_DT) %>% arrange(Gene, desc(Support)) 
+  # }) %>% data.table::rbindlist() 
+  
+  
+  
   
   # Annotate with haplorR
   if(haploreg_annotation){

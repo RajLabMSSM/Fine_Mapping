@@ -36,6 +36,8 @@
 #   Check Package:             'Cmd + Shift + E'
 #   Test Package:              'Cmd + Shift + T'
  
+# regex commands: http://www.endmemo.com/program/R/gsub.php
+
 # Load libraries
 # .libPaths()  
 
@@ -56,8 +58,10 @@ library(tidyr)
 # library(BiocManager)
 library(biomaRt) # BiocManager::install("biomaRt") 
 # library(refGenome)
-
 library(crayon) 
+
+# https://bioconductor.org/packages/release/bioc/vignettes/genbankr/inst/doc/genbankr.html
+library(genbankr) #BiocManager::install("genbankr")
 
 # install_fGWAS <- function(){
 #   devtools::install_github("wzhy2000/fGWAS/pkg")
@@ -108,7 +112,6 @@ source("./echolocatoR/R/Finemapping/COJO.R")
 source("./echolocatoR/R/Finemapping/COLOC.R")
 source("./echolocatoR/R/Finemapping/fGWAS.R")
 source("./echolocatoR/R/Finemapping/POLYFUN.R")
-
 # Plotting
 source("./echolocatoR/R/Plotting/plot.R")
 source("./echolocatoR/R/Plotting/ggbio.R")
@@ -119,6 +122,8 @@ source("./echolocatoR/R/Annotation/GoShifter.R") # ***
 source("./echolocatoR/R/Annotation/XGR.R")
 source("./echolocatoR/R/Annotation/psychENCODE.R")
 source("./echolocatoR/R/Annotation/mergeQTL.R")
+source("./echolocatoR/R/Annotation/Nott_2019.R")
+
 
 
 
@@ -158,18 +163,77 @@ rbind.file.list <- function(file.list, verbose=T){
     printer(x, v = verbose)
     dat <- data.table::fread(x, nThread = 4) 
     return(dat)
-  }) %>% data.table::rbindlist()
+  }) %>% data.table::rbindlist(fill=T)
   return(merged.dat)
 }
 
 # data.table::fwrite( subset(subset_DT, SNP != "rs34637584"), "Data/GWAS/Nalls23andMe_2019/LRRK2/LocusZoomData_-rs34637584.txt", sep="\t")
 
-quick_finemap <- function(){
-  gene <- "LRRK2"
+quick_finemap <- function(locus="LRRK2"){ 
+  gene <<- locus
+  locus <<- locus
   results_path <<- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
-  finemap_DT <<- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
-  # return(finemap_DT)
+  finemap_DT <<- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt")) 
+  finemap_DT <<- find_consensus_SNPs(finemap_DT)
+  
+  if(file.exists(file.path(results_path,"plink","UKB_LD.RDS"))){
+    LD_matrix <<- readRDS(file.path(results_path,"plink","UKB_LD.RDS"))
+  }
+  if(file.exists(file.path(results_path,"plink","LD_matrix.RData")) ){
+    file.path(results_path,"plink","LD_matrix.RData")
+  } 
+  sub.out <- subset_common_snps(LD_matrix, finemap_DT)
+  LD_matrix <- sub.out$LD
+  finemap_DT <- sub.out$DT  
+  subset_DT <<- finemap_DT
 }
+ 
+
+tryFunc <- function(input, func) {
+  out <- tryCatch(
+    {
+      # Just to highlight: if you want to use more than one 
+      # R expression in the "try" part then you'll have to 
+      # use curly brackets.
+      # 'tryCatch()' will return the last evaluated expression 
+      # in case the "try" part was completed successfully
+       
+      func(input) 
+      # The return value of `readLines()` is the actual value 
+      # that will be returned in case there is no condition 
+      # (e.g. warning or error). 
+      # You don't need to state the return value via `return()` as code 
+      # in the "try" part is not wrapped insided a function (unlike that
+      # for the condition handlers for warnings and error below)
+    },
+    error=function(cond) {
+      message(paste("URL does not seem to exist:", input))
+      message("Here's the original error message:")
+      message(cond)
+      # Choose a return value in case of error
+      return(NA)
+    },
+    warning=function(cond) {
+      message(paste("URL caused a warning:", input))
+      message("Here's the original warning message:")
+      message(cond)
+      # Choose a return value in case of warning
+      return(NULL)
+    },
+    finally={
+      # NOTE:
+      # Here goes everything that should be executed at the end,
+      # regardless of success or error.
+      # If you want more than one expression to be executed, then you 
+      # need to wrap them in curly brackets ({...}); otherwise you could
+      # just have written 'finally=<expression>' 
+      message(paste("Processed URL:", input))
+      message("Some other message at the end")
+    }
+  )    
+  return(out)
+}
+
 
 # quick_start
 quickstart <- function(){ 
@@ -374,22 +438,29 @@ dt.replace <- function(DT, target, replacement){
 subset_common_snps <- function(LD_matrix, finemap_DT){
   ld.snps <- unique(row.names(LD_matrix))
   fm.snps <- unique(finemap_DT$SNP)
-  common.snps <- intersect(ld.snps, fm.snps)
+  common.snps <- base::intersect(ld.snps, fm.snps)
   printer("+ LD_matrix =",length(ld.snps),"SNPs.")
   printer("+ finemap_DT =",length(fm.snps),"SNPs.")
   printer("+",length(common.snps),"SNPs in common.")
-  LD_matrix <- LD_matrix[common.snps, common.snps] 
-  finemap_DT <- subset(finemap_DT, SNP %in% common.snps)
-  return(list(LD_matrix=LD_matrix,
-              finemap_DT=finemap_DT))
+  new_LD <- LD_matrix[common.snps, common.snps] 
+  new_LD[is.na(new_LD)] <- 0
+  new_DT <- data.table::as.data.table(subset(finemap_DT, SNP %in% row.names(new_LD)))
+  # if(nrow(new_DT)!=nrow(new_LD)){stop("nrow new_DT != nrow new_LD")}
+  new_DT <- unique(new_DT)
+  # Reassign the lead SNP if it's missing
+  if(sum(new_DT$leadSNP)==0){
+    printer("+ leadSNP missing. Assigning new one by min p-value.")
+    top.snp <- head(arrange(new_DT, P, desc(Effect)))[1,]$SNP
+    new_DT$leadSNP <- ifelse(new_DT$SNP==top.snp,T,F) 
+  }
+  return(list(LD=new_LD,
+              DT=new_DT))
 }
 
 gene_trimmer <- function(subset_DT, 
-                         gene, 
-                         trim_gene_limits=F, 
+                         gene,  
                          min_POS=NULL, 
-                         max_POS=NULL){
-  if(trim_gene_limits){
+                         max_POS=NULL){ 
     printer("BIOMART:: Trimming data to only include SNPs within gene coordinates.")
     gene_info <- biomart_geneInfo(gene)
     gene_info_sub <- subset(gene_info, hgnc_symbol==gene)
@@ -399,9 +470,7 @@ gene_trimmer <- function(subset_DT,
     max_POS <- min(max_POS, gene_info_sub$end_position, na.rm = T)  
     subset_DT <- subset(subset_DT, CHR==gene_info$chromosome_name[1] & POS>=min_POS & POS<=max_POS)
     printer("BIOMART::",nrow(subset_DT),"SNPs left after trimming.")
-    return(subset_DT)
-   
-  } else{return(subset_DT)} 
+    return(subset_DT) 
 }
 
 limit_SNPs <- function(max_snps=500, subset_DT){
@@ -411,13 +480,18 @@ limit_SNPs <- function(max_snps=500, subset_DT){
     lead.index <- which(subset_DT$leadSNP==T) 
     i=1
     tmp.sub<-data.frame() 
-    while(nrow(tmp.sub)<max_snps){
+    while(nrow(tmp.sub)<max_snps-1){
       # print(i)
       snp.start <- max(1, lead.index-i)
       snp.end <- min(nrow(subset_DT), lead.index+i)
       tmp.sub <- subset_DT[snp.start:snp.end]
       i=i+1
-    }
+    }  
+    # Need to add that last row on only one end
+    snp.start <- max(1, lead.index-i+1) # +1 keep it the same index as before
+    snp.end <- min(nrow(subset_DT), lead.index+i)
+    tmp.sub <- subset_DT[snp.start:snp.end]
+     
   printer("+ Reduced number of SNPs:",orig_n,"==>",nrow(tmp.sub))
   return(tmp.sub)
   } else {
@@ -499,7 +573,8 @@ finemap_pipeline <- function(gene,
                              remove_tmps=T,
                              plot_types=c("simple","fancy"),
                              PAINTOR_QTL_datasets=NULL,
-                             server=F){
+                             server=F,
+                             PP_threshold=.95){
    # Create paths 
    results_path <- make_results_path(dataset_name, dataset_type, gene)
    subset_path <- get_subset_path(results_path=results_path, gene=gene, subset_path="auto")
@@ -533,20 +608,27 @@ finemap_pipeline <- function(gene,
                       query_by = query_by,
                       probe_path = probe_path,
                       remove_tmps = remove_tmps) 
+
+   #### ***** SNP Filters ***** ###
    # Remove pre-specified SNPs
    if(remove_variants!=F){
      printer("Removing specified variants:",paste(remove_variants, collapse=','), v=verbose)
      try({subset_DT <- subset(subset_DT, !(SNP %in% remove_variants) )}) 
-   }
-   # Filter by MAF
-   if(!is.na(min_MAF)){ 
-     try({subset_DT <- subset(subset_DT, MAF >= min_MAF) })
    } 
-   # Trim subset according to annotations of where the gene's limit are 
-   subset_DT <- gene_trimmer(subset_DT, gene=gene,
-                             trim_gene_limits=trim_gene_limits,
-                             min_POS=min_POS,
-                             max_POS=min_POS) 
+   # Trim subset according to annotations of where the gene's limit are
+   if(trim_gene_limits){
+     subset_DT <- gene_trimmer(subset_DT=subset_DT, 
+                                gene=gene, 
+                                min_POS=min_POS,
+                                max_POS=min_POS) 
+   }
+   if(!is.null(max_snps)){
+     subset_DT <- limit_SNPs(max_snps = max_snps, subset_DT = subset_DT) 
+   }
+   if(!is.null(min_MAF) & min_MAF>0){
+     printer("echolocatoR:: Removing SNPs w/ MAF <",min_MAF)
+     subset_DT <- subset(subset_DT, MAF>=min_MAF)  
+   }
    
   ### Compute LD matrix 
   message("--- Step 2: Calculate Linkage Disequilibrium ---")
@@ -566,15 +648,8 @@ finemap_pipeline <- function(gene,
                                  server=server)
   # Subset LD and df to only overlapping SNPs 
   sub.out <- subset_common_snps(LD_matrix, subset_DT)
-  LD_matrix <- sub.out$LD_matrix
-  subset_DT <- sub.out$finemap_DT 
-  
-  if(!is.null(max_snps)){
-    subset_DT <- limit_SNPs(max_snps = max_snps, subset_DT = subset_DT)
-    sub.out <- subset_common_snps(LD_matrix, subset_DT)
-    LD_matrix <- sub.out$LD_matrix
-    subset_DT <- sub.out$finemap_DT
-  }
+  LD_matrix <- sub.out$LD
+  subset_DT <- sub.out$DT  
    
   # Plot LD 
   if(plot_LD){
@@ -612,8 +687,9 @@ finemap_pipeline <- function(gene,
                                 N_controls_col = N_controls_col,
                                 A1_col = A1_col,
                                 A2_col = A2_col,
-                                PAINTOR_QTL_datasets = PAINTOR_QTL_datasets)  
-  finemap_DT <- find_consensus_SNPs(finemap_DT)
+                                PAINTOR_QTL_datasets = PAINTOR_QTL_datasets, 
+                                PP_threshold = PP_threshold)  
+  finemap_DT <- find_consensus_SNPs(finemap_DT, credset_thresh = PP_threshold)
   # Step 6: COLOCALIZE
   # Step 7: Functionally Fine-map
   
@@ -629,18 +705,20 @@ finemap_pipeline <- function(gene,
       #                               gene = gene,
       #                               original = T,
       #                               save = T)
-      mf_plot <- ggbio_plot(finemap_DT=finemap_DT, 
+      mf_plot <- GGBIO.plot(finemap_DT=finemap_DT, 
                             LD_matrix=LD_matrix, 
                             gene=gene, 
                             results_path=results_path, 
                             method_list=finemap_methods,
-                            XGR_libnames = NULL)
-      print(mf_plot)
+                            Nott_sn_epigenome = T,
+                            XGR_libnames = NULL, 
+                            save_plot = T, 
+                            show_plot = T) 
     }) 
   }
   if("fancy" %in% plot_types){
     try({
-      trx <- ggbio_plot(finemap_DT = finemap_DT,
+      trx <- GGBIO.plot(finemap_DT = finemap_DT,
                         gene = gene,
                         LD_matrix = LD_matrix,
                         results_path = results_path,
@@ -735,7 +813,8 @@ finemap_loci <- function(loci, fullSS_path,
                              remove_tmps=T,
                              plot_types = c("simple","fancy"),
                              PAINTOR_QTL_datasets=NULL,
-                             server=F){ 
+                             server=F,
+                             PP_threshold=.95){ 
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
   lead_SNPs <- snps_to_condition(conditioned_snps, top_SNPs, loci)
@@ -743,6 +822,7 @@ finemap_loci <- function(loci, fullSS_path,
   for (i in 1:length(loci)){
     try({ 
       gene <- loci[i]
+      message("^o^",gene,"^o^")
       lead_SNP <- arg_list_handler(lead_SNPs, i) 
       gene_limits <- arg_list_handler(trim_gene_limits, i) 
       conditioned_snp <- arg_list_handler(conditioned_snps, i)  
@@ -797,12 +877,13 @@ finemap_loci <- function(loci, fullSS_path,
                                      remove_tmps=remove_tmps,
                                      plot_types=plot_types,
                                      PAINTOR_QTL_datasets=PAINTOR_QTL_datasets, 
-                                     server=server)  
+                                     server=server,
+                                     PP_threshold=PP_threshold)  
       
       # Create summary table for all genes
       printer("Generating summary table...", v=verbose)
       newEntry <- cbind(data.table(Gene=gene), finemap_DT) %>% as.data.table() 
-      fineMapped_allResults <- rbind(fineMapped_allResults, newEntry) 
+      fineMapped_allResults <- rbind(fineMapped_allResults, newEntry, fill=T) 
       end_gene <- Sys.time()
       printer(gene,"fine-mapped in", round(end_gene-start_gene, 2),"seconds", v=verbose)
     }) 

@@ -63,8 +63,8 @@ COJO_plot <- function(gene,
 
 
 
-construct_SNPs_labels <- function(DT, lead=T, method=T, consensus=T){ 
-  printer("\n + Constructing SNP labels...")
+construct_SNPs_labels <- function(DT, lead=T, method=T, consensus=T, verbose=F){ 
+  printer("+ PLOT:: Constructing SNP labels...", v=verbose)
   labelSNPs <- data.table::data.table() 
   DT <- data.table::as.data.table(DT)
   

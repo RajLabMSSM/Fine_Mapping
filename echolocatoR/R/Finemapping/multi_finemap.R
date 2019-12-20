@@ -6,10 +6,13 @@ find_consensus_SNPs <- function(finemap_DT,
                                 verbose=T, 
                                 credset_thresh=.95,
                                 consensus_thresh=2, 
-                                sort_by_support=T){
+                                sort_by_support=T, 
+                                exclude_methods=NULL){
   printer("+ Identifying Consensus SNPs...",v=verbose)
+  exclude_methods <- append(exclude_methods,"mean")
   # Find SNPs that are in the credible set for all fine-mapping tools
   CS_cols <- colnames(finemap_DT)[endsWith(colnames(finemap_DT),".Credible_Set")] 
+  CS_cols <- CS_cols[!(CS_cols %in% paste0(exclude_methods,".Credible_Set"))]
   if(consensus_thresh=="all"){consensus_thresh<-length(CS_cols)}
   printer("++ support_thresh =",consensus_thresh)
   # Get the number of tools supporting each SNP
@@ -26,13 +29,15 @@ find_consensus_SNPs <- function(finemap_DT,
   # Calculate mean PP
   printer("+ Calculating mean Posterior Probability (mean.PP)...")
   PP.cols <- grep(".PP",colnames(finemap_DT), value = T)  
+  PP.cols <- PP.cols[!(PP.cols %in% paste0(exclude_methods,".PP"))]
   PP.sub <- subset(finemap_DT, select=c("SNP",PP.cols)) %>% data.frame()# %>% unique() 
   PP.sub[is.na(PP.sub)] <- 0
   if(NCOL(PP.sub[,-1]) > 1){
     finemap_DT$mean.PP <- rowMeans(PP.sub[,-1]) 
   } else{ 
-    finemap_DT$mean.PP <- PP.sub[,-1]
-    }
+    finemap_DT$mean.PP <- PP.sub[,-1] 
+  }
+  finemap_DT$mean.Credible_Set <- ifelse(finemap_DT$mean.PP>=credset_thresh,1,0)
   
   # PP.sub %>% arrange(desc(mean.PP)) %>% head() 
    printer("++",length(CS_cols),"fine-mapping methods used.")
@@ -66,13 +71,14 @@ multi_finemap <- function(results_path,
                           N_controls_col="N_controls",
                           A1_col="A1",
                           A2_col="A2",
-                          PAINTOR_QTL_datasets=NULL){
+                          PAINTOR_QTL_datasets=NULL,
+                          PP_threshold=.95){
   printer("++ Fine-mapping using multiple tools:", paste(finemap_method_list, collapse=", "))
   # finemap_method_list <- finemap_method_list[finemap_method_list!="COJO"]  
   # Check overlap
   sub.out <- subset_common_snps(LD_matrix, subset_DT)
-  LD_matrix <- sub.out$LD_matrix
-  subset_DT <- sub.out$finemap_DT 
+  LD_matrix <- sub.out$LD
+  subset_DT <- sub.out$DT 
   
   select_cols <- colnames(subset_DT)[!grepl(colnames(subset_DT), 
                                             pattern = paste(c(finemap_method_list,"Support","Consensus_SNP"),collapse = "|"))]
@@ -88,7 +94,7 @@ multi_finemap <- function(results_path,
       DT <- finemap_method_handler(fullSS_path = fullSS_path,
                                    results_path = results_path,
                                    finemap_method = m, 
-                                   subset_DT = subset_DT, 
+                                   subset_DT = data.table::as.data.table(subset_DT), 
                                    dataset_type = dataset_type,
                                    LD_matrix = LD_matrix, 
                                    n_causal = n_causal, 
@@ -102,7 +108,8 @@ multi_finemap <- function(results_path,
                                    N_controls_col = N_controls_col,
                                    A1_col = A1_col,
                                    A2_col = A2_col,
-                                   PAINTOR_QTL_datasets = PAINTOR_QTL_datasets)
+                                   PAINTOR_QTL_datasets = PAINTOR_QTL_datasets,
+                                   PP_threshold = PP_threshold)
      }) 
       # },
       # # WARNING
@@ -166,7 +173,15 @@ finemap_method_handler <- function(results_path,
                                    N_controls_col="N_controls",
                                    A1_col="A1",
                                    A2_col="A2",
-                                   PAINTOR_QTL_datasets=NULL){ 
+                                   PAINTOR_QTL_datasets=NULL,
+                                   PP_threshold=.95){ 
+  sub.out <- subset_common_snps(LD_matrix=LD_matrix,
+                                finemap_DT=subset_DT)
+  LD_matrix <- sub.out$LD
+  subset_DT <- sub.out$DT
+  
+  message(paste("echolocatoR::",finemap_method))
+  
   # INITIATE FINE-MAPPING 
   if(finemap_method=="SUSIE"){ 
     # SUSIE
@@ -174,23 +189,25 @@ finemap_method_handler <- function(results_path,
                         dataset_type = dataset_type,
                         LD_matrix = LD_matrix,
                         n_causal = n_causal, 
-                        sample_size = sample_size)
+                        sample_size = sample_size, 
+                        PP_threshold = PP_threshold)
     
     
   } else if(finemap_method=="POLYFUN_SUSIE"){
     # PolyFun+SUSIE 
-    finemap_DT <- POLYFUN.SUSIE(results_path = results_path,  
+    finemap_DT <- POLYFUN_SUSIE(results_path = results_path,  
                                 finemap_DT = subset_DT, 
                                 LD_matrix = LD_matrix, 
                                 dataset_type = dataset_type,
                                 n_causal = n_causal,
                                 sample_size = sample_size,
-                                polyfun_approach = "non-parametric") 
+                                polyfun_approach = "non-parametric",
+                                PP_threshold = PP_threshold) 
     
   }else if(finemap_method=="ABF"){
     # coloc - finemap.abf
     finemap_DT <- ABF(subset_DT = subset_DT,
-                      PP_threshold = .5)
+                      PP_threshold = PP_threshold)
     
     
   } else if(finemap_method=="FINEMAP"){
@@ -199,7 +216,8 @@ finemap_method_handler <- function(results_path,
                           results_path = results_path, 
                           LD_matrix = LD_matrix,
                           n_samples = sample_size,   
-                          n_causal = n_causal)
+                          n_causal = n_causal, 
+                          credset_thresh = PP_threshold)
     
     
   } else if("COJO" %in% finemap_method){
@@ -230,10 +248,11 @@ finemap_method_handler <- function(results_path,
                            gene=basename(results_path), 
                            n_causal=n_causal,   
                            use_annotations=F,
-                           PP_threshold=.95,
+                           PP_threshold=PP_threshold,
                            GWAS_populations="EUR",
                            LD_matrix=LD_matrix,
-                           force_new_LD=F)
+                           force_new_LD=F, 
+                           PP_threshold=PP_threshold)
   } else {
     stop("[::ERROR::] Enter valid finemap_method: 'SUSIE', 'ABF', 'FINEMAP', 'COJO', and 'PAINTOR' are currently available.")
   }
@@ -260,7 +279,8 @@ finemap_handler <- function(results_path,
                             N_controls_col="N_controls",
                             A1_col="A1",
                             A2_col="A2",
-                            PAINTOR_QTL_datasets=NULL){
+                            PAINTOR_QTL_datasets=NULL,
+                            PP_threshold=.95){
   message("-------- Step 4: Statistically Fine-map --------")
   start_FM <- Sys.time()
   set.seed(1)  
@@ -292,7 +312,8 @@ finemap_handler <- function(results_path,
                                  N_controls_col = N_controls_col,
                                  A1_col = A1_col,
                                  A2_col = A2_col,
-                                 PAINTOR_QTL_datasets = PAINTOR_QTL_datasets)
+                                 PAINTOR_QTL_datasets = PAINTOR_QTL_datasets,
+                                 PP_threshold = PP_threshold)
       save_finemap_results(finemap_DT, file_dir)
     } 
   # } else {

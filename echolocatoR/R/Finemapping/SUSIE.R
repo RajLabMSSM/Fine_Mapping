@@ -62,16 +62,20 @@ SUSIE <- function(subset_DT,
                   n_causal=5,
                   sample_size=NA, 
                   var_y="estimate",
-                  prior_weights=NULL){
+                  prior_weights=NULL,
+                  PP_threshold=.95){
   # Sum of Single Effects (SuSiE): Iterative Bayesian Step-wise Selection
   # https://stephenslab.github.io/susieR/
   vars <- get_var_y(subset_DT, dataset_type)
   sample_size <- get_sample_size(subset_DT, sample_size)
-  printer("+ Fine-mapping...")
-  
-  # SUSIE's authors "merge[d] susie_ss and susie_bhat to susie_suff_stat" in 11/2019.
-  susie_func <- ifelse(length(find("susie_bhat"))==0, susieR::susie_suff_stat, susieR::susie_bhat) 
-  
+  printer("+ SUSIE:: n_causal =",n_causal)
+  if(!is.null(prior_weights)){
+    printer("Utilizing prior_weights for",length(prior_weights),"SNPs.")
+  }
+  library(susieR)
+  # SUSIE's authors "merge[d] susie_ss and susie_bhat to susie_suff_stat" in 11/2019. 
+  susie_func <- ifelse(length(find("susie_bhat"))==0, 
+                       susieR::susie_suff_stat, susieR::susie_bhat)  
   fitted_bhat <- susie_func(bhat = subset_DT$Effect,
                             shat = subset_DT$StdErr,
                             R = LD_matrix,
@@ -83,13 +87,15 @@ SUSIE <- function(subset_DT,
                             scaled_prior_variance = 0.1, # 0.1: Equates to "proportion of variance explained"
                             
                             standardize = TRUE,
-                            estimate_residual_variance = TRUE, # TRUE
+                            estimate_residual_variance = F, # TRUE
                             var_y = vars$phenotype_variance, # Variance of the phenotype (e.g. gene expression, or disease status)
                             
                             # A p vector of prior probability that each element is non-zero
                             prior_weights = prior_weights,
+                            coverage = PP_threshold,
                             
-                            verbose = FALSE ) 
+                            verbose = FALSE) 
+ 
   # try({susieR::susie_plot_iteration(fitted_bhat, n_causal, 'test_track_fit')})
   printer("")
   printer("++ Extracting Credible Sets...") 
@@ -113,7 +119,7 @@ SUSIE <- function(subset_DT,
       CS_dict <- append(CS_dict, setNames(i,s))
     }  
   }
-  finemap_DT$Credible_Set <- lapply(finemap_DT$SNP, function(x){ if(x %in% names(CS_dict)){ CS_dict[[x]] } else{0}}) %>% unlist()   
+  finemap_DT$Credible_Set <- lapply(finemap_DT$SNP, function(x){ if(x %in% names(CS_dict) & subset(finemap_DT, SNP==x)$PP>=PP_threshold){ CS_dict[[x]] } else{0}}) %>% unlist()
   return(finemap_DT)
 }
 

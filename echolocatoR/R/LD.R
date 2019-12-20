@@ -39,6 +39,8 @@ LD.load_or_create <- function(results_path,
                               server = server)
   } else {
     LD_path <- file.path(results_path,"plink/LD_matrix.RData")
+    # load(file.path(results_path, "plink/LD_matrix.RData"))
+    # saveRDS(LD_matrix, LD_path)
     if(!file.exists(LD_path) | force_new_LD==T){
       printer("+ Computing LD matrix...", verbose) 
       LD_matrix <- compute_LD_matrix(results_path = results_path, 
@@ -200,27 +202,28 @@ LD.UKBiobank <- function(finemap_DT,
                          results_path,
                          force_new_LD=F,
                          polyfun="./echolocatoR/tools/polyfun",
-                         server=F){  
+                         server=F){   
   alkes_url <- "https://data.broadinstitute.org/alkesgroup/UKBB_LD"
   URL <- alkes_url 
   chrom <- unique(finemap_DT$CHR)
   min_pos <- min(finemap_DT$POS) 
   file.name <- LD.find_ld_prefix(chrom=chrom, min_pos=min_pos)
+  printer("+ UKB LD file name:",file.name)
    
   gz.path <- file.path(alkes_url, paste0(file.name,".gz")) 
   npz.path <- file.path(alkes_url, paste0(file.name,".npz"))
   
   chimera.path <- file.path("/sc/orga/projects/pd-omics/tools/polyfun/UKBB_LD")
   UKBB.LD.file <- file.path(results_path,"plink/UKB_LD.RDS")
-   
+  
   if(server){ 
     URL <- chimera.path
     if(file.exists(file.path(chimera.path, paste0(file.name,".gz")))  & 
        file.exists(file.path(chimera.path, paste0(file.name,".npz"))) ){
-       printer("+LD:: Pre-existing UKB LD gz/npz files detected. Importing...") 
+       printer("+ LD:: Pre-existing UKB LD gz/npz files detected. Importing...") 
     } else {
-      printer("+ LD:: Downloading .gz/.npz and saving to disk.")
-      LD.download_UKB_LD(LD.file.list = file.path(alkes_url, file.name),
+      printer("+ LD:: Downloading .gz/.npz and saving to disk.") 
+      LD.download_UKB_LD(LD.file.list = file.name,
                          out.path = chimera.path, 
                          background = F)
     }  
@@ -237,12 +240,17 @@ LD.UKBiobank <- function(finemap_DT,
     POLYFUN.load_conda(server = server)
     reticulate::source_python(file.path(polyfun,"load_ld.py"))
     printer("+ LD:: ...this could take some time...")
-    ld.out <- load_ld(ld_prefix = file.path(URL, file.name))
+    
+    ld.out <- tryFunc(input = file.path(URL, file.name), load_ld)
+    if(is.na(ld.out)){
+      ld.out <- load_ld(ld_prefix = file.path(URL, file.name), npz_suffix='2')
+    } 
     # LD matrix
     ld_R <- ld.out[[1]] 
     # head(ld_R)[1:10]
     # SNP info 
-    ld_snps <- data.table::data.table(reticulate::py_to_r(ld.out[[2]]))
+    # ld_snps <- data.table::data.table( reticulate::py_to_r(ld.out[[2]]) ) 
+    ld_snps <- data.table::data.table(ld.out[[2]])
     # remove(ld.out) 
     # ld_snps.sub <- subset(ld_snps, position %in% finemap_DT$POS)
     indices <- which(ld_snps$position %in% finemap_DT$POS)
@@ -250,6 +258,7 @@ LD.UKBiobank <- function(finemap_DT,
     LD_matrix <- ld_R[indices, indices]
     row.names(LD_matrix) <- ld_snps.sub$rsid
     colnames(LD_matrix) <- ld_snps.sub$rsid 
+    LD_matrix[is.na(LD_matrix)] <- 0
     printer("LD matrix dimensions", paste(dim(LD_matrix),collapse=" x "))
     printer("+ POLYFUN:: Saving LD =>",UKBB.LD.file)
     dir.create(dirname(UKBB.LD.file), showWarnings = F, recursive = T)
@@ -261,6 +270,7 @@ LD.UKBiobank <- function(finemap_DT,
 
 LD.download_UKB_LD <- function(LD.file.list, 
                                out.path="/sc/orga/projects/pd-omics/tools/polyfun/UKBB_LD/",
+                               alkes_url="https://data.broadinstitute.org/alkesgroup/UKBB_LD",
                                background=T){
     flags <- ifelse(background,"-bqc","qc")
     for(f in LD.file.list){ 
@@ -273,13 +283,13 @@ LD.download_UKB_LD <- function(LD.file.list,
       print(cmd)
       system(cmd)
     }
-  }
+}
 
 LD.UKBiobank_multi_download <- function(out.path = "/sc/orga/projects/pd-omics/tools/polyfun/UKBB_LD/"){
   # Download all UKBB LD files
   # wget -r -np -A '*.gz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
   # wget -r -np -A '*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
-  alkes_url <- "https://data.broadinstitute.org/alkesgroup/UKBB_LD"
+
   # Figure out the names of LD files you'll need
   merged_DT <- merge_finemapping_results(minimum_support = 0)
   locus_coords <- merged_DT %>% dplyr::group_by(Gene) %>% 

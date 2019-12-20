@@ -1,0 +1,17 @@
+[INFO]  Loaded an LD matrix for 22522 SNPs from Data/GWAS/Nalls23andMe_2019/LRRK2/plink/chr12_40000001_43000001.npz
+[INFO]  Loading sumstats file...
+[INFO]  Loaded an LD matrix for 22522 SNPs from Data/GWAS/Nalls23andMe_2019/LRRK2/plink/chr12_40000001_43000001.npz
+[INFO]  Loading sumstats file...
+[INFO]  Loaded sumstats for 374529 SNPs
+[INFO]  Loaded an LD matrix for 22522 SNPs from Data/GWAS/Nalls23andMe_2019/LRRK2/plink/chr12_40000001_43000001.npz
+[INFO]  Loading sumstats file...
+[INFO]  Loaded sumstats for 374529 SNPs
+[INFO]  Loaded an LD matrix for 22522 SNPs from Data/GWAS/Nalls23andMe_2019/LRRK2/plink/chr12_40000001_43000001.npz
+[INFO]  Loading sumstats file...
+[INFO]  Loaded sumstats for 374529 SNPs
+[INFO]  Loaded an LD matrix for 22522 SNPs from Data/GWAS/Nalls23andMe_2019/LRRK2/plink/chr12_40000001_43000001.npz
+[INFO]  Loading sumstats file...
+[INFO]  Loaded sumstats for 373589 SNPs
+[INFO]  Removing 21839 SNPs in the LD matrix that are not in the sumstats file
+[WARNING]  Flipping the alleles of 380 SNPs in the LD matrix that are flipped compared to the sumstats file
+[INFO]  Starting functionally-informed SuSiE fine-mapping for chromosome 12 BP 40515388-40713899 (683 SNPs)

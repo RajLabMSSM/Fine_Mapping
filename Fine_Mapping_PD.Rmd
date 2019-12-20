@@ -41,7 +41,6 @@ source("echolocatoR/R/MAIN.R")
 # Data_dirs <- read.csv("./Data/directories_table.csv")
 finemap_results <- list()
 coloc_results <- list()
-
 # quickstart()
 ```
 
@@ -52,6 +51,8 @@ coloc_results <- list()
 ## Statistical Fine-mapping {.tabset .tabset-fade .tabset-pills} 
 
 Parkinson's Disease GWAS.  
+
+BA, specificity spelling, T-cell?, FDR5%, networks of co-expression[ed genes], singel-cell; NOD2, GPNMB, BST1 and CHRNB1 are eQTLs in MyND monocytes
 
 ```{r PD: Nalls23andMe_2019, results = 'asis', fig.height=10, fig.width=7}
 # fig.show='hold'
@@ -77,16 +78,19 @@ top_SNPs <- data.table::rbindlist(list(top_SNPs,
                                       ), use.names = T)
 loci <- unique(top_SNPs$Gene)
 
+# loci <- c("SPTSSB","MED12L","CHRNB1","ITPKB","BST1")
+# loci <- c("HLA-DRB5","LOC100131289","TRIM40")
+
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci = unique(c("LRRK2", loci)),
+                                               loci = c("TRIM40"),#unique(c("LRRK2", loci)),
                                                trim_gene_limits = F,#c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
                                                query_by ="coordinates",
                                                subset_path = "auto", 
-                                               finemap_methods= c("ABF","SUSIE","POLYFUN_SUSIE"),#FINEMAP,  
-                                               force_new_LD = F,    
-                                               force_new_subset = T,
+                                               finemap_methods= c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),  
+                                               force_new_LD = T,    
+                                               force_new_subset = F,
                                                force_new_finemap = T, 
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
@@ -94,21 +98,21 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  freq_col = "freq", MAF_col = "calculate",
                  A1_col = "A1",
                  A2_col = "A2",
-                 bp_distance = 100000,#500000*2,
-                 # max_snps=500,
+                 bp_distance = 500000,
+                 # max_snps=1000,
                  download_reference = T, 
-                 LD_reference = "UKB",#"1KG_Phase1",
+                 LD_reference = "1KG_Phase1",#"1KG_Phase1",
                  superpopulation = "EUR", 
                  LD_block = F, 
-                 min_MAF = 0,
-                 remove_variants = c("rs34637584"),
-                 remove_correlates = c("rs34637584"),
+                 min_MAF = 0.05,
+                 # remove_variants = c("rs34637584"),
+                 # remove_correlates = c("rs34637584"),
                  conditioned_snps = "auto", # Use the lead SNP for each gene  
                  n_causal = 10, 
                  plot_types = c("simple"), #"fancy" 
-                 remove_tmps = F, 
-                 
-                 server=T)
+                 PP_threshold = .95,
+                 remove_tmps = F,  
+                 server=F)
 ```
 
 # Summarize Fine-mapping Results
