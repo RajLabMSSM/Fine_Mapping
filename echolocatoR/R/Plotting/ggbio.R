@@ -486,7 +486,7 @@ GGBIO.plot <- function(finemap_DT,
     geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') + 
     theme(legend.key.width=unit(.5,"line"),                                                                      legend.key.height=unit(.5,"line"),
           strip.text.y = element_text(angle = 0),
-          strip.text = element_text(size = 9),
+          strip.text = element_text(size = 7),
           panel.background = element_rect(fill = "white", colour = "black", linetype = "solid"),
           plot.subtitle = element_text(color = "turquoise", size = 8)) + 
     scale_x_continuous( labels=function(x)x/1000000)
@@ -498,8 +498,8 @@ GGBIO.plot <- function(finemap_DT,
     printer("+ GGBIO:: Saving plot ==>",plot.path)
     ggsave(filename = plot.path, 
            plot = trks_plus_lines,
-           height = 12+length(XGR_libnames)+n_roadmap+n_Nott, 
-           width = 8, dpi = 400, bg = "transparent")
+           height = 14+length(XGR_libnames)+n_roadmap+n_Nott, 
+           width = 12, dpi = 400, bg = "transparent")
   } 
   return(trks_plus_lines)
 } 

@@ -37,7 +37,9 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
   
   # Import BigWig annotation files
   bigWigFiles <- readxl::read_excel("./echolocatoR/annotations/Glass_lab/Glass.snEpigenomics.xlsx") 
-  bigWigFiles <- subset(bigWigFiles, marker!="-" &  cell_type!="peripheral microglia")
+  # bigWigFiles <- subset(bigWigFiles, marker!="-" &  cell_type!="peripheral microglia")
+  bigWigFiles <- dplyr::mutate(bigWigFiles, cell_type = gsub(" ",".",cell_type))
+  
   
   # Convert finemap data to granges
   dat <- finemap_DT
@@ -54,7 +56,9 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
     printer("GVIZ:: Importing...",bw.name)
     bw.filt <- import.bw.filt(bw.file=bw.file, 
                               gr.dat=gr.dat, full_data=full_data) 
-    bw.filt$Experiment <- bw.name
+    bw.filt$Cell_type <- bigWigFiles$cell_type[i]
+    bw.filt$Assay <- bigWigFiles$assay[i]
+    bw.filt$Experiment <- gsub("_"," ",bw.name)
     # colnames(mcols(bw.filt))[1] <- bw.name
     # bw.filt$expt_name <- bw.name  
     # bw.filt$cell_type <-strsplit(bw.name, "_")[[1]][[1]]
@@ -62,19 +66,17 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
     return(bw.filt)
   })
   bw.cols <- bigWigFiles$name
-  names(bw.grlist) <- bw.cols
-  bw.gr <- unlist(GenomicRanges::GRangesList(bw.grlist)) 
-  mcols(bw.gr) <-  tidyr::separate(data.frame(mcols(bw.gr)), 
-                                  col=Experiment, 
-                                  into = c("Cell_type","Assay"), sep = "_", remove = F)
+  # names(bw.grlist) <- bw.cols
+  bw.gr <- unlist(GenomicRanges::GRangesList(bw.grlist))  
   
   # merge into a single granges object
   # gr.snp <- Reduce(function(x, y) GenomicRanges::merge(x, y, all.x=T), 
   #                  append(bw.grlist, gr.dat))
   nott_tracks <-  ggbio::autoplot(object = bw.gr, 
-                                  geom="histogram", facets= Experiment ~ ., bins=100, 
+                                  geom="histogram", facets= Experiment ~ ., 
+                                  bins=100, 
                                   aes(fill=Cell_type), show.legend=T) + 
-    theme(legend.position="top")
+    theme(legend.position="right")
   if(return_assay_track){ return(nott_tracks)}
   
   
@@ -88,7 +90,7 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
   
   # gr.snp[start(gr.snp)!=Inf]
   # Fuse all tracks 
-  params_list <- list(title = paste0(gene," [",length(seqnames(gr.snp))," SNPs]"), 
+  params_list <- list(title = paste0(gene," [",length(seqnames(gr.dat))," SNPs]"), 
                       track.bg.color = "transparent",
                       track.plot.color = "transparent",
                       label.text.cex = .7, 
