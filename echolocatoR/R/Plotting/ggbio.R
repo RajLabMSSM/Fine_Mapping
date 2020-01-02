@@ -499,7 +499,7 @@ GGBIO.plot <- function(finemap_DT,
     ggsave(filename = plot.path, 
            plot = trks_plus_lines,
            height = 14+length(XGR_libnames)+n_roadmap+n_Nott, 
-           width = 12, dpi = 400, bg = "transparent")
+           width = 10, dpi = 400, bg = "transparent")
   } 
   return(trks_plus_lines)
 } 

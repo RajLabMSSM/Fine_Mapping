@@ -82,7 +82,7 @@ loci <- unique(top_SNPs$Gene)
 # loci <- c("HLA-DRB5","LOC100131289","TRIM40")
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci = loci,#unique(c("LRRK2", loci)),
+                                               loci = "CHRNB1",#unique(c("LRRK2", loci)),
                                                trim_gene_limits = F,#c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
