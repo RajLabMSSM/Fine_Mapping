@@ -34,5 +34,7 @@ Manuscripts/
 # Genome-wide analyses
 /Data/**/**/_genome_wide/fGWAS/Input/annotations.Nalls23andMe_2019.txt
 ## PolyFun specifically 
-/Data/**/**/_genome_wide/PolyFun/*sumstats_munged.parquet
+/Data/**/**/_genome_wide/PolyFun/*.parquet
+/Data/**/**/*.parquet
 #/Data/**/**/_genome_wide/PolyFun/output/
+

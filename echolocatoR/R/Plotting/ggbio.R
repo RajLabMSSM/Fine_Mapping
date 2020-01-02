@@ -441,17 +441,30 @@ GGBIO.plot <- function(finemap_DT,
  
   
   if(Nott_sn_epigenome){
-    track.Nott <- GGBIO.nott_etal_2019(finemap_DT, locus=gene, 
-                                       return_interaction_track = T) 
-    TRACKS_list <- append(TRACKS_list, track.Nott)
-    names(TRACKS_list)[length(TRACKS_list)] <- "Nott (2019)\nPLAC-seq"
+    # Epigenomic histograms
+    track.Nott_histo <- NOTT_2019.epigenomic_histograms(finemap_DT,
+                                                        results_path,
+                                                        show_plot=F, 
+                                                        save_plot=F, 
+                                                        full_data=T,
+                                                        return_assay_track=T)
+    TRACKS_list <- append(TRACKS_list, track.Nott_histo)
+    names(TRACKS_list)[length(TRACKS_list)] <- "Nott (2019)\nRead Densities"
+    
+    # PLAC-seq
+    track.Nott_plac <- NOTT_2019.plac_seq_plot(finemap_DT, 
+                                               locus=gene, 
+                                               return_interaction_track = T) 
+    TRACKS_list <- append(TRACKS_list, track.Nott_plac)
+    names(TRACKS_list)[length(TRACKS_list)] <- "Nott (2019)\nPLAC-seq" 
   }
 
   
   # Fuse all tracks  
   n_roadmap <- ifelse(ROADMAP,1,0)
-  n_Nott <- ifelse(Nott_sn_epigenome,1,0)
-  heights <- c(rep(.33,length(method_list)+2+n_Nott), 
+  n_Nott <- ifelse(Nott_sn_epigenome,2,0)
+  heights <- c(rep(.33,length(method_list)+2), # Fine-mapping tracks + GWAS and meanPP
+               c(1,.33),# Nott data
                rep(1,length(XGR_libnames)+n_roadmap))
   params_list <- list(title = paste0(gene," locus [",length(seqnames(gr.snp))," SNPs]"), 
                       track.bg.color = "transparent",
@@ -461,18 +474,22 @@ GGBIO.plot <- function(finemap_DT,
                       label.text.color = "white",
                       label.text.angle = 0,
                       label.width = unit(5.5, "lines"),
-                      xlim = c(min(gr.snp$POS), max(gr.snp$POS)), 
-                      heights = heights)
-  TRACKS_list <- append(TRACKS_list, params_list)
-  trks <- suppressWarnings(do.call("tracks", TRACKS_list)) 
+                      # xlim = c(min(gr.snp$POS), max(gr.snp$POS)), 
+                      heights = heights) 
+  trks <- suppressWarnings(do.call("tracks", append(TRACKS_list, params_list))) 
   
   # Add lines
   lead.pos <- subset(finemap_DT, leadSNP)$POS
   consensus.pos <- subset(finemap_DT, Consensus_SNP==T)$POS
   trks_plus_lines <- trks + 
-    geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') +
     geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=1, size=.3, linetype='solid') +
-    theme(legend.key.width=unit(.5,"line"),                                                                    legend.key.height=unit(.5,"line"))
+    geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') + 
+    theme(legend.key.width=unit(.5,"line"),                                                                      legend.key.height=unit(.5,"line"),
+          strip.text.y = element_text(angle = 0),
+          strip.text = element_text(size = 9),
+          panel.background = element_rect(fill = "white", colour = "black", linetype = "solid"),
+          plot.subtitle = element_text(color = "turquoise", size = 8)) + 
+    scale_x_continuous( labels=function(x)x/1000000)
     
   if(show_plot){print(trks_plus_lines)}
   # Save
@@ -481,7 +498,7 @@ GGBIO.plot <- function(finemap_DT,
     printer("+ GGBIO:: Saving plot ==>",plot.path)
     ggsave(filename = plot.path, 
            plot = trks_plus_lines,
-           height = 12+length(XGR_libnames)+n_roadmap, 
+           height = 12+length(XGR_libnames)+n_roadmap+n_Nott, 
            width = 8, dpi = 400, bg = "transparent")
   } 
   return(trks_plus_lines)

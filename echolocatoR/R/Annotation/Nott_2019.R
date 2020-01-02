@@ -5,24 +5,36 @@
 #  ^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^
 
 
-GGBIO.ucsc_tracks <- function(finemap_DT){ 
+NOTT_2019.epigenomic_histograms <- function(finemap_DT,
+                                            results_path,
+                                            show_plot=T, 
+                                            save_plot=T, 
+                                            full_data=T,
+                                            return_assay_track=F){ 
+  library(BiocGenerics)
+  library(GenomicRanges)
+  library(ggbio)
   # GLASS DATA: UCSC GB
-  # https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr2:127770344-127983251&hgsid=778249165_ySowqECRKNxURRn6bafH0yewAiuf
-   
-  # finemap_DT <- quick_finemap("TRIM40")
+  # https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr2:127770344-127983251&hgsid=778249165_ySowqECRKNxURRn6bafH0yewAiuf 
   
   # UCSC Tracks   
-  import.bw.filt <- function(bw.file, gr.dat){  
-    bw.dat <- rtracklayer::BigWigSelection(ranges = gr.dat, 
-                                           colnames = "score")  
-    # import.bw:: https://rdrr.io/bioc/Gviz/src/R/Gviz.R#sym-.import.bw
-    bw.filt <- rtracklayer::import.bw(con = bw.file, selection= gr.dat)
-    # bw.filt <- Gviz:::.import.bw(bw.file, selection = gr.dat)
-    # gr <- bw.filt@range
-    # gr.filt <- gr[seqnames(gr) == chr & start(gr) > from & end(gr) < to] 
-    plot(x = start(bw.filt), y=bw.filt$score)
+  import.bw.filt <- function(bw.file, gr.dat, full_data=T){   
+    if(full_data){
+      # Get all ranges within min/max
+      gr.span <- gr.dat[1,]
+      mcols(gr.span) <- NULL
+      start(gr.span) <- min(gr.dat$POS)
+      end(gr.span) <- max(gr.dat$POS)
+    } else {
+      # Otherwise, just use the score for the exact values
+      gr.span <- gr.dat
+      } 
+    # bw.dat <- rtracklayer::BigWigSelection(ranges = gr.dat,  colnames = "score")    
+    bw.filt <- rtracklayer::import.bw(con = bw.file, selection = gr.span) 
+    # plot(x = start(bw.filt), y=bw.filt$score)
     return(bw.filt)
   }
+  
   # Import BigWig annotation files
   bigWigFiles <- readxl::read_excel("./echolocatoR/annotations/Glass_lab/Glass.snEpigenomics.xlsx") 
   bigWigFiles <- subset(bigWigFiles, marker!="-" &  cell_type!="peripheral microglia")
@@ -30,7 +42,7 @@ GGBIO.ucsc_tracks <- function(finemap_DT){
   # Convert finemap data to granges
   dat <- finemap_DT
   dat$seqnames <- paste0("chr",dat$CHR) 
-  dat$start.end <- dat$POS
+  dat$start.end <- dat$POS 
   gr.dat <- GenomicRanges::makeGRangesFromDataFrame(df = dat,
                                                     seqnames.field = "seqnames",
                                                     start.field = "start.end", 
@@ -41,43 +53,41 @@ GGBIO.ucsc_tracks <- function(finemap_DT){
     bw.name <- gsub("_pooled|pooled_","",bigWigFiles$name[i])
     printer("GVIZ:: Importing...",bw.name)
     bw.filt <- import.bw.filt(bw.file=bw.file, 
-                              gr.dat = gr.dat)
-    colnames(mcols(bw.filt))[1] <- bw.name
+                              gr.dat=gr.dat, full_data=full_data) 
+    bw.filt$Experiment <- bw.name
+    # colnames(mcols(bw.filt))[1] <- bw.name
     # bw.filt$expt_name <- bw.name  
     # bw.filt$cell_type <-strsplit(bw.name, "_")[[1]][[1]]
     # bw.filt$assay <- strsplit(bw.name, "_")[[1]][[2]]
     return(bw.filt)
   })
-  gr.snp <- Reduce(function(x, y) GenomicRanges::merge(x, y, all.x=T), 
-                   append(bw.grlist, gr.dat))  
+  bw.cols <- bigWigFiles$name
+  names(bw.grlist) <- bw.cols
+  bw.gr <- unlist(GenomicRanges::GRangesList(bw.grlist)) 
+  mcols(bw.gr) <-  tidyr::separate(data.frame(mcols(bw.gr)), 
+                                  col=Experiment, 
+                                  into = c("Cell_type","Assay"), sep = "_", remove = F)
   
+  # merge into a single granges object
+  # gr.snp <- Reduce(function(x, y) GenomicRanges::merge(x, y, all.x=T), 
+  #                  append(bw.grlist, gr.dat))
+  nott_tracks <-  ggbio::autoplot(object = bw.gr, 
+                                  geom="histogram", facets= Experiment ~ ., bins=100, 
+                                  aes(fill=Cell_type), show.legend=T) + 
+    theme(legend.position="top")
+  if(return_assay_track){ return(nott_tracks)}
   
   
   # Fine-mapping tracks
-  INIT_list <- list(   
-    "GWAS"=ggbio::plotGrandLinear(obj = gr.snp, aes(y=-log10(P), fill=-log10(P))),
-    "Fine_mapping"=ggbio::plotGrandLinear(obj = gr.snp, aes(y=mean.PP, color=mean.PP)) + 
-      scale_color_viridis_c()
+  TRACKS_list <- list(   
+    "GWAS"=ggbio::plotGrandLinear(obj = gr.dat, aes(y=-log10(P), color=-log10(P))),
+    "Fine_mapping"=ggbio::plotGrandLinear(obj = gr.dat, aes(y=mean.PP, color=mean.PP)) + 
+      scale_color_viridis_c(),
+    "Nott_etal_2019" = nott_tracks
   )    
-  # BigWig tracks from Glass
-  bw.cols <- colnames(mcols(gr.snp))[1:12]  
-  BW_tracks<- y(bw.cols, function(annot){
-    gg.bw <- ggbio::plotGrandLinear(gr.snp, aes(y=eval(parse(text=annot)), 
-                                                color=eval(parse(text=annot))) 
-    ) + labs(y="Score", color="Score") + ylim(0,45)
-    # if(bw.cols!=bw.cols[1]){
-    #   gg.bw <- gg.bw + labs()
-    # }
-    return(gg.bw)                                                             
-  }) 
-  TRACKS_list <- append(INIT_list, BW_tracks)  
-  names(TRACKS_list) <- c(names(INIT_list), gsub("_","\n",bw.cols))
-  
   
   # gr.snp[start(gr.snp)!=Inf]
-  # Fuse all tracks
-  # gene <- "LRRK2"
-  library(ggbio)
+  # Fuse all tracks 
   params_list <- list(title = paste0(gene," [",length(seqnames(gr.snp))," SNPs]"), 
                       track.bg.color = "transparent",
                       track.plot.color = "transparent",
@@ -87,33 +97,31 @@ GGBIO.ucsc_tracks <- function(finemap_DT){
                       label.text.angle = 0,
                       label.width = unit(5.5, "lines"),
                       # xlim = c(min(start(gr.snp)), max(start(gr.snp))),
-                      heights = c(rep(1,length(INIT_list)), rep(1,length(BW_tracks)) ))
-  TRACKS_list <- append(TRACKS_list, params_list)
-  trks <- suppressWarnings(do.call("tracks", TRACKS_list)) 
-  
+                      heights = c(.3,.3,1)
+                      ) 
+  trks <- suppressWarnings(do.call("tracks", append(TRACKS_list, params_list)))  
   # add lines
-  lead.pos <- subset(finemap_DT,SNP=="rs76904798")$POS
+  lead.pos <- subset(finemap_DT,leadSNP)$POS
   consensus.pos <- subset(finemap_DT, Consensus_SNP==T)$POS
+  
   trks_plus_lines <- trks + 
-    # theme_bw() + 
+    # theme_bw() +
     # ggbio::theme_genome() +  
-    # theme(strip.text.y = element_text(angle = 0), 
-    #       strip.text = element_text(size=9 )) + 
-    geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') +
-    geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=1, size=.3, linetype='solid') 
+    theme(strip.text.y = element_text(angle = 0),
+          strip.text = element_text(size = 9), 
+          panel.background = element_rect(fill = "white", colour = "black", linetype = "solid")) + 
+    geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=1, size=.1, linetype='solid') +
+    geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.1, linetype='solid') + 
+    scale_x_continuous( labels=function(x)x/1000000)
   
-  ggsave(file.path(results_path,"Annotation","Glass.snEpigenomics.png"), 
-         plot = trks_plus_lines, dpi=400, height = 15, width = 8, 
-         bg = "transparent")
-  trks_plus_lines
-  
-  INIT_list[[1]] +
-    geom_vline(xintercept = , color="red", alpha=1, size=.3, linetype='solid')   
-  
-  # Save merged Glass epigenomic data
-  data.table::fwrite(GenomicRanges::as.data.frame(gr.snp[,bw.cols]),
-                     file.path("./echolocatoR/annotations/Glass_lab/LRRK2.Glass.txt"),
-                     sep="\t", nThread = 4)
+  if(show_plot){ print(trks_plus_lines) }
+  if(save_plot){ 
+    ggsave(file.path(results_path,"Annotation",
+                     paste0(basename(results_path),"_Glass.snEpigenomics.png") ), 
+           plot = trks_plus_lines, dpi=400, height = 15, width = 8, 
+           bg = "transparent")
+  } 
+  return(trks_plus_lines)
 }
 
 
@@ -183,12 +191,12 @@ NOTT_2019.get_interactions <- function(annot_sub, top.consensus.pos, marker_key)
 
 
 # ***************************** #
-GGBIO.nott_etal_2019 <- function(finemap_DT=NULL,
+NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
                                  locus="LRRK2",
                                  print_plot=T, 
                                  save_plot=T, 
                                  return_interaction_track=F){
-  # finemap_DT <- quick_finemap()
+  #  quick_finemap()
   library(ggbio)
   marker_key <- list(PU1="Microglia",
                      Olig2="Oligodendrocytes",
@@ -241,7 +249,7 @@ GGBIO.nott_etal_2019 <- function(finemap_DT=NULL,
     theme(legend.key.width=unit(1.5,"line"),
           legend.key.height=unit(1.5,"line"))
   if(return_interaction_track){
-    printer("++ Nott sn-epigenomics:: Returning PLAC-seq track only.")
+    printer("++ Nott sn-epigenomics:: Returning PLAC-seq track.")
     return(NOTT.interact_trk +  
              ggbio::geom_rect(data = annot_sub, 
                               aes(xmin=start, xmax=end, ymin=-0, ymax=Inf),

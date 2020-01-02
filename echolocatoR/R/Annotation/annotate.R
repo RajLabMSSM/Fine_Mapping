@@ -179,13 +179,14 @@ top_finemapped_loci <- function(dataset="./Data/GWAS/Nalls23andMe_2019",
                                       dataset = dataset, 
                                       exclude_methods = NULL)   
   FM_all <- FM_orig 
-  # missing.loci <- unique(subset(FM_all, !is.na(FINEMAP.Probability))$Gene)
-  # FM_all <- subset(FM_all, !(Gene %in% missing.loci))  
-    # dplyr::group_by(FM_all, Gene) %>% 
-    # summarise(n_consensus = sum(Consensus_SNP == T), 
-    #           n_CS = sum(Support)) %>% 
-    #   subset(n_consensus>0) %>% arrange(n_consensus, n_CS)  
+  FM_all[is.na(FM_all)] <- 0   
+  # Remove manually added loci
   FM_all <- subset(FM_all, !(Gene %in%c("ATG14","SP1","LMNB1","ATP6V0A1")) )
+  # Identify which loci had the smallest Union Credile Sets between SUSIE and POLYFUN+SUSIE. 
+  # subset(FM_all, SUSIE.Credible_Set > 0 | POLYFUN_SUSIE.Credible_Set > 0) %>%
+  #   dplyr::group_by(Gene) %>% count(name = "N") %>% arrange(N)
+       
+    
   
   # List all available QTL datasets
   list_Data_dirs() %>% dplyr::filter(grepl("QTL",type)) %>% dplyr::select(Dataset, type)
@@ -302,10 +303,11 @@ top_finemapped_loci <- function(dataset="./Data/GWAS/Nalls23andMe_2019",
   top_loci_sort <- subset(top_loci, GWAS.sig.size>0 & Consensus.size>0) %>% 
     arrange(Consensus.size, GWAS.lead_Consensus.any, desc(QTL.count_avg))
   
+  
   if(save_results){
     topLoci.path <- file.path(dataset,"_genome_wide/top_loci.csv")
     printer("+ Saving top loci ==>",topLoci.path)
-    data.table::fwrite(top_loci, topLoci.path)
+    data.table::fwrite(top_loci_sort, topLoci.path)
   } 
   
   return(top_loci) 
@@ -719,6 +721,11 @@ epigenetics_enrichment <- function(snp_list1,
     } 
   }
 }
+
+
+
+
+
 
  
  

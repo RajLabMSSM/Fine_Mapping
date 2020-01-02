@@ -171,7 +171,7 @@ rbind.file.list <- function(file.list, verbose=T){
 
 quick_finemap <- function(locus="LRRK2"){ 
   gene <<- locus
-  locus <<- locus
+  # locus <<- locus
   results_path <<- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
   finemap_DT <<- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt")) 
   finemap_DT <<- find_consensus_SNPs(finemap_DT)
@@ -822,7 +822,7 @@ finemap_loci <- function(loci, fullSS_path,
   for (i in 1:length(loci)){
     try({ 
       gene <- loci[i]
-      message("^o^",gene,"^o^")
+      message("🦇 🦇 🦇 ",gene," 🦇 🦇 🦇 ")
       lead_SNP <- arg_list_handler(lead_SNPs, i) 
       gene_limits <- arg_list_handler(trim_gene_limits, i) 
       conditioned_snp <- arg_list_handler(conditioned_snps, i)  
