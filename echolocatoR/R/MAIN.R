@@ -187,6 +187,15 @@ quick_finemap <- function(locus="LRRK2"){
   finemap_DT <- sub.out$DT  
   subset_DT <<- finemap_DT
 }
+
+quick_finemap_soft <- function(locus="LRRK2"){
+  gene <<- locus
+  # locus <<- locus
+  results_path <<- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
+  finemap_DT <- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt")) 
+  finemap_DT <- find_consensus_SNPs(finemap_DT)
+  return(finemap_DT)
+}
  
 
 tryFunc <- function(input, func) {

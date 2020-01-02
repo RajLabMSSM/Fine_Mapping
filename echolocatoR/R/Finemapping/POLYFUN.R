@@ -146,26 +146,35 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
                                            results_path="./Data/GWAS/Nalls23andMe_2019/LRRK2",
                                            dataset="Nalls23andMe_2019",
                                            finemap_DT=NULL, 
-                                           locus="LRRK2"){
+                                           locus="LRRK2", 
+                                           force_new_priors=F){
   dataset <- basename(dirname(results_path))
   locus <- basename(results_path)
   PF.output.path <- file.path(results_path, "PolyFun")
-  finemap_DT <- POLYFUN.initialize(finemap_DT=finemap_DT, 
-                                    results_path=results_path, 
-                                    locus=locus)
-  # Prepare input
-  snp.path <- POLYFUN.prepare_snp_input(PF.output.path=PF.output.path, 
-                                        results_path=results_path,
-                                        finemap_DT=finemap_DT)
-  PF.output.file <- file.path(PF.output.path,"snps_with_priors.snpvar.gz")
-  # Retrieve priors
-  cmd <- paste("python3",file.path(polyfun,"extract_snpvar.py"),
-               "--snps",snp.path,
-               "--out",file.path(PF.output.path,"snps_with_priors"))
-  print(cmd)
-  system(cmd) 
+  snp_w_priors.file <- file.path(PF.output.path,"snps_with_priors.snpvar.tsv.gz")
+  
+  if((!file.exists(snp_w_priors.file)) | force_new_priors){
+    finemap_DT <- POLYFUN.initialize(finemap_DT=finemap_DT, 
+                                     results_path=results_path, 
+                                     locus=locus)
+    # [1]. Prepare input
+    snp.path <- POLYFUN.prepare_snp_input(PF.output.path=PF.output.path, 
+                                          results_path=results_path,
+                                          finemap_DT=finemap_DT)
+    
+    # [2.] Retrieve priors 
+    cmd <- paste("python3",file.path(polyfun,"extract_snpvar.py"),
+                 "--snps",snp.path,
+                 "--out",snp_w_priors.file)
+    print(cmd)
+    system(cmd) 
+    
+    printer("++ Remove tmp file.")
+    file.remove(snp.path)
+  } else { print("++ Importing pre-existing priors.")}
   # Import results
-  priors <- data.table::fread(PF.output.file, nThread = 4) 
+  priors <- data.table::fread(snp_w_priors.file, nThread = 4) %>% 
+    dplyr::rename(SNP=SNP_x) %>% dplyr::select(-SNP_y)
   return(priors)
 }
 
@@ -490,8 +499,7 @@ POLYFUN_SUSIE <- function(results_path,
                           sample_size=NA, 
                           server=F,
                           PP_threshold=.95){
-  
-  # polyfun="./echolocatoR/tools/polyfun";  results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide"; dataset="Nalls23andMe_2019"; locus="LRRK2"; finemap_DT=NULL; polyfun_priors="parametric"; sample.size=1474097; min_INFO=0; min_MAF=0; server=T;
+  # polyfun="./echolocatoR/tools/polyfun";  results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide"; dataset="Nalls23andMe_2019"; locus="LRRK2"; finemap_DT=NULL; polyfun_priors="parametric"; sample_size=1474097; min_INFO=0; min_MAF=0; server=T; dataset_type="GWAS"; n_causal=10; PP_threshold=.95
   out.path <- file.path(dirname(results_path),"_genome_wide/PolyFun/output") 
   chrom <- unique(finemap_DT$CHR)
   printer("++ POLYFUN:: Unique chrom =",paste(chrom,collapse=","))
@@ -500,29 +508,25 @@ POLYFUN_SUSIE <- function(results_path,
   # ~~~~~~~~ Approach 1 ~~~~~~~~ 
   if (polyfun_approach=="precomputed"){
     priors <- POLYFUN.get_precomputed_priors(results_path=results_path, 
-                                             finemap_DT=finemap_DT)
-    
+                                             finemap_DT=finemap_DT, 
+                                             force_new_priors = F)
+    # precomputed.priors <- priors
   # ~~~~~~~~ Approach 2 ~~~~~~~~ 
   } else if (polyfun_approach=="parametric"){
     ldsc.files <- list.files(out.path, pattern = "*.snpvar_ridge_constrained.gz", full.names = T) %>% 
       grep(pattern = paste0(".",chrom,"."), value = T, fixed=T)
-    h2 <- rbind.file.list(ldsc.files) 
+    priors <- rbind.file.list(ldsc.files) 
     # ~~~~~~~~ Approach 3 ~~~~~~~~ 
   } else if (polyfun_approach=="non-parametric"){
     ldsc.files <- list.files(out.path, pattern = "*.snpvar_constrained.gz", full.names = T) %>%  base::grep(pattern = paste0(".",chrom,"."), value = T, fixed = T)
-    h2 <- rbind.file.list(ldsc.files) 
+    priors <- rbind.file.list(ldsc.files) 
   } 
+   
   # Prepare data  
   merged_DT <- data.table:::merge.data.table(finemap_DT, 
-                                            dplyr::select(h2, SNP, POLYFUN.h2=SNPVAR) %>% 
-                                              data.table::data.table(), 
-                                            by="SNP")
-  # if(is.null(LD_matrix)){
-  #   # LD_matrix <- readRDS(file.path(results_path,"plink/LD_matrix.RData"))
-  #   LD_matrix <- LD.UKBiobank(finemap_DT = merged_DT,
-  #                             results_path = results_path,
-  #                             force_new_LD=F)
-  # } 
+                                              dplyr::select(priors, SNP, POLYFUN.h2=SNPVAR) %>% 
+                                                data.table::data.table(), 
+                                              by="SNP") 
   sub.out <- subset_common_snps(LD_matrix = LD_matrix, 
                                 finemap_DT = merged_DT)
   LD_matrix <- sub.out$LD
@@ -531,13 +535,30 @@ POLYFUN_SUSIE <- function(results_path,
   subset_DT <- SUSIE(subset_DT=new_DT, 
                      LD_matrix=LD_matrix, 
                      dataset_type=dataset_type,
-                     n_causal=n_causal,
+                     n_causal=5,
                      sample_size=sample_size, 
                      var_y="estimate",
                      prior_weights=new_DT$POLYFUN.h2, 
                      PP_threshold=PP_threshold)
-  # subset_DT <- subset_DT %>% dplyr::rename(POLYFUN_SUSIE.PP=Probability, 
-  #                                          PolyFun_SUSIE.Credible_Set=Credible_Set) %>%  data.table::data.table()
+  # subset_DT.precomputed <- subset_DT
+  # subset_DT.computed <- subset_DT
+  # Check for differences between pre-computed and re-computed heritabilities 
+  # library(patchwork)
+  # ## GWAS
+  # ggplot() + 
+  #   geom_point(data=subset_DT, aes(x=POS, y=-log10(P), fill="PD GWAS", color=-log10(P))) +  
+  #   #3 Priors
+  #   ggplot() +
+  #   geom_point(data=precomputed.priors, aes(x=BP, y=SNPVAR, color="Pre-computed")) +
+  #   geom_point(data=subset(priors, BP>=min(precomputed.priors$BP) & BP<=max(precomputed.priors$BP)),
+  #              aes(x=BP, y=SNPVAR, color="Computed")) + 
+  #   ## fine-mapping with computed priors
+  #   ggplot() + 
+  #   geom_point(data=subset_DT.computed, aes(x=POS, y=PP, color="POLYFUN+SUSIE \n Computed Priors")) + 
+  #   patchwork::plot_layout(ncol = 1) + 
+  #   ## fine-mapping with pre-computed priors
+  #   ggplot() + 
+  #   geom_point(data=subset_DT.precomputed, aes(x=POS, y=PP, fill="POLYFUN+SUSIE \n Pre-computed Priors"), color="turquoise") 
   return(subset_DT)
 }
 
