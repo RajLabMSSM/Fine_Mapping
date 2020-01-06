@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/echolocatoR/tools/IMPACT" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/echolocatoR/tools/PAINTOR_V3.0" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/echolocatoR/tools/goshifter" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/echolocatoR/tools/polyfun" vcs="Git" />
+  </component>
+</project>
