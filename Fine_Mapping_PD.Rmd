@@ -40,8 +40,7 @@ source("echolocatoR/R/MAIN.R")
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS:
 # Data_dirs <- read.csv("./Data/directories_table.csv")
 finemap_results <- list()
-coloc_results <- list()
-# quickstart()
+coloc_results <- list() 
 ```
 
   
@@ -82,16 +81,16 @@ loci <- unique(top_SNPs$Gene)
 # loci <- c("HLA-DRB5","LOC100131289","TRIM40")
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci = "CHRNB1",#unique(c("LRRK2", loci)),
+                                               loci = "LRRK2",#unique(c("LRRK2", loci)),
                                                trim_gene_limits = F,#c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
                                                query_by ="coordinates",
                                                subset_path = "auto", 
                                                finemap_methods= c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),  
-                                               force_new_LD = F,    
+                                               force_new_LD = T,    
                                                force_new_subset = F,
-                                               force_new_finemap = F, 
+                                               force_new_finemap = T, 
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 

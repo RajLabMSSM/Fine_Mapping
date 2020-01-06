@@ -53,26 +53,14 @@ library(patchwork) #devtools::install_github("thomasp85/patchwork")
 # library(cowplot)
 library(ggrepel)
 library(curl) 
-library(gaston)
+# library(gaston)
 library(tidyr)
 # library(BiocManager)
 library(biomaRt) # BiocManager::install("biomaRt") 
 # library(refGenome)
 library(crayon) 
 
-# https://bioconductor.org/packages/release/bioc/vignettes/genbankr/inst/doc/genbankr.html
-library(genbankr) #BiocManager::install("genbankr")
-
-# install_fGWAS <- function(){
-#   devtools::install_github("wzhy2000/fGWAS/pkg")
-#   system("git clone https://github.com/wzhy2000/fGWAS.git & cd fGWAS & R CMD INSTALL pkg")
-# }
-# library(fGWAS) 
-# library(snpStats) #BiocManager::install("snpStats") 
 # library(coloc)
-
-
-# library(bigsnpr) # BiocManager::install("bigsnpr")
 # install.packages("haploR", dependencies = TRUE)
 # library(haploR)
 # library(GeneOverlap) #BiocManager::install("GeneOverlap")
@@ -80,7 +68,17 @@ library(genbankr) #BiocManager::install("genbankr")
 # BiocManager::install(c("supraHex","graph","Rgraphviz","dnet")) 
 # library(XGR)# install.packages("XGR")
 
+ 
 
+# library(Rsamtools) # BiocManager::install("Rsamtools")
+
+# install_fGWAS <- function(){
+#   devtools::install_github("wzhy2000/fGWAS/pkg")
+#   system("git clone https://github.com/wzhy2000/fGWAS.git & cd fGWAS & R CMD INSTALL pkg")
+# }
+# library(fGWAS) 
+# library(snpStats) #BiocManager::install("snpStats")  
+# library(bigsnpr) # BiocManager::install("bigsnpr")
 
 # *** SUSIE ****
 # library(knitrBootstrap) #install_github('jimhester/knitrBootstrap')
@@ -659,7 +657,6 @@ finemap_pipeline <- function(gene,
   sub.out <- subset_common_snps(LD_matrix, subset_DT)
   LD_matrix <- sub.out$LD
   subset_DT <- sub.out$DT  
-   
   # Plot LD 
   if(plot_LD){
     try({ 

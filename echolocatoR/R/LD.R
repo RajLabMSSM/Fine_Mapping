@@ -37,36 +37,31 @@ LD.load_or_create <- function(results_path,
                               results_path = results_path, 
                               force_new_LD = force_new_LD,
                               server = server)
-  } else {
-    LD_path <- file.path(results_path,"plink/LD_matrix.RData")
-    # load(file.path(results_path, "plink/LD_matrix.RData"))
-    # saveRDS(LD_matrix, LD_path)
+  } else if (LD_reference == "1KG_Phase1" | LD_reference == "1KG_Phase3") { 
+    LD_path <- file.path(results_path,"plink",paste0(LD_reference,"_LD.RDS")) 
     if(!file.exists(LD_path) | force_new_LD==T){
       printer("+ Computing LD matrix...", verbose) 
-      LD_matrix <- compute_LD_matrix(results_path = results_path, 
-                                     subset_DT = subset_DT, 
-                                     gene = gene,
-                                     reference = LD_reference,
-                                     superpopulation = superpopulation, 
-                                     download_reference = download_reference,
-                                     
-                                     min_r2 = min_r2,
-                                     LD_block = LD_block,
-                                     block_size = block_size,
-                                     min_Dprime = min_Dprime,
-                                     remove_correlates = remove_correlates,
-                                     fillNA = fillNA) 
-      # Save LD matrix 
-      # data.table::fwrite(LD_matrix, LD_path, sep="\t") 
+      LD_matrix <- LD.1KG(results_path = results_path, 
+                           subset_DT = subset_DT, 
+                           gene = gene,
+                           reference = LD_reference,
+                           superpopulation = superpopulation, 
+                           download_reference = download_reference,
+                           
+                           min_r2 = min_r2,
+                           LD_block = LD_block,
+                           block_size = block_size,
+                           min_Dprime = min_Dprime,
+                           remove_correlates = remove_correlates,
+                           fillNA = fillNA) 
+      # Save LD matrix  
       printer("+ Saving LD matrix to:",LD_path, v=verbose) 
-      saveRDS(LD_matrix, file = LD_path) 
-      # write.table(LD_matrix, LD_path, sep="\t", quote = F) 
+      saveRDS(LD_matrix, file = LD_path)  
     } else { 
-      printer("+ Previously computed LD matrix detected. Importing...",LD_path, v=verbose) 
-      # LD_matrix <- data.table::fread(LD_path, sep="\t", stringsAsFactors = F)  
+      printer("+ Previously computed LD matrix detected. Importing...", LD_path, v=verbose)  
       LD_matrix <- readRDS(LD_path)
     } 
-  } 
+  }  
   return(LD_matrix)
 }
  
@@ -112,32 +107,20 @@ LD_plot <- function(LD_matrix, subset_DT, span=10){
 } 
 
  
-ThousandGenomes_LD <- function(subset_DT, 
-                         reference="1KG_Phase1", 
-                         vcf_folder="./Data/Reference/1000_Genomes", 
-                         results_path,
-                         gene, 
-                         download_reference=T, 
-                         whole_vcf=F){ 
+LD.1KG_download_vcf <- function(subset_DT, 
+                                 reference="1KG_Phase1", 
+                                 vcf_folder="./Data/Reference/1000_Genomes", 
+                                 results_path,
+                                 gene, 
+                                 download_reference=T, 
+                                 whole_vcf=F){ 
   ## http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
   # Download portion of vcf from 1KG website 
   
-  subset_DT$CHR <- gsub("chr","",subset_DT$CHR)
-  if(whole_vcf){
-    region <= ""
-    gene=""
-  } else {
-    # Method 1: get all within a range
-    # region <- paste(unique(subset_DT$CHR),":",
-    #                 min(subset_DT$POS),"-",
-    #                 max(subset_DT$POS), sep="")
-    # Method 2: specify exact positions
-    regions.txt <- file.path(results_path,"plink","regions.txt")
-    data.table::fwrite(list(paste0(subset_DT$CHR,":", subset_DT$POS,"-",subset_DT$POS)), 
-                            file=regions.txt)
-    region <- paste("-R",regions.txt) 
-  } 
+  # Don't use the chr prefix: https://www.internationalgenome.org/faq/how-do-i-get-sub-section-vcf-file/
+  subset_DT$CHR <- gsub("chr","",subset_DT$CHR) 
   chrom <- unique(subset_DT$CHR) 
+  
   # PHASE 3 DATA
   if(reference=="1KG_Phase3"){
     printer("LD Reference Panel = 1KG_Phase3")
@@ -173,11 +156,27 @@ ThousandGenomes_LD <- function(subset_DT,
                           ifelse(whole_vcf, paste(reference, paste0("chr",chrom),"vcf", sep="."),
                                                  paste(gene,"subset.vcf",sep="_"))) 
   # Create directory if it doesn't exist
-  dir.create(path = dirname(subset_vcf), recursive =  T, showWarnings = F)
-  
+  dir.create(path = dirname(subset_vcf), recursive = T, showWarnings = F) 
   # Download and subset vcf if the subset doesn't exist already
-  if(!file.exists(subset_vcf)){
-    tabix_cmd <- paste("tabix -fh",vcf_URL, region, ">", gsub("\\./","",subset_vcf) )
+  if(!file.exists(subset_vcf)){  
+    if(whole_vcf){
+      region <= ""
+      gene=""
+    } else { 
+      # Specify exact positions
+      regions.bed <- file.path(results_path,"plink","regions.tsv")
+      data.table::fwrite(list(paste0(subset_DT$CHR), sort(subset_DT$POS)),
+                         file=regions.bed, sep="\t")
+      # data.table::fwrite(list(paste0(subset_DT$CHR,":", subset_DT$POS,"-",subset_DT$POS)),
+      #                    file=regions.bed, sep="\t")
+      region <- paste("-R",regions.bed) 
+    } 
+    # Download tabix subset
+    tabix_cmd <- paste("tabix -fh",vcf_URL, 
+                       # Specifying the SNP subset drastically reduces compute time
+                       gsub("\\./","",region),
+                       ">", 
+                       gsub("\\./","",subset_vcf) )
     printer(tabix_cmd)
     # system("ml tabix")
     system(tabix_cmd)
@@ -189,7 +188,18 @@ ThousandGenomes_LD <- function(subset_DT,
 }
  
 
- LD.find_ld_prefix <- function(chrom, min_pos){
+RSAMTOOLS.download_filter_vcf <- function(){
+  gr <- GenomicRanges::makeGRangesFromDataFrame(df = subset_DT[,c("CHR","POS")],
+                                                seqnames.field = "CHR",
+                                                start.field = "POS",
+                                                end.field = "POS")
+  # Rsamtools::scanTabix(file = vcf_URL, param = gr)
+  library(Rsamtools)
+  tbx <- Rsamtools::TabixFile(file = vcf_URL,  index = paste0(vcf_URL,".tbi"))
+  countTabix(tbx, param=gr)
+}
+
+LD.UKB_find_ld_prefix <- function(chrom, min_pos){
     bp_starts <- seq(1,252000001, by = 1000000)
     bp_ends <- bp_starts+3000000
     i <- max(which(bp_starts<=min_pos)) 
@@ -207,7 +217,7 @@ LD.UKBiobank <- function(finemap_DT,
   URL <- alkes_url 
   chrom <- unique(finemap_DT$CHR)
   min_pos <- min(finemap_DT$POS) 
-  file.name <- LD.find_ld_prefix(chrom=chrom, min_pos=min_pos)
+  file.name <- LD.UKB_find_ld_prefix(chrom=chrom, min_pos=min_pos)
   printer("+ UKB LD file name:",file.name)
    
   gz.path <- file.path(alkes_url, paste0(file.name,".gz")) 
@@ -303,16 +313,23 @@ LD.UKBiobank_multi_download <- function(out.path = "/sc/orga/projects/pd-omics/t
   return(LD.file.list)
 }
  
+
+
+
 BCFTOOLS.filter_vcf <- function(subset_vcf, 
                                 popDat, 
                                 superpopulation, 
                                 remove_tmp=F){
+  # vcf.bgz <- Rsamtools::bgzip(subset_vcf, overwrite = T)
+  # Rsamtools::indexTabix(file = vcf.bgz, seq = 12, begin=subset_DT$POS[1]) 
+  # tbx <- Rsamtools::TabixFile(file = subset_vcf)
+  
   vcf.gz <- paste0(subset_vcf,".gz")
   vcf.gz.subset <- gsub("_subset","_samples_subset",vcf.gz)
   # Compress vcf
   if(!file.exists(vcf.gz)){
     printer("LD:BCFTOOLS:: Compressing vcf file...")
-    system(paste("bgzip",subset_vcf))
+    system(paste("bgzip -f",subset_vcf))
   }
   # Re-index vcf
   printer("LD:TABIX:: Re-indexing vcf.gz...")
@@ -399,11 +416,11 @@ PLINK.read_ld_table <- function(ld.path, snp.subset=F){
 
 
 
-filter_vcf <- function(subset_vcf,
-                       subset_DT, 
-                       results_path, 
-                       superpopulation,
-                       popDat){
+GASTON.filter_vcf <- function(subset_vcf,
+                               subset_DT, 
+                               results_path, 
+                               superpopulation,
+                               popDat){
   # Import w/ gaston and further subset
   printer("+ Importing VCF as bed file...")
   bed.file <- gaston::read.vcf(subset_vcf, verbose = F) 
@@ -421,29 +438,29 @@ filter_vcf <- function(subset_vcf,
   return(bed)
 }
  
-compute_LD_matrix <- function(results_path, 
-                              subset_DT, 
-                              gene,
-                              reference="1KG_Phase1", 
-                              superpopulation="EUR",
-                              vcf_folder="./Data/Reference/1000_Genomes",
-                              download_reference=T,
-                              min_r2=F, 
-                              LD_block=F, 
-                              block_size=.7, 
-                              min_Dprime=F,
-                              remove_correlates=F,
-                              remove_tmps=T,
-                              fillNA=0){   
-  # Quickstart
+LD.1KG <- function(results_path, 
+                    subset_DT, 
+                    gene,
+                    reference="1KG_Phase1", 
+                    superpopulation="EUR",
+                    vcf_folder="./Data/Reference/1000_Genomes",
+                    download_reference=T,
+                    min_r2=F, 
+                    LD_block=F, 
+                    block_size=.7, 
+                    min_Dprime=F,
+                    remove_correlates=F,
+                    remove_tmps=T,
+                    fillNA=0){   
+          # Quickstart
   # gene <- "LRRK2"; results_path <- file.path("./Data/GWAS/Nalls23andMe_2019",gene); reference="1KG_Phase1"; vcf_folder="./Data/Reference/1000_Genomes"; superpopulation="EUR"; vcf_folder="./Data/Reference/1000_Genomes"; min_r2=F; LD_block=F; block_size=.7; min_Dprime=F;  remove_correlates=F; download_reference=T; subset_DT <- data.table::fread(file.path(results_path,"Multi-finemap/Multi-finemap_results.txt"))
     printer("LD:: Using 1000Genomes LD reference panel...")
-    vcf_info <- ThousandGenomes_LD(subset_DT=subset_DT, 
-                                   results_path,
-                                   reference=reference, 
-                                   vcf_folder=vcf_folder, 
-                                   gene=gene, 
-                                   download_reference=download_reference)
+    vcf_info <- LD.1KG_download_vcf(subset_DT=subset_DT, 
+                                     results_path,
+                                     reference=reference, 
+                                     vcf_folder=vcf_folder, 
+                                     gene=gene, 
+                                     download_reference=download_reference)
     subset_vcf <- vcf_info$subset_vcf
     popDat <- vcf_info$popDat
     vcf.gz.path <- BCFTOOLS.filter_vcf(subset_vcf = subset_vcf,
@@ -451,10 +468,7 @@ compute_LD_matrix <- function(results_path,
                                        superpopulation = superpopulation,
                                        remove_tmp = F)
     PLINK.vcf_to_bed(vcf.gz.subset = vcf.gz.path, 
-                     results_path = results_path)
-    
-    
-    
+                     results_path = results_path) 
     # Calculate pairwise LD for all SNP combinations
     #### "Caution that the LD matrix has to be correlation matrix" -SuSiER documentation
     ### https://stephenslab.github.io/susieR/articles/finemapping_summary_statistics.html  
@@ -475,6 +489,7 @@ compute_LD_matrix <- function(results_path,
     if(LD_block){
       block_snps <- leadSNP_block(leadSNP, "./plink_tmp", block_size)
       LD_matrix <- LD_matrix[row.names(LD_matrix) %in% block_snps, colnames(LD_matrix) %in% block_snps]
+      LD_matrix <- LD_matrix[block_snps, block_snps]
     } 
     # IMPORTANT! Remove large data.ld file after you're done with it
     if(remove_tmps){ 
