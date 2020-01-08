@@ -99,7 +99,8 @@ library(crayon)
 # General
 source("./echolocatoR/R/directory.R")
 source("./echolocatoR/R/query.R")
-source("./echolocatoR/R/LD.R")
+# LD
+source("./echolocatoR/R/LD/LD.R")
 # Fine-mapping
 source("./echolocatoR/R/Finemapping/multi_finemap.R")
 source("./echolocatoR/R/Finemapping/SUSIE.R")
@@ -892,8 +893,9 @@ finemap_loci <- function(loci, fullSS_path,
       fineMapped_allResults <- rbind(fineMapped_allResults, newEntry, fill=T) 
       end_gene <- Sys.time()
       printer(gene,"fine-mapped in", round(end_gene-start_gene, 2),"seconds", v=verbose)
+      cat('  \n') 
     }) 
-    cat('  \n') 
+   
   }  
   return(fineMapped_allResults)
 }

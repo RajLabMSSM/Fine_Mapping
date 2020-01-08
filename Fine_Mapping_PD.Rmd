@@ -114,7 +114,8 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  server=F)
 ```
 
-# Summarize Fine-mapping Results
+
+
 
 ## Gather Annotations
 

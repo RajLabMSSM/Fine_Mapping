@@ -320,9 +320,9 @@ GGBIO.plot <- function(finemap_DT,
                           # Have to limit (can only handle depth < 1000)
                           which = gr.snp_CHR[(lead.index-lw):(lead.index+lw),], 
                           names.expr = "gene_name",
-                          facets=seqnames~., 
-                          aes(fill=seqnames), 
-                          color="turquoise")  +  
+                          # facets=seqnames~., 
+                          # color="turquoise",
+                          aes(fill=gene_name, color=gene_name))  +  
     theme_bw() + 
     theme(strip.text.y = element_text(angle = 0), 
           strip.text = element_text(size=9 ))
