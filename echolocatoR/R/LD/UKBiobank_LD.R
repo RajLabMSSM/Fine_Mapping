@@ -9,6 +9,8 @@ LD.UKB_find_ld_prefix <- function(chrom, min_pos){
   return(file.name)
 }
 
+ 
+
 
 LD.UKBiobank <- function(finemap_DT, 
                          results_path,
@@ -83,40 +85,58 @@ LD.UKBiobank <- function(finemap_DT,
 }
 
 
+LD.list_all_LDfiles <- function(alkes_ld_excel="./echolocatoR/tools/polyfun/Alkes_UKB_LD.xlsx"){
+  alkes_url="https://data.broadinstitute.org/alkesgroup/UKBB_LD"
+  xl <- readxl::read_excel(alkes_ld_excel)
+  npz.paths <- file.path(alkes_url, grep(".npz$",xl$Name, value = T)) 
+  return(npz.paths)
+}
+
 LD.download_UKB_LD <- function(LD.file.list, 
                                out.path="/sc/orga/projects/pd-omics/tools/polyfun/UKBB_LD/",
                                alkes_url="https://data.broadinstitute.org/alkesgroup/UKBB_LD",
-                               background=T){
+                               background=T,
+                               method="wget"){
   flags <- ifelse(background,"-bqc","qc")
   for(f in LD.file.list){ 
     gz.path <- file.path(alkes_url,paste0(f,".gz"))
     npz.path <- file.path(alkes_url,paste0(f,".npz"))
     # https://stackoverflow.com/questions/21365251/how-to-run-wget-in-background-for-an-unattended-download-of-files
-    ## -bqc makes wget run in the background quietly
-    system(paste("wget",gz.path,"-np",flags,"-P",out.path))
-    cmd <- paste("wget",npz.path,"-np",flags,"-P",out.path)
-    print(cmd)
-    system(cmd)
+    if(method=="wget"){
+      ## -bqc makes wget run in the background quietly
+      # gz file
+      system(paste("wget",gz.path,"-np",flags,"-P",out.path))
+      # npz file
+      cmd <- paste("wget",npz.path,"-np",flags,"-P",out.path) 
+      print(cmd)
+      system(cmd)
+    } else if (method=="aria2") {
+      printer("++ Enabling parallelized download with aria2")
+      system(paste("aria2c -d",out.path,gz.path))
+      cmd <- paste("aria2c -d",out.path,gz.path)
+      print(cmd)
+      system(cmd)
+    } 
   }
 }
 
-LD.UKBiobank_multi_download <- function(out.path = "/sc/orga/projects/pd-omics/tools/polyfun/UKBB_LD/"){
-  # Download all UKBB LD files
-  # wget -r -np -A '*.gz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
-  # wget -r -np -A '*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
-  
-  # Figure out the names of LD files you'll need
-  merged_DT <- merge_finemapping_results(minimum_support = 0)
-  locus_coords <- merged_DT %>% dplyr::group_by(Gene) %>% 
-    dplyr::summarise(chrom=unique(CHR), min_pos=min(POS), max_pos=max(POS))
-  LD.file.list <- lapply(1:nrow(locus_coords), function(i){
-    return(LD.find_ld_prefix(chrom = locus_coords$chrom[i], min_pos=locus_coords$min_pos[i]))
-  }) %>% unlist()
-  
-  LD.download_UKB_LD(LD.file.list = LD.file.list,
-                     out.path = out.path)
-  return(LD.file.list)
-}
+# LD.UKBiobank_multi_download <- function(out.path = "/sc/orga/projects/pd-omics/tools/polyfun/UKBB_LD/"){
+#   # Download all UKBB LD files
+#   # wget -r -np -A '*.gz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
+#   # wget -r -np -A '*.npz' https://data.broadinstitute.org/alkesgroup/UKBB_LD/
+#   
+#   # Figure out the names of LD files you'll need
+#   merged_DT <- merge_finemapping_results(minimum_support = 0)
+#   locus_coords <- merged_DT %>% dplyr::group_by(Gene) %>% 
+#     dplyr::summarise(chrom=unique(CHR), min_pos=min(POS), max_pos=max(POS))
+#   LD.file.list <- lapply(1:nrow(locus_coords), function(i){
+#     return(LD.find_ld_prefix(chrom = locus_coords$chrom[i], min_pos=locus_coords$min_pos[i]))
+#   }) %>% unlist()
+#   
+#   LD.download_UKB_LD(LD.file.list = LD.file.list,
+#                      out.path = out.path)
+#   return(LD.file.list)
+# }
 
 
 

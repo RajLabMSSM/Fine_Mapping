@@ -267,7 +267,8 @@ GGBIO.plot <- function(finemap_DT,
                        PP_threshold=.95,
                        Nott_sn_epigenome=F, 
                        save_plot=T, 
-                       show_plot=T){
+                       show_plot=T,
+                       dpi=200){
   # http://bioconductor.org/packages/release/bioc/vignettes/ggbio/inst/doc/ggbio.pdf
   library(ggbio)
   require(GenomicRanges)
@@ -499,7 +500,7 @@ GGBIO.plot <- function(finemap_DT,
     ggsave(filename = plot.path, 
            plot = trks_plus_lines,
            height = 14+length(XGR_libnames)+n_roadmap+n_Nott, 
-           width = 10, dpi = 400, bg = "transparent")
+           width = 10, dpi = dpi, bg = "transparent")
   } 
   return(trks_plus_lines)
 } 

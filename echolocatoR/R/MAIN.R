@@ -101,6 +101,7 @@ source("./echolocatoR/R/directory.R")
 source("./echolocatoR/R/query.R")
 # LD
 source("./echolocatoR/R/LD/LD.R")
+source("./echolocatoR/R/LD/UKBiobank_LD.R")
 # Fine-mapping
 source("./echolocatoR/R/Finemapping/multi_finemap.R")
 source("./echolocatoR/R/Finemapping/SUSIE.R")
