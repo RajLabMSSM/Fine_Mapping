@@ -304,11 +304,6 @@ top_finemapped_loci <- function(dataset="./Data/GWAS/Nalls23andMe_2019",
   #   subset(QTL.count_avg>0) %>%
   #   ## [3] Just one consensus SNP and small Credible Set
   #   arrange(Consensus.size, CredSet.size, desc(QTL.count))  
-   
-  # Add link to plot
-  baseURL <- "https://github.com/RajLabMSSM/Fine_Mapping/blob/master/Data/GWAS/Nalls23andMe_2019"
-  top_loci_sort <- cbind(file.path(,top_loci_sort$SNP), )
-  
   
   if(save_results){
     topLoci.path <- file.path(dataset,"_genome_wide/top_loci.csv")
