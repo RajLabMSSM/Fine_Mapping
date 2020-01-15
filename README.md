@@ -23,8 +23,7 @@ git submodule update
 
 ### Parkinson's Disease  
 
-#### [Genetic Fine-mapping 8 loci](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_8.PD.loci.html)
-- Old version of fine-mapping on just 8 PD loci.  
+#### [Fine-mapping 78 + PolyFun & UKBiobank LD](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD_results.html) 
 #### [Genetic Fine-mapping 78 Loci](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD.html) 
 - Most recent version of fine-mapping, on all 78 loci. Note that currently the plots are shifted over a tab or two from their respective loci (working on fixing this).  
 #### [Functional Fine-mapping of LRRK2 Locus](https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping.Functional.html) 
