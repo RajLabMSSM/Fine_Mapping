@@ -183,8 +183,8 @@ quick_finemap <- function(locus="LRRK2"){
     file.path(results_path,"plink","LD_matrix.RData")
   } 
   sub.out <- subset_common_snps(LD_matrix, finemap_DT)
-  LD_matrix <- sub.out$LD
-  finemap_DT <- sub.out$DT  
+  LD_matrix <<- sub.out$LD
+  finemap_DT <<- sub.out$DT  
   subset_DT <<- finemap_DT
 }
 
@@ -444,24 +444,40 @@ dt.replace <- function(DT, target, replacement){
 }
 
 
-subset_common_snps <- function(LD_matrix, finemap_DT){
-  ld.snps <- unique(row.names(LD_matrix))
-  fm.snps <- unique(finemap_DT$SNP)
+subset_common_snps <- function(LD_matrix, finemap_DT, verbose=F){
+  printer("+ Subsetting LD matrix and finemap_DT to common SNPs...", v=verbose)
+  # Remove duplicate SNPs 
+  dups <- which(!duplicated(LD_matrix))
+  LD_matrix <- LD_matrix[dups,dups]
+  ld.snps <- row.names(LD_matrix)
+  
+  # Remove duplicate SNPs
+  finemap_DT <- finemap_DT[which(!duplicated(finemap_DT$SNP)),]
+  fm.snps <- finemap_DT$SNP
   common.snps <- base::intersect(ld.snps, fm.snps)
-  printer("+ LD_matrix =",length(ld.snps),"SNPs.")
-  printer("+ finemap_DT =",length(fm.snps),"SNPs.")
-  printer("+",length(common.snps),"SNPs in common.")
+  printer("+ LD_matrix =",length(ld.snps),"SNPs.", v=verbose)
+  printer("+ finemap_DT =",length(fm.snps),"SNPs.", v=verbose)
+  printer("+",length(common.snps),"SNPs in common.", v=verbose)
+  # Subset/order LD matrix 
   new_LD <- LD_matrix[common.snps, common.snps] 
   new_LD[is.na(new_LD)] <- 0
-  new_DT <- data.table::as.data.table(subset(finemap_DT, SNP %in% row.names(new_LD)))
-  # if(nrow(new_DT)!=nrow(new_LD)){stop("nrow new_DT != nrow new_LD")}
-  new_DT <- unique(new_DT)
+  # Subset/order finemap_DT
+  finemap_DT <- data.frame(finemap_DT)
+  row.names(finemap_DT) <- finemap_DT$SNP
+  new_DT <- data.table::as.data.table(finemap_DT[common.snps, ]) 
+  new_DT <- unique(new_DT) 
   # Reassign the lead SNP if it's missing
   if(sum(new_DT$leadSNP)==0){
-    printer("+ leadSNP missing. Assigning new one by min p-value.")
+    printer("+ leadSNP missing. Assigning new one by min p-value.", v=verbose)
     top.snp <- head(arrange(new_DT, P, desc(Effect)))[1,]$SNP
     new_DT$leadSNP <- ifelse(new_DT$SNP==top.snp,T,F) 
   }
+  # Check dimensions are correct
+  if(nrow(new_DT)!=nrow(new_LD)){
+    warning("+ LD_matrix and finemap_DT do NOT have the same number of SNPs.",v=verbose)
+    warning("+ LD_matrix SNPs = ",nrow(new_LD),"; finemap_DT = ",nrow(finemap_DT), v=verbose)
+  }
+  printer("++ Subsetting complete.",v=verbose)
   return(list(LD=new_LD,
               DT=new_DT))
 }
@@ -616,28 +632,7 @@ finemap_pipeline <- function(gene,
                       file_sep = file_sep, 
                       query_by = query_by,
                       probe_path = probe_path,
-                      remove_tmps = remove_tmps) 
-
-   #### ***** SNP Filters ***** ###
-   # Remove pre-specified SNPs
-   if(remove_variants!=F){
-     printer("Removing specified variants:",paste(remove_variants, collapse=','), v=verbose)
-     try({subset_DT <- subset(subset_DT, !(SNP %in% remove_variants) )}) 
-   } 
-   # Trim subset according to annotations of where the gene's limit are
-   if(trim_gene_limits){
-     subset_DT <- gene_trimmer(subset_DT=subset_DT, 
-                                gene=gene, 
-                                min_POS=min_POS,
-                                max_POS=min_POS) 
-   }
-   if(!is.null(max_snps)){
-     subset_DT <- limit_SNPs(max_snps = max_snps, subset_DT = subset_DT) 
-   }
-   if(!is.null(min_MAF) & min_MAF>0){
-     printer("echolocatoR:: Removing SNPs w/ MAF <",min_MAF)
-     subset_DT <- subset(subset_DT, MAF>=min_MAF)  
-   }
+                      remove_tmps = remove_tmps)
    
   ### Compute LD matrix 
   message("--- Step 2: Calculate Linkage Disequilibrium ---")
@@ -655,6 +650,30 @@ finemap_pipeline <- function(gene,
                                  remove_correlates=remove_correlates,
                                  verbose=verbose, 
                                  server=server)
+  
+  #### ***** SNP Filters ***** ###
+  # Remove pre-specified SNPs
+  ## Do this step AFTER saving the LD to disk so that it's easier to re-subset in different ways later without having to redownload LD.
+  if(remove_variants!=F){
+    printer("Removing specified variants:",paste(remove_variants, collapse=','), v=verbose)
+    try({subset_DT <- subset(subset_DT, !(SNP %in% remove_variants) )}) 
+  } 
+  # Trim subset according to annotations of where the gene's limit are
+  if(trim_gene_limits){
+    subset_DT <- gene_trimmer(subset_DT=subset_DT, 
+                              gene=gene, 
+                              min_POS=min_POS,
+                              max_POS=min_POS) 
+  }
+  if(!is.null(max_snps)){
+    subset_DT <- limit_SNPs(max_snps = max_snps, subset_DT = subset_DT) 
+  }
+  if(!is.null(min_MAF) & min_MAF>0){
+    printer("echolocatoR:: Removing SNPs w/ MAF <",min_MAF)
+    subset_DT <- subset(subset_DT, MAF>=min_MAF)  
+  }
+  
+  
   # Subset LD and df to only overlapping SNPs 
   sub.out <- subset_common_snps(LD_matrix, subset_DT)
   LD_matrix <- sub.out$LD

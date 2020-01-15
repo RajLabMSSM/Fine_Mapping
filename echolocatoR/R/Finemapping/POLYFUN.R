@@ -502,7 +502,7 @@ POLYFUN_SUSIE <- function(results_path,
   # polyfun="./echolocatoR/tools/polyfun";  results_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide"; dataset="Nalls23andMe_2019"; locus="LRRK2"; finemap_DT=NULL; polyfun_priors="parametric"; sample_size=1474097; min_INFO=0; min_MAF=0; server=T; dataset_type="GWAS"; n_causal=10; PP_threshold=.95
   out.path <- file.path(dirname(results_path),"_genome_wide/PolyFun/output") 
   chrom <- unique(finemap_DT$CHR)
-  printer("++ POLYFUN:: Unique chrom =",paste(chrom,collapse=","))
+  # printer("++ POLYFUN:: Unique chrom =",paste(chrom,collapse=","))
  
   # Import priors
   # ~~~~~~~~ Approach 1 ~~~~~~~~ 

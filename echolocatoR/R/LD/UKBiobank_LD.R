@@ -85,10 +85,11 @@ LD.UKBiobank <- function(finemap_DT,
 }
 
 
-LD.list_all_LDfiles <- function(alkes_ld_excel="./echolocatoR/tools/polyfun/Alkes_UKB_LD.xlsx"){
+LD.list_all_LDfiles <- function(alkes_ld_excel="./echolocatoR/tools/Alkes_UKB_LD.xlsx"){
   alkes_url="https://data.broadinstitute.org/alkesgroup/UKBB_LD"
   xl <- readxl::read_excel(alkes_ld_excel)
   npz.paths <- file.path(alkes_url, grep(".npz$",xl$Name, value = T)) 
+  paste(paste0("'",npz.paths,"'"), collapse=" ")
   return(npz.paths)
 }
 
@@ -112,8 +113,8 @@ LD.download_UKB_LD <- function(LD.file.list,
       system(cmd)
     } else if (method=="aria2") {
       printer("++ Enabling parallelized download with aria2")
-      system(paste("aria2c -d",out.path,gz.path))
-      cmd <- paste("aria2c -d",out.path,gz.path)
+      system(paste("aria2c -d",out.path, gz.path))
+      cmd <- paste("aria2c -d",out.path, gz.path)
       print(cmd)
       system(cmd)
     } 
