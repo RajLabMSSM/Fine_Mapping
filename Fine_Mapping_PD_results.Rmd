@@ -22,7 +22,7 @@ output:
     theme: cerulean
     highlight: zenburn
     code_folding: show
-    toc: true
+    toc: false
     toc_float: true
     smooth_scroll: true
     number_sections: false
@@ -64,11 +64,14 @@ plot.paths <- file.path("./Data/GWAS/Nalls23andMe_2019",
   # top_loci_sort <- cbind(links, top_loci_sort)
 
 genes <-  basename(dirname(dirname(plot.paths)))
-
+ "https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD_results.html"
 # file.path("https://rajlabmssm.github.io/Fine_Mapping/Data/Nalls23andMe_2019",
 #           genes,"Multi-finemap", paste0(genes,"_ggbio.png"))
 # Dropdown
+
+plot.paths <- file.path("https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019",genes,"Multi-finemap",paste0(genes,"_ggbio.png"))
 names(plot.paths) <-  genes
+ 
 
 bsselect(vector = plot.paths, 
          type = "img", 
