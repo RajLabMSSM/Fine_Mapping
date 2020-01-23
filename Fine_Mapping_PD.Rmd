@@ -40,7 +40,7 @@ source("echolocatoR/R/MAIN.R")
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS:
 # Data_dirs <- read.csv("./Data/directories_table.csv")
 finemap_results <- list()
-coloc_results <- list() 
+coloc_results <- list()  
 ```
 
   
@@ -81,29 +81,29 @@ loci <- unique(top_SNPs$Gene)
 # loci <- c("HLA-DRB5","LOC100131289","TRIM40")
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci = loci,#"LRRK2",#unique(c("LRRK2", loci)),
+                                               loci = "LRRK2",#unique(c("LRRK2", loci)),
                                                trim_gene_limits = F,#c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
                                                query_by ="coordinates",
                                                subset_path = "auto", 
                                                finemap_methods= c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),  
-                                               force_new_LD = F,    
                                                force_new_subset = F,
-                                               force_new_finemap = T, 
+                                               force_new_LD = F,
+                                               force_new_finemap = F, 
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
                  freq_col = "freq", MAF_col = "calculate",
                  A1_col = "A1",
                  A2_col = "A2",
-                 bp_distance = 500000,
+                 bp_distance = 500000*2,
                  # max_snps=1000,
                  download_reference = T, 
                  LD_reference = "UKB",#"1KG_Phase1",
                  superpopulation = "EUR", 
                  LD_block = F, 
-                 min_MAF = 0.01,
+                 min_MAF = 0.001,
                  # remove_variants = c("rs34637584"),
                  # remove_correlates = c("rs34637584"),
                  conditioned_snps = "auto", # Use the lead SNP for each gene  

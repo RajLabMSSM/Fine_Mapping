@@ -49,7 +49,7 @@ Summarize Fine-mapping Results
 
 ## Show all plots  
 
-```{r Gather plots}
+```{r Gather plots, results='asis'}
 # .tabset-dropdown
 loci <- list.dirs("./Data/GWAS/Nalls23andMe_2019", recursive = F) %>% basename()
 loci <- loci[loci!="_genome_wide"]
@@ -63,33 +63,32 @@ plot.paths <- file.path("./Data/GWAS/Nalls23andMe_2019",
   #           paste0(top_loci_sort$Locus,"_ggbio.png")))
   # top_loci_sort <- cbind(links, top_loci_sort)
 
-genes <-  basename(dirname(dirname(plot.paths)))
- "https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD_results.html"
 # file.path("https://rajlabmssm.github.io/Fine_Mapping/Data/Nalls23andMe_2019",
 #           genes,"Multi-finemap", paste0(genes,"_ggbio.png"))
 # Dropdown
 
-plot.paths <- file.path("https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019",genes,"Multi-finemap",paste0(genes,"_ggbio.png"))
-names(plot.paths) <-  genes
- 
+# genes <-  basename(dirname(dirname(plot.paths)))
+# plot.paths <- file.path("https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019",genes,"Multi-finemap",paste0(genes,"_ggbio.png"))
+# names(plot.paths) <-  genes
+#  
+# 
+# bsselect(vector = plot.paths, 
+#          type = "img", 
+#          selected = "LRRK2", 
+#          frame_height = "1000", 
+#          live_search = T, 
+#          show_tick = T)
 
-bsselect(vector = plot.paths, 
-         type = "img", 
-         selected = "LRRK2", 
-         frame_height = "1000", 
-         live_search = T, 
-         show_tick = T)
-
-# for (p in plot.paths){
-#   if(file.exists(p)){
-#     try({ 
-#     gene <- basename(dirname(dirname(p)))
-#     cat('  \n###', gene, '  \n')
-#     cat(paste0('![',gene,'](',p,')'))
-#     cat('  \n')
-#     })
-#   }
-# }
+for (p in plot.paths){
+  if(file.exists(p)){
+    try({
+    gene <- basename(dirname(dirname(p)))
+    cat('  \n###', gene, '  \n')
+    cat(paste0('![',gene,'](',p,')'))
+    cat('  \n')
+    })
+  }
+}
 ```
 
 

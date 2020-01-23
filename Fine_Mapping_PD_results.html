@@ -248,945 +248,6 @@ window.initializeCodeFolding = function(show) {
 
 }
 </script>
-<script>(function() {
-  // If window.HTMLWidgets is already defined, then use it; otherwise create a
-  // new object. This allows preceding code to set options that affect the
-  // initialization process (though none currently exist).
-  window.HTMLWidgets = window.HTMLWidgets || {};
-
-  // See if we're running in a viewer pane. If not, we're in a web browser.
-  var viewerMode = window.HTMLWidgets.viewerMode =
-      /\bviewer_pane=1\b/.test(window.location);
-
-  // See if we're running in Shiny mode. If not, it's a static document.
-  // Note that static widgets can appear in both Shiny and static modes, but
-  // obviously, Shiny widgets can only appear in Shiny apps/documents.
-  var shinyMode = window.HTMLWidgets.shinyMode =
-      typeof(window.Shiny) !== "undefined" && !!window.Shiny.outputBindings;
-
-  // We can't count on jQuery being available, so we implement our own
-  // version if necessary.
-  function querySelectorAll(scope, selector) {
-    if (typeof(jQuery) !== "undefined" && scope instanceof jQuery) {
-      return scope.find(selector);
-    }
-    if (scope.querySelectorAll) {
-      return scope.querySelectorAll(selector);
-    }
-  }
-
-  function asArray(value) {
-    if (value === null)
-      return [];
-    if ($.isArray(value))
-      return value;
-    return [value];
-  }
-
-  // Implement jQuery's extend
-  function extend(target /*, ... */) {
-    if (arguments.length == 1) {
-      return target;
-    }
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
-      for (var prop in source) {
-        if (source.hasOwnProperty(prop)) {
-          target[prop] = source[prop];
-        }
-      }
-    }
-    return target;
-  }
-
-  // IE8 doesn't support Array.forEach.
-  function forEach(values, callback, thisArg) {
-    if (values.forEach) {
-      values.forEach(callback, thisArg);
-    } else {
-      for (var i = 0; i < values.length; i++) {
-        callback.call(thisArg, values[i], i, values);
-      }
-    }
-  }
-
-  // Replaces the specified method with the return value of funcSource.
-  //
-  // Note that funcSource should not BE the new method, it should be a function
-  // that RETURNS the new method. funcSource receives a single argument that is
-  // the overridden method, it can be called from the new method. The overridden
-  // method can be called like a regular function, it has the target permanently
-  // bound to it so "this" will work correctly.
-  function overrideMethod(target, methodName, funcSource) {
-    var superFunc = target[methodName] || function() {};
-    var superFuncBound = function() {
-      return superFunc.apply(target, arguments);
-    };
-    target[methodName] = funcSource(superFuncBound);
-  }
-
-  // Add a method to delegator that, when invoked, calls
-  // delegatee.methodName. If there is no such method on
-  // the delegatee, but there was one on delegator before
-  // delegateMethod was called, then the original version
-  // is invoked instead.
-  // For example:
-  //
-  // var a = {
-  //   method1: function() { console.log('a1'); }
-  //   method2: function() { console.log('a2'); }
-  // };
-  // var b = {
-  //   method1: function() { console.log('b1'); }
-  // };
-  // delegateMethod(a, b, "method1");
-  // delegateMethod(a, b, "method2");
-  // a.method1();
-  // a.method2();
-  //
-  // The output would be "b1", "a2".
-  function delegateMethod(delegator, delegatee, methodName) {
-    var inherited = delegator[methodName];
-    delegator[methodName] = function() {
-      var target = delegatee;
-      var method = delegatee[methodName];
-
-      // The method doesn't exist on the delegatee. Instead,
-      // call the method on the delegator, if it exists.
-      if (!method) {
-        target = delegator;
-        method = inherited;
-      }
-
-      if (method) {
-        return method.apply(target, arguments);
-      }
-    };
-  }
-
-  // Implement a vague facsimilie of jQuery's data method
-  function elementData(el, name, value) {
-    if (arguments.length == 2) {
-      return el["htmlwidget_data_" + name];
-    } else if (arguments.length == 3) {
-      el["htmlwidget_data_" + name] = value;
-      return el;
-    } else {
-      throw new Error("Wrong number of arguments for elementData: " +
-        arguments.length);
-    }
-  }
-
-  // http://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
-  function escapeRegExp(str) {
-    return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-  }
-
-  function hasClass(el, className) {
-    var re = new RegExp("\\b" + escapeRegExp(className) + "\\b");
-    return re.test(el.className);
-  }
-
-  // elements - array (or array-like object) of HTML elements
-  // className - class name to test for
-  // include - if true, only return elements with given className;
-  //   if false, only return elements *without* given className
-  function filterByClass(elements, className, include) {
-    var results = [];
-    for (var i = 0; i < elements.length; i++) {
-      if (hasClass(elements[i], className) == include)
-        results.push(elements[i]);
-    }
-    return results;
-  }
-
-  function on(obj, eventName, func) {
-    if (obj.addEventListener) {
-      obj.addEventListener(eventName, func, false);
-    } else if (obj.attachEvent) {
-      obj.attachEvent(eventName, func);
-    }
-  }
-
-  function off(obj, eventName, func) {
-    if (obj.removeEventListener)
-      obj.removeEventListener(eventName, func, false);
-    else if (obj.detachEvent) {
-      obj.detachEvent(eventName, func);
-    }
-  }
-
-  // Translate array of values to top/right/bottom/left, as usual with
-  // the "padding" CSS property
-  // https://developer.mozilla.org/en-US/docs/Web/CSS/padding
-  function unpackPadding(value) {
-    if (typeof(value) === "number")
-      value = [value];
-    if (value.length === 1) {
-      return {top: value[0], right: value[0], bottom: value[0], left: value[0]};
-    }
-    if (value.length === 2) {
-      return {top: value[0], right: value[1], bottom: value[0], left: value[1]};
-    }
-    if (value.length === 3) {
-      return {top: value[0], right: value[1], bottom: value[2], left: value[1]};
-    }
-    if (value.length === 4) {
-      return {top: value[0], right: value[1], bottom: value[2], left: value[3]};
-    }
-  }
-
-  // Convert an unpacked padding object to a CSS value
-  function paddingToCss(paddingObj) {
-    return paddingObj.top + "px " + paddingObj.right + "px " + paddingObj.bottom + "px " + paddingObj.left + "px";
-  }
-
-  // Makes a number suitable for CSS
-  function px(x) {
-    if (typeof(x) === "number")
-      return x + "px";
-    else
-      return x;
-  }
-
-  // Retrieves runtime widget sizing information for an element.
-  // The return value is either null, or an object with fill, padding,
-  // defaultWidth, defaultHeight fields.
-  function sizingPolicy(el) {
-    var sizingEl = document.querySelector("script[data-for='" + el.id + "'][type='application/htmlwidget-sizing']");
-    if (!sizingEl)
-      return null;
-    var sp = JSON.parse(sizingEl.textContent || sizingEl.text || "{}");
-    if (viewerMode) {
-      return sp.viewer;
-    } else {
-      return sp.browser;
-    }
-  }
-
-  // @param tasks Array of strings (or falsy value, in which case no-op).
-  //   Each element must be a valid JavaScript expression that yields a
-  //   function. Or, can be an array of objects with "code" and "data"
-  //   properties; in this case, the "code" property should be a string
-  //   of JS that's an expr that yields a function, and "data" should be
-  //   an object that will be added as an additional argument when that
-  //   function is called.
-  // @param target The object that will be "this" for each function
-  //   execution.
-  // @param args Array of arguments to be passed to the functions. (The
-  //   same arguments will be passed to all functions.)
-  function evalAndRun(tasks, target, args) {
-    if (tasks) {
-      forEach(tasks, function(task) {
-        var theseArgs = args;
-        if (typeof(task) === "object") {
-          theseArgs = theseArgs.concat([task.data]);
-          task = task.code;
-        }
-        var taskFunc = tryEval(task);
-        if (typeof(taskFunc) !== "function") {
-          throw new Error("Task must be a function! Source:\n" + task);
-        }
-        taskFunc.apply(target, theseArgs);
-      });
-    }
-  }
-
-  // Attempt eval() both with and without enclosing in parentheses.
-  // Note that enclosing coerces a function declaration into
-  // an expression that eval() can parse
-  // (otherwise, a SyntaxError is thrown)
-  function tryEval(code) {
-    var result = null;
-    try {
-      result = eval(code);
-    } catch(error) {
-      if (!error instanceof SyntaxError) {
-        throw error;
-      }
-      try {
-        result = eval("(" + code + ")");
-      } catch(e) {
-        if (e instanceof SyntaxError) {
-          throw error;
-        } else {
-          throw e;
-        }
-      }
-    }
-    return result;
-  }
-
-  function initSizing(el) {
-    var sizing = sizingPolicy(el);
-    if (!sizing)
-      return;
-
-    var cel = document.getElementById("htmlwidget_container");
-    if (!cel)
-      return;
-
-    if (typeof(sizing.padding) !== "undefined") {
-      document.body.style.margin = "0";
-      document.body.style.padding = paddingToCss(unpackPadding(sizing.padding));
-    }
-
-    if (sizing.fill) {
-      document.body.style.overflow = "hidden";
-      document.body.style.width = "100%";
-      document.body.style.height = "100%";
-      document.documentElement.style.width = "100%";
-      document.documentElement.style.height = "100%";
-      if (cel) {
-        cel.style.position = "absolute";
-        var pad = unpackPadding(sizing.padding);
-        cel.style.top = pad.top + "px";
-        cel.style.right = pad.right + "px";
-        cel.style.bottom = pad.bottom + "px";
-        cel.style.left = pad.left + "px";
-        el.style.width = "100%";
-        el.style.height = "100%";
-      }
-
-      return {
-        getWidth: function() { return cel.offsetWidth; },
-        getHeight: function() { return cel.offsetHeight; }
-      };
-
-    } else {
-      el.style.width = px(sizing.width);
-      el.style.height = px(sizing.height);
-
-      return {
-        getWidth: function() { return el.offsetWidth; },
-        getHeight: function() { return el.offsetHeight; }
-      };
-    }
-  }
-
-  // Default implementations for methods
-  var defaults = {
-    find: function(scope) {
-      return querySelectorAll(scope, "." + this.name);
-    },
-    renderError: function(el, err) {
-      var $el = $(el);
-
-      this.clearError(el);
-
-      // Add all these error classes, as Shiny does
-      var errClass = "shiny-output-error";
-      if (err.type !== null) {
-        // use the classes of the error condition as CSS class names
-        errClass = errClass + " " + $.map(asArray(err.type), function(type) {
-          return errClass + "-" + type;
-        }).join(" ");
-      }
-      errClass = errClass + " htmlwidgets-error";
-
-      // Is el inline or block? If inline or inline-block, just display:none it
-      // and add an inline error.
-      var display = $el.css("display");
-      $el.data("restore-display-mode", display);
-
-      if (display === "inline" || display === "inline-block") {
-        $el.hide();
-        if (err.message !== "") {
-          var errorSpan = $("<span>").addClass(errClass);
-          errorSpan.text(err.message);
-          $el.after(errorSpan);
-        }
-      } else if (display === "block") {
-        // If block, add an error just after the el, set visibility:none on the
-        // el, and position the error to be on top of the el.
-        // Mark it with a unique ID and CSS class so we can remove it later.
-        $el.css("visibility", "hidden");
-        if (err.message !== "") {
-          var errorDiv = $("<div>").addClass(errClass).css("position", "absolute")
-            .css("top", el.offsetTop)
-            .css("left", el.offsetLeft)
-            // setting width can push out the page size, forcing otherwise
-            // unnecessary scrollbars to appear and making it impossible for
-            // the element to shrink; so use max-width instead
-            .css("maxWidth", el.offsetWidth)
-            .css("height", el.offsetHeight);
-          errorDiv.text(err.message);
-          $el.after(errorDiv);
-
-          // Really dumb way to keep the size/position of the error in sync with
-          // the parent element as the window is resized or whatever.
-          var intId = setInterval(function() {
-            if (!errorDiv[0].parentElement) {
-              clearInterval(intId);
-              return;
-            }
-            errorDiv
-              .css("top", el.offsetTop)
-              .css("left", el.offsetLeft)
-              .css("maxWidth", el.offsetWidth)
-              .css("height", el.offsetHeight);
-          }, 500);
-        }
-      }
-    },
-    clearError: function(el) {
-      var $el = $(el);
-      var display = $el.data("restore-display-mode");
-      $el.data("restore-display-mode", null);
-
-      if (display === "inline" || display === "inline-block") {
-        if (display)
-          $el.css("display", display);
-        $(el.nextSibling).filter(".htmlwidgets-error").remove();
-      } else if (display === "block"){
-        $el.css("visibility", "inherit");
-        $(el.nextSibling).filter(".htmlwidgets-error").remove();
-      }
-    },
-    sizing: {}
-  };
-
-  // Called by widget bindings to register a new type of widget. The definition
-  // object can contain the following properties:
-  // - name (required) - A string indicating the binding name, which will be
-  //   used by default as the CSS classname to look for.
-  // - initialize (optional) - A function(el) that will be called once per
-  //   widget element; if a value is returned, it will be passed as the third
-  //   value to renderValue.
-  // - renderValue (required) - A function(el, data, initValue) that will be
-  //   called with data. Static contexts will cause this to be called once per
-  //   element; Shiny apps will cause this to be called multiple times per
-  //   element, as the data changes.
-  window.HTMLWidgets.widget = function(definition) {
-    if (!definition.name) {
-      throw new Error("Widget must have a name");
-    }
-    if (!definition.type) {
-      throw new Error("Widget must have a type");
-    }
-    // Currently we only support output widgets
-    if (definition.type !== "output") {
-      throw new Error("Unrecognized widget type '" + definition.type + "'");
-    }
-    // TODO: Verify that .name is a valid CSS classname
-
-    // Support new-style instance-bound definitions. Old-style class-bound
-    // definitions have one widget "object" per widget per type/class of
-    // widget; the renderValue and resize methods on such widget objects
-    // take el and instance arguments, because the widget object can't
-    // store them. New-style instance-bound definitions have one widget
-    // object per widget instance; the definition that's passed in doesn't
-    // provide renderValue or resize methods at all, just the single method
-    //   factory(el, width, height)
-    // which returns an object that has renderValue(x) and resize(w, h).
-    // This enables a far more natural programming style for the widget
-    // author, who can store per-instance state using either OO-style
-    // instance fields or functional-style closure variables (I guess this
-    // is in contrast to what can only be called C-style pseudo-OO which is
-    // what we required before).
-    if (definition.factory) {
-      definition = createLegacyDefinitionAdapter(definition);
-    }
-
-    if (!definition.renderValue) {
-      throw new Error("Widget must have a renderValue function");
-    }
-
-    // For static rendering (non-Shiny), use a simple widget registration
-    // scheme. We also use this scheme for Shiny apps/documents that also
-    // contain static widgets.
-    window.HTMLWidgets.widgets = window.HTMLWidgets.widgets || [];
-    // Merge defaults into the definition; don't mutate the original definition.
-    var staticBinding = extend({}, defaults, definition);
-    overrideMethod(staticBinding, "find", function(superfunc) {
-      return function(scope) {
-        var results = superfunc(scope);
-        // Filter out Shiny outputs, we only want the static kind
-        return filterByClass(results, "html-widget-output", false);
-      };
-    });
-    window.HTMLWidgets.widgets.push(staticBinding);
-
-    if (shinyMode) {
-      // Shiny is running. Register the definition with an output binding.
-      // The definition itself will not be the output binding, instead
-      // we will make an output binding object that delegates to the
-      // definition. This is because we foolishly used the same method
-      // name (renderValue) for htmlwidgets definition and Shiny bindings
-      // but they actually have quite different semantics (the Shiny
-      // bindings receive data that includes lots of metadata that it
-      // strips off before calling htmlwidgets renderValue). We can't
-      // just ignore the difference because in some widgets it's helpful
-      // to call this.renderValue() from inside of resize(), and if
-      // we're not delegating, then that call will go to the Shiny
-      // version instead of the htmlwidgets version.
-
-      // Merge defaults with definition, without mutating either.
-      var bindingDef = extend({}, defaults, definition);
-
-      // This object will be our actual Shiny binding.
-      var shinyBinding = new Shiny.OutputBinding();
-
-      // With a few exceptions, we'll want to simply use the bindingDef's
-      // version of methods if they are available, otherwise fall back to
-      // Shiny's defaults. NOTE: If Shiny's output bindings gain additional
-      // methods in the future, and we want them to be overrideable by
-      // HTMLWidget binding definitions, then we'll need to add them to this
-      // list.
-      delegateMethod(shinyBinding, bindingDef, "getId");
-      delegateMethod(shinyBinding, bindingDef, "onValueChange");
-      delegateMethod(shinyBinding, bindingDef, "onValueError");
-      delegateMethod(shinyBinding, bindingDef, "renderError");
-      delegateMethod(shinyBinding, bindingDef, "clearError");
-      delegateMethod(shinyBinding, bindingDef, "showProgress");
-
-      // The find, renderValue, and resize are handled differently, because we
-      // want to actually decorate the behavior of the bindingDef methods.
-
-      shinyBinding.find = function(scope) {
-        var results = bindingDef.find(scope);
-
-        // Only return elements that are Shiny outputs, not static ones
-        var dynamicResults = results.filter(".html-widget-output");
-
-        // It's possible that whatever caused Shiny to think there might be
-        // new dynamic outputs, also caused there to be new static outputs.
-        // Since there might be lots of different htmlwidgets bindings, we
-        // schedule execution for later--no need to staticRender multiple
-        // times.
-        if (results.length !== dynamicResults.length)
-          scheduleStaticRender();
-
-        return dynamicResults;
-      };
-
-      // Wrap renderValue to handle initialization, which unfortunately isn't
-      // supported natively by Shiny at the time of this writing.
-
-      shinyBinding.renderValue = function(el, data) {
-        Shiny.renderDependencies(data.deps);
-        // Resolve strings marked as javascript literals to objects
-        if (!(data.evals instanceof Array)) data.evals = [data.evals];
-        for (var i = 0; data.evals && i < data.evals.length; i++) {
-          window.HTMLWidgets.evaluateStringMember(data.x, data.evals[i]);
-        }
-        if (!bindingDef.renderOnNullValue) {
-          if (data.x === null) {
-            el.style.visibility = "hidden";
-            return;
-          } else {
-            el.style.visibility = "inherit";
-          }
-        }
-        if (!elementData(el, "initialized")) {
-          initSizing(el);
-
-          elementData(el, "initialized", true);
-          if (bindingDef.initialize) {
-            var result = bindingDef.initialize(el, el.offsetWidth,
-              el.offsetHeight);
-            elementData(el, "init_result", result);
-          }
-        }
-        bindingDef.renderValue(el, data.x, elementData(el, "init_result"));
-        evalAndRun(data.jsHooks.render, elementData(el, "init_result"), [el, data.x]);
-      };
-
-      // Only override resize if bindingDef implements it
-      if (bindingDef.resize) {
-        shinyBinding.resize = function(el, width, height) {
-          // Shiny can call resize before initialize/renderValue have been
-          // called, which doesn't make sense for widgets.
-          if (elementData(el, "initialized")) {
-            bindingDef.resize(el, width, height, elementData(el, "init_result"));
-          }
-        };
-      }
-
-      Shiny.outputBindings.register(shinyBinding, bindingDef.name);
-    }
-  };
-
-  var scheduleStaticRenderTimerId = null;
-  function scheduleStaticRender() {
-    if (!scheduleStaticRenderTimerId) {
-      scheduleStaticRenderTimerId = setTimeout(function() {
-        scheduleStaticRenderTimerId = null;
-        window.HTMLWidgets.staticRender();
-      }, 1);
-    }
-  }
-
-  // Render static widgets after the document finishes loading
-  // Statically render all elements that are of this widget's class
-  window.HTMLWidgets.staticRender = function() {
-    var bindings = window.HTMLWidgets.widgets || [];
-    forEach(bindings, function(binding) {
-      var matches = binding.find(document.documentElement);
-      forEach(matches, function(el) {
-        var sizeObj = initSizing(el, binding);
-
-        if (hasClass(el, "html-widget-static-bound"))
-          return;
-        el.className = el.className + " html-widget-static-bound";
-
-        var initResult;
-        if (binding.initialize) {
-          initResult = binding.initialize(el,
-            sizeObj ? sizeObj.getWidth() : el.offsetWidth,
-            sizeObj ? sizeObj.getHeight() : el.offsetHeight
-          );
-          elementData(el, "init_result", initResult);
-        }
-
-        if (binding.resize) {
-          var lastSize = {
-            w: sizeObj ? sizeObj.getWidth() : el.offsetWidth,
-            h: sizeObj ? sizeObj.getHeight() : el.offsetHeight
-          };
-          var resizeHandler = function(e) {
-            var size = {
-              w: sizeObj ? sizeObj.getWidth() : el.offsetWidth,
-              h: sizeObj ? sizeObj.getHeight() : el.offsetHeight
-            };
-            if (size.w === 0 && size.h === 0)
-              return;
-            if (size.w === lastSize.w && size.h === lastSize.h)
-              return;
-            lastSize = size;
-            binding.resize(el, size.w, size.h, initResult);
-          };
-
-          on(window, "resize", resizeHandler);
-
-          // This is needed for cases where we're running in a Shiny
-          // app, but the widget itself is not a Shiny output, but
-          // rather a simple static widget. One example of this is
-          // an rmarkdown document that has runtime:shiny and widget
-          // that isn't in a render function. Shiny only knows to
-          // call resize handlers for Shiny outputs, not for static
-          // widgets, so we do it ourselves.
-          if (window.jQuery) {
-            window.jQuery(document).on(
-              "shown.htmlwidgets shown.bs.tab.htmlwidgets shown.bs.collapse.htmlwidgets",
-              resizeHandler
-            );
-            window.jQuery(document).on(
-              "hidden.htmlwidgets hidden.bs.tab.htmlwidgets hidden.bs.collapse.htmlwidgets",
-              resizeHandler
-            );
-          }
-
-          // This is needed for the specific case of ioslides, which
-          // flips slides between display:none and display:block.
-          // Ideally we would not have to have ioslide-specific code
-          // here, but rather have ioslides raise a generic event,
-          // but the rmarkdown package just went to CRAN so the
-          // window to getting that fixed may be long.
-          if (window.addEventListener) {
-            // It's OK to limit this to window.addEventListener
-            // browsers because ioslides itself only supports
-            // such browsers.
-            on(document, "slideenter", resizeHandler);
-            on(document, "slideleave", resizeHandler);
-          }
-        }
-
-        var scriptData = document.querySelector("script[data-for='" + el.id + "'][type='application/json']");
-        if (scriptData) {
-          var data = JSON.parse(scriptData.textContent || scriptData.text);
-          // Resolve strings marked as javascript literals to objects
-          if (!(data.evals instanceof Array)) data.evals = [data.evals];
-          for (var k = 0; data.evals && k < data.evals.length; k++) {
-            window.HTMLWidgets.evaluateStringMember(data.x, data.evals[k]);
-          }
-          binding.renderValue(el, data.x, initResult);
-          evalAndRun(data.jsHooks.render, initResult, [el, data.x]);
-        }
-      });
-    });
-
-    invokePostRenderHandlers();
-  }
-
-
-  function has_jQuery3() {
-    if (!window.jQuery) {
-      return false;
-    }
-    var $version = window.jQuery.fn.jquery;
-    var $major_version = parseInt($version.split(".")[0]);
-    return $major_version >= 3;
-  }
-
-  /*
-  / Shiny 1.4 bumped jQuery from 1.x to 3.x which means jQuery's
-  / on-ready handler (i.e., $(fn)) is now asyncronous (i.e., it now
-  / really means $(setTimeout(fn)).
-  / https://jquery.com/upgrade-guide/3.0/#breaking-change-document-ready-handlers-are-now-asynchronous
-  /
-  / Since Shiny uses $() to schedule initShiny, shiny>=1.4 calls initShiny
-  / one tick later than it did before, which means staticRender() is
-  / called renderValue() earlier than (advanced) widget authors might be expecting.
-  / https://github.com/rstudio/shiny/issues/2630
-  /
-  / For a concrete example, leaflet has some methods (e.g., updateBounds)
-  / which reference Shiny methods registered in initShiny (e.g., setInputValue).
-  / Since leaflet is privy to this life-cycle, it knows to use setTimeout() to
-  / delay execution of those methods (until Shiny methods are ready)
-  / https://github.com/rstudio/leaflet/blob/18ec981/javascript/src/index.js#L266-L268
-  /
-  / Ideally widget authors wouldn't need to use this setTimeout() hack that
-  / leaflet uses to call Shiny methods on a staticRender(). In the long run,
-  / the logic initShiny should be broken up so that method registration happens
-  / right away, but binding happens later.
-  */
-  function maybeStaticRenderLater() {
-    if (shinyMode && has_jQuery3()) {
-      window.jQuery(window.HTMLWidgets.staticRender);
-    } else {
-      window.HTMLWidgets.staticRender();
-    }
-  }
-
-  if (document.addEventListener) {
-    document.addEventListener("DOMContentLoaded", function() {
-      document.removeEventListener("DOMContentLoaded", arguments.callee, false);
-      maybeStaticRenderLater();
-    }, false);
-  } else if (document.attachEvent) {
-    document.attachEvent("onreadystatechange", function() {
-      if (document.readyState === "complete") {
-        document.detachEvent("onreadystatechange", arguments.callee);
-        maybeStaticRenderLater();
-      }
-    });
-  }
-
-
-  window.HTMLWidgets.getAttachmentUrl = function(depname, key) {
-    // If no key, default to the first item
-    if (typeof(key) === "undefined")
-      key = 1;
-
-    var link = document.getElementById(depname + "-" + key + "-attachment");
-    if (!link) {
-      throw new Error("Attachment " + depname + "/" + key + " not found in document");
-    }
-    return link.getAttribute("href");
-  };
-
-  window.HTMLWidgets.dataframeToD3 = function(df) {
-    var names = [];
-    var length;
-    for (var name in df) {
-        if (df.hasOwnProperty(name))
-            names.push(name);
-        if (typeof(df[name]) !== "object" || typeof(df[name].length) === "undefined") {
-            throw new Error("All fields must be arrays");
-        } else if (typeof(length) !== "undefined" && length !== df[name].length) {
-            throw new Error("All fields must be arrays of the same length");
-        }
-        length = df[name].length;
-    }
-    var results = [];
-    var item;
-    for (var row = 0; row < length; row++) {
-        item = {};
-        for (var col = 0; col < names.length; col++) {
-            item[names[col]] = df[names[col]][row];
-        }
-        results.push(item);
-    }
-    return results;
-  };
-
-  window.HTMLWidgets.transposeArray2D = function(array) {
-      if (array.length === 0) return array;
-      var newArray = array[0].map(function(col, i) {
-          return array.map(function(row) {
-              return row[i]
-          })
-      });
-      return newArray;
-  };
-  // Split value at splitChar, but allow splitChar to be escaped
-  // using escapeChar. Any other characters escaped by escapeChar
-  // will be included as usual (including escapeChar itself).
-  function splitWithEscape(value, splitChar, escapeChar) {
-    var results = [];
-    var escapeMode = false;
-    var currentResult = "";
-    for (var pos = 0; pos < value.length; pos++) {
-      if (!escapeMode) {
-        if (value[pos] === splitChar) {
-          results.push(currentResult);
-          currentResult = "";
-        } else if (value[pos] === escapeChar) {
-          escapeMode = true;
-        } else {
-          currentResult += value[pos];
-        }
-      } else {
-        currentResult += value[pos];
-        escapeMode = false;
-      }
-    }
-    if (currentResult !== "") {
-      results.push(currentResult);
-    }
-    return results;
-  }
-  // Function authored by Yihui/JJ Allaire
-  window.HTMLWidgets.evaluateStringMember = function(o, member) {
-    var parts = splitWithEscape(member, '.', '\\');
-    for (var i = 0, l = parts.length; i < l; i++) {
-      var part = parts[i];
-      // part may be a character or 'numeric' member name
-      if (o !== null && typeof o === "object" && part in o) {
-        if (i == (l - 1)) { // if we are at the end of the line then evalulate
-          if (typeof o[part] === "string")
-            o[part] = tryEval(o[part]);
-        } else { // otherwise continue to next embedded object
-          o = o[part];
-        }
-      }
-    }
-  };
-
-  // Retrieve the HTMLWidget instance (i.e. the return value of an
-  // HTMLWidget binding's initialize() or factory() function)
-  // associated with an element, or null if none.
-  window.HTMLWidgets.getInstance = function(el) {
-    return elementData(el, "init_result");
-  };
-
-  // Finds the first element in the scope that matches the selector,
-  // and returns the HTMLWidget instance (i.e. the return value of
-  // an HTMLWidget binding's initialize() or factory() function)
-  // associated with that element, if any. If no element matches the
-  // selector, or the first matching element has no HTMLWidget
-  // instance associated with it, then null is returned.
-  //
-  // The scope argument is optional, and defaults to window.document.
-  window.HTMLWidgets.find = function(scope, selector) {
-    if (arguments.length == 1) {
-      selector = scope;
-      scope = document;
-    }
-
-    var el = scope.querySelector(selector);
-    if (el === null) {
-      return null;
-    } else {
-      return window.HTMLWidgets.getInstance(el);
-    }
-  };
-
-  // Finds all elements in the scope that match the selector, and
-  // returns the HTMLWidget instances (i.e. the return values of
-  // an HTMLWidget binding's initialize() or factory() function)
-  // associated with the elements, in an array. If elements that
-  // match the selector don't have an associated HTMLWidget
-  // instance, the returned array will contain nulls.
-  //
-  // The scope argument is optional, and defaults to window.document.
-  window.HTMLWidgets.findAll = function(scope, selector) {
-    if (arguments.length == 1) {
-      selector = scope;
-      scope = document;
-    }
-
-    var nodes = scope.querySelectorAll(selector);
-    var results = [];
-    for (var i = 0; i < nodes.length; i++) {
-      results.push(window.HTMLWidgets.getInstance(nodes[i]));
-    }
-    return results;
-  };
-
-  var postRenderHandlers = [];
-  function invokePostRenderHandlers() {
-    while (postRenderHandlers.length) {
-      var handler = postRenderHandlers.shift();
-      if (handler) {
-        handler();
-      }
-    }
-  }
-
-  // Register the given callback function to be invoked after the
-  // next time static widgets are rendered.
-  window.HTMLWidgets.addPostRenderHandler = function(callback) {
-    postRenderHandlers.push(callback);
-  };
-
-  // Takes a new-style instance-bound definition, and returns an
-  // old-style class-bound definition. This saves us from having
-  // to rewrite all the logic in this file to accomodate both
-  // types of definitions.
-  function createLegacyDefinitionAdapter(defn) {
-    var result = {
-      name: defn.name,
-      type: defn.type,
-      initialize: function(el, width, height) {
-        return defn.factory(el, width, height);
-      },
-      renderValue: function(el, x, instance) {
-        return instance.renderValue(x);
-      },
-      resize: function(el, width, height, instance) {
-        return instance.resize(width, height);
-      }
-    };
-
-    if (defn.find)
-      result.find = defn.find;
-    if (defn.renderError)
-      result.renderError = defn.renderError;
-    if (defn.clearError)
-      result.clearError = defn.clearError;
-
-    return result;
-  }
-})();
-
-</script>
-<style type="text/css">select.bs-select-hidden,select.selectpicker{display:none!important}.bootstrap-select{width:220px\9}.bootstrap-select>.dropdown-toggle{width:100%;padding-right:25px;z-index:1}.bootstrap-select>.dropdown-toggle.bs-placeholder,.bootstrap-select>.dropdown-toggle.bs-placeholder:active,.bootstrap-select>.dropdown-toggle.bs-placeholder:focus,.bootstrap-select>.dropdown-toggle.bs-placeholder:hover{color:#999}.bootstrap-select>select{position:absolute!important;bottom:0;left:50%;display:block!important;width:.5px!important;height:100%!important;padding:0!important;opacity:0!important;border:none}.bootstrap-select>select.mobile-device{top:0;left:0;display:block!important;width:100%!important;z-index:2}.error .bootstrap-select .dropdown-toggle,.has-error .bootstrap-select .dropdown-toggle{border-color:#b94a48}.bootstrap-select.fit-width{width:auto!important}.bootstrap-select:not([class*=col-]):not([class*=form-control]):not(.input-group-btn){width:220px}.bootstrap-select .dropdown-toggle:focus{outline:thin dotted #333!important;outline:5px auto -webkit-focus-ring-color!important;outline-offset:-2px}.bootstrap-select.form-control{margin-bottom:0;padding:0;border:none}.bootstrap-select.form-control:not([class*=col-]){width:100%}.bootstrap-select.form-control.input-group-btn{z-index:auto}.bootstrap-select.form-control.input-group-btn:not(:first-child):not(:last-child)>.btn{border-radius:0}.bootstrap-select.btn-group:not(.input-group-btn),.bootstrap-select.btn-group[class*=col-]{float:none;display:inline-block;margin-left:0}.bootstrap-select.btn-group.dropdown-menu-right,.bootstrap-select.btn-group[class*=col-].dropdown-menu-right,.row .bootstrap-select.btn-group[class*=col-].dropdown-menu-right{float:right}.form-group .bootstrap-select.btn-group,.form-horizontal .bootstrap-select.btn-group,.form-inline .bootstrap-select.btn-group{margin-bottom:0}.form-group-lg .bootstrap-select.btn-group.form-control,.form-group-sm .bootstrap-select.btn-group.form-control{padding:0}.form-inline .bootstrap-select.btn-group .form-control{width:100%}.bootstrap-select.btn-group.disabled,.bootstrap-select.btn-group>.disabled{cursor:not-allowed}.bootstrap-select.btn-group.disabled:focus,.bootstrap-select.btn-group>.disabled:focus{outline:0!important}.bootstrap-select.btn-group.bs-container{position:absolute;height:0!important;padding:0!important}.bootstrap-select.btn-group.bs-container .dropdown-menu{z-index:1060}.bootstrap-select.btn-group .dropdown-toggle .filter-option{display:inline-block;overflow:hidden;width:100%;text-align:left}.bootstrap-select.btn-group .dropdown-toggle .caret{position:absolute;top:50%;right:12px;margin-top:-2px;vertical-align:middle}.bootstrap-select.btn-group[class*=col-] .dropdown-toggle{width:100%}.bootstrap-select.btn-group .dropdown-menu{min-width:100%;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box}.bootstrap-select.btn-group .dropdown-menu.inner{position:static;float:none;border:0;padding:0;margin:0;border-radius:0;-webkit-box-shadow:none;box-shadow:none}.bootstrap-select.btn-group .dropdown-menu li{position:relative}.bootstrap-select.btn-group .dropdown-menu li.active small{color:#fff}.bootstrap-select.btn-group .dropdown-menu li.disabled a{cursor:not-allowed}.bootstrap-select.btn-group .dropdown-menu li a{cursor:pointer;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.bootstrap-select.btn-group .dropdown-menu li a.opt{position:relative;padding-left:2.25em}.bootstrap-select.btn-group .dropdown-menu li a span.check-mark{display:none}.bootstrap-select.btn-group .dropdown-menu li a span.text{display:inline-block}.bootstrap-select.btn-group .dropdown-menu li small{padding-left:.5em}.bootstrap-select.btn-group .dropdown-menu .notify{position:absolute;bottom:5px;width:96%;margin:0 2%;min-height:26px;padding:3px 5px;background:#f5f5f5;border:1px solid #e3e3e3;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,.05);box-shadow:inset 0 1px 1px rgba(0,0,0,.05);pointer-events:none;opacity:.9;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box}.bootstrap-select.btn-group .no-results{padding:3px;background:#f5f5f5;margin:0 5px;white-space:nowrap}.bootstrap-select.btn-group.fit-width .dropdown-toggle .filter-option{position:static}.bootstrap-select.btn-group.fit-width .dropdown-toggle .caret{position:static;top:auto;margin-top:-1px}.bootstrap-select.btn-group.show-tick .dropdown-menu li.selected a span.check-mark{position:absolute;display:inline-block;right:15px;margin-top:5px}.bootstrap-select.btn-group.show-tick .dropdown-menu li a span.text{margin-right:34px}.bootstrap-select.show-menu-arrow.open>.dropdown-toggle{z-index:1061}.bootstrap-select.show-menu-arrow .dropdown-toggle:before{content:'';border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:7px solid rgba(204,204,204,.2);position:absolute;bottom:-4px;left:9px;display:none}.bootstrap-select.show-menu-arrow .dropdown-toggle:after{content:'';border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:6px solid #fff;position:absolute;bottom:-4px;left:10px;display:none}.bootstrap-select.show-menu-arrow.dropup .dropdown-toggle:before{bottom:auto;top:-3px;border-top:7px solid rgba(204,204,204,.2);border-bottom:0}.bootstrap-select.show-menu-arrow.dropup .dropdown-toggle:after{bottom:auto;top:-3px;border-top:6px solid #fff;border-bottom:0}.bootstrap-select.show-menu-arrow.pull-right .dropdown-toggle:before{right:12px;left:auto}.bootstrap-select.show-menu-arrow.pull-right .dropdown-toggle:after{right:13px;left:auto}.bootstrap-select.show-menu-arrow.open>.dropdown-toggle:after,.bootstrap-select.show-menu-arrow.open>.dropdown-toggle:before{display:block}.bs-actionsbox,.bs-donebutton,.bs-searchbox{padding:4px 8px}.bs-actionsbox{width:100%;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box}.bs-actionsbox .btn-group button{width:50%}.bs-donebutton{float:left;width:100%;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box}.bs-donebutton .btn-group button{width:100%}.bs-searchbox+.bs-actionsbox{padding:0 8px 4px}.bs-searchbox .form-control{margin-bottom:0;width:100%;float:none}</style>
-<script>/*!
- * Bootstrap-select v1.12.1 (http://silviomoreto.github.io/bootstrap-select)
- *
- * Copyright 2013-2016 bootstrap-select
- * Licensed under MIT (https://github.com/silviomoreto/bootstrap-select/blob/master/LICENSE)
- */
-!function(a,b){"function"==typeof define&&define.amd?define(["jquery"],function(a){return b(a)}):"object"==typeof module&&module.exports?module.exports=b(require("jquery")):b(a.jQuery)}(this,function(a){!function(a){"use strict";function b(b){var c=[{re:/[\xC0-\xC6]/g,ch:"A"},{re:/[\xE0-\xE6]/g,ch:"a"},{re:/[\xC8-\xCB]/g,ch:"E"},{re:/[\xE8-\xEB]/g,ch:"e"},{re:/[\xCC-\xCF]/g,ch:"I"},{re:/[\xEC-\xEF]/g,ch:"i"},{re:/[\xD2-\xD6]/g,ch:"O"},{re:/[\xF2-\xF6]/g,ch:"o"},{re:/[\xD9-\xDC]/g,ch:"U"},{re:/[\xF9-\xFC]/g,ch:"u"},{re:/[\xC7-\xE7]/g,ch:"c"},{re:/[\xD1]/g,ch:"N"},{re:/[\xF1]/g,ch:"n"}];return a.each(c,function(){b=b?b.replace(this.re,this.ch):""}),b}function c(b){var c=arguments,d=b;[].shift.apply(c);var e,f=this.each(function(){var b=a(this);if(b.is("select")){var f=b.data("selectpicker"),g="object"==typeof d&&d;if(f){if(g)for(var h in g)g.hasOwnProperty(h)&&(f.options[h]=g[h])}else{var i=a.extend({},k.DEFAULTS,a.fn.selectpicker.defaults||{},b.data(),g);i.template=a.extend({},k.DEFAULTS.template,a.fn.selectpicker.defaults?a.fn.selectpicker.defaults.template:{},b.data().template,g.template),b.data("selectpicker",f=new k(this,i))}"string"==typeof d&&(e=f[d]instanceof Function?f[d].apply(f,c):f.options[d])}});return"undefined"!=typeof e?e:f}String.prototype.includes||!function(){var a={}.toString,b=function(){try{var a={},b=Object.defineProperty,c=b(a,a,a)&&b}catch(a){}return c}(),c="".indexOf,d=function(b){if(null==this)throw new TypeError;var d=String(this);if(b&&"[object RegExp]"==a.call(b))throw new TypeError;var e=d.length,f=String(b),g=f.length,h=arguments.length>1?arguments[1]:void 0,i=h?Number(h):0;i!=i&&(i=0);var j=Math.min(Math.max(i,0),e);return!(g+j>e)&&c.call(d,f,i)!=-1};b?b(String.prototype,"includes",{value:d,configurable:!0,writable:!0}):String.prototype.includes=d}(),String.prototype.startsWith||!function(){var a=function(){try{var a={},b=Object.defineProperty,c=b(a,a,a)&&b}catch(a){}return c}(),b={}.toString,c=function(a){if(null==this)throw new TypeError;var c=String(this);if(a&&"[object RegExp]"==b.call(a))throw new TypeError;var d=c.length,e=String(a),f=e.length,g=arguments.length>1?arguments[1]:void 0,h=g?Number(g):0;h!=h&&(h=0);var i=Math.min(Math.max(h,0),d);if(f+i>d)return!1;for(var j=-1;++j<f;)if(c.charCodeAt(i+j)!=e.charCodeAt(j))return!1;return!0};a?a(String.prototype,"startsWith",{value:c,configurable:!0,writable:!0}):String.prototype.startsWith=c}(),Object.keys||(Object.keys=function(a,b,c){c=[];for(b in a)c.hasOwnProperty.call(a,b)&&c.push(b);return c});var d={useDefault:!1,_set:a.valHooks.select.set};a.valHooks.select.set=function(b,c){return c&&!d.useDefault&&a(b).data("selected",!0),d._set.apply(this,arguments)};var e=null;a.fn.triggerNative=function(a){var b,c=this[0];c.dispatchEvent?("function"==typeof Event?b=new Event(a,{bubbles:!0}):(b=document.createEvent("Event"),b.initEvent(a,!0,!1)),c.dispatchEvent(b)):c.fireEvent?(b=document.createEventObject(),b.eventType=a,c.fireEvent("on"+a,b)):this.trigger(a)},a.expr.pseudos.icontains=function(b,c,d){var e=a(b),f=(e.data("tokens")||e.text()).toString().toUpperCase();return f.includes(d[3].toUpperCase())},a.expr.pseudos.ibegins=function(b,c,d){var e=a(b),f=(e.data("tokens")||e.text()).toString().toUpperCase();return f.startsWith(d[3].toUpperCase())},a.expr.pseudos.aicontains=function(b,c,d){var e=a(b),f=(e.data("tokens")||e.data("normalizedText")||e.text()).toString().toUpperCase();return f.includes(d[3].toUpperCase())},a.expr.pseudos.aibegins=function(b,c,d){var e=a(b),f=(e.data("tokens")||e.data("normalizedText")||e.text()).toString().toUpperCase();return f.startsWith(d[3].toUpperCase())};var f={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#x27;","`":"&#x60;"},g={"&amp;":"&","&lt;":"<","&gt;":">","&quot;":'"',"&#x27;":"'","&#x60;":"`"},h=function(a){var b=function(b){return a[b]},c="(?:"+Object.keys(a).join("|")+")",d=RegExp(c),e=RegExp(c,"g");return function(a){return a=null==a?"":""+a,d.test(a)?a.replace(e,b):a}},i=h(f),j=h(g),k=function(b,c){d.useDefault||(a.valHooks.select.set=d._set,d.useDefault=!0),this.$element=a(b),this.$newElement=null,this.$button=null,this.$menu=null,this.$lis=null,this.options=c,null===this.options.title&&(this.options.title=this.$element.attr("title"));var e=this.options.windowPadding;"number"==typeof e&&(this.options.windowPadding=[e,e,e,e]),this.val=k.prototype.val,this.render=k.prototype.render,this.refresh=k.prototype.refresh,this.setStyle=k.prototype.setStyle,this.selectAll=k.prototype.selectAll,this.deselectAll=k.prototype.deselectAll,this.destroy=k.prototype.destroy,this.remove=k.prototype.remove,this.show=k.prototype.show,this.hide=k.prototype.hide,this.init()};k.VERSION="1.12.1",k.DEFAULTS={noneSelectedText:"Nothing selected",noneResultsText:"No results matched {0}",countSelectedText:function(a,b){return 1==a?"{0} item selected":"{0} items selected"},maxOptionsText:function(a,b){return[1==a?"Limit reached ({n} item max)":"Limit reached ({n} items max)",1==b?"Group limit reached ({n} item max)":"Group limit reached ({n} items max)"]},selectAllText:"Select All",deselectAllText:"Deselect All",doneButton:!1,doneButtonText:"Close",multipleSeparator:", ",styleBase:"btn",style:"btn-default",size:"auto",title:null,selectedTextFormat:"values",width:!1,container:!1,hideDisabled:!1,showSubtext:!1,showIcon:!0,showContent:!0,dropupAuto:!0,header:!1,liveSearch:!1,liveSearchPlaceholder:null,liveSearchNormalize:!1,liveSearchStyle:"contains",actionsBox:!1,iconBase:"glyphicon",tickIcon:"glyphicon-ok",showTick:!1,template:{caret:'<span class="caret"></span>'},maxOptions:!1,mobile:!1,selectOnTab:!1,dropdownAlignRight:!1,windowPadding:0},k.prototype={constructor:k,init:function(){var b=this,c=this.$element.attr("id");this.$element.addClass("bs-select-hidden"),this.liObj={},this.multiple=this.$element.prop("multiple"),this.autofocus=this.$element.prop("autofocus"),this.$newElement=this.createView(),this.$element.after(this.$newElement).appendTo(this.$newElement),this.$button=this.$newElement.children("button"),this.$menu=this.$newElement.children(".dropdown-menu"),this.$menuInner=this.$menu.children(".inner"),this.$searchbox=this.$menu.find("input"),this.$element.removeClass("bs-select-hidden"),this.options.dropdownAlignRight===!0&&this.$menu.addClass("dropdown-menu-right"),"undefined"!=typeof c&&(this.$button.attr("data-id",c),a('label[for="'+c+'"]').click(function(a){a.preventDefault(),b.$button.focus()})),this.checkDisabled(),this.clickListener(),this.options.liveSearch&&this.liveSearchListener(),this.render(),this.setStyle(),this.setWidth(),this.options.container&&this.selectPosition(),this.$menu.data("this",this),this.$newElement.data("this",this),this.options.mobile&&this.mobile(),this.$newElement.on({"hide.bs.dropdown":function(a){b.$menuInner.attr("aria-expanded",!1),b.$element.trigger("hide.bs.select",a)},"hidden.bs.dropdown":function(a){b.$element.trigger("hidden.bs.select",a)},"show.bs.dropdown":function(a){b.$menuInner.attr("aria-expanded",!0),b.$element.trigger("show.bs.select",a)},"shown.bs.dropdown":function(a){b.$element.trigger("shown.bs.select",a)}}),b.$element[0].hasAttribute("required")&&this.$element.on("invalid",function(){b.$button.addClass("bs-invalid").focus(),b.$element.on({"focus.bs.select":function(){b.$button.focus(),b.$element.off("focus.bs.select")},"shown.bs.select":function(){b.$element.val(b.$element.val()).off("shown.bs.select")},"rendered.bs.select":function(){this.validity.valid&&b.$button.removeClass("bs-invalid"),b.$element.off("rendered.bs.select")}})}),setTimeout(function(){b.$element.trigger("loaded.bs.select")})},createDropdown:function(){var b=this.multiple||this.options.showTick?" show-tick":"",c=this.$element.parent().hasClass("input-group")?" input-group-btn":"",d=this.autofocus?" autofocus":"",e=this.options.header?'<div class="popover-title"><button type="button" class="close" aria-hidden="true">&times;</button>'+this.options.header+"</div>":"",f=this.options.liveSearch?'<div class="bs-searchbox"><input type="text" class="form-control" autocomplete="off"'+(null===this.options.liveSearchPlaceholder?"":' placeholder="'+i(this.options.liveSearchPlaceholder)+'"')+' role="textbox" aria-label="Search"></div>':"",g=this.multiple&&this.options.actionsBox?'<div class="bs-actionsbox"><div class="btn-group btn-group-sm btn-block"><button type="button" class="actions-btn bs-select-all btn btn-default">'+this.options.selectAllText+'</button><button type="button" class="actions-btn bs-deselect-all btn btn-default">'+this.options.deselectAllText+"</button></div></div>":"",h=this.multiple&&this.options.doneButton?'<div class="bs-donebutton"><div class="btn-group btn-block"><button type="button" class="btn btn-sm btn-default">'+this.options.doneButtonText+"</button></div></div>":"",j='<div class="btn-group bootstrap-select'+b+c+'"><button type="button" class="'+this.options.styleBase+' dropdown-toggle" data-toggle="dropdown"'+d+' role="button"><span class="filter-option pull-left"></span>&nbsp;<span class="bs-caret">'+this.options.template.caret+'</span></button><div class="dropdown-menu open" role="combobox">'+e+f+g+'<ul class="dropdown-menu inner" role="listbox" aria-expanded="false"></ul>'+h+"</div></div>";return a(j)},createView:function(){var a=this.createDropdown(),b=this.createLi();return a.find("ul")[0].innerHTML=b,a},reloadLi:function(){var a=this.createLi();this.$menuInner[0].innerHTML=a},createLi:function(){var c=this,d=[],e=0,f=document.createElement("option"),g=-1,h=function(a,b,c,d){return"<li"+("undefined"!=typeof c&""!==c?' class="'+c+'"':"")+("undefined"!=typeof b&null!==b?' data-original-index="'+b+'"':"")+("undefined"!=typeof d&null!==d?'data-optgroup="'+d+'"':"")+">"+a+"</li>"},j=function(d,e,f,g){return'<a tabindex="0"'+("undefined"!=typeof e?' class="'+e+'"':"")+(f?' style="'+f+'"':"")+(c.options.liveSearchNormalize?' data-normalized-text="'+b(i(a(d).html()))+'"':"")+("undefined"!=typeof g||null!==g?' data-tokens="'+g+'"':"")+' role="option">'+d+'<span class="'+c.options.iconBase+" "+c.options.tickIcon+' check-mark"></span></a>'};if(this.options.title&&!this.multiple&&(g--,!this.$element.find(".bs-title-option").length)){var k=this.$element[0];f.className="bs-title-option",f.innerHTML=this.options.title,f.value="",k.insertBefore(f,k.firstChild);var l=a(k.options[k.selectedIndex]);void 0===l.attr("selected")&&void 0===this.$element.data("selected")&&(f.selected=!0)}return this.$element.find("option").each(function(b){var f=a(this);if(g++,!f.hasClass("bs-title-option")){var k=this.className||"",l=this.style.cssText,m=f.data("content")?f.data("content"):f.html(),n=f.data("tokens")?f.data("tokens"):null,o="undefined"!=typeof f.data("subtext")?'<small class="text-muted">'+f.data("subtext")+"</small>":"",p="undefined"!=typeof f.data("icon")?'<span class="'+c.options.iconBase+" "+f.data("icon")+'"></span> ':"",q=f.parent(),r="OPTGROUP"===q[0].tagName,s=r&&q[0].disabled,t=this.disabled||s;if(""!==p&&t&&(p="<span>"+p+"</span>"),c.options.hideDisabled&&(t&&!r||s))return void g--;if(f.data("content")||(m=p+'<span class="text">'+m+o+"</span>"),r&&f.data("divider")!==!0){if(c.options.hideDisabled&&t){if(void 0===q.data("allOptionsDisabled")){var u=q.children();q.data("allOptionsDisabled",u.filter(":disabled").length===u.length)}if(q.data("allOptionsDisabled"))return void g--}var v=" "+q[0].className||"";if(0===f.index()){e+=1;var w=q[0].label,x="undefined"!=typeof q.data("subtext")?'<small class="text-muted">'+q.data("subtext")+"</small>":"",y=q.data("icon")?'<span class="'+c.options.iconBase+" "+q.data("icon")+'"></span> ':"";w=y+'<span class="text">'+i(w)+x+"</span>",0!==b&&d.length>0&&(g++,d.push(h("",null,"divider",e+"div"))),g++,d.push(h(w,null,"dropdown-header"+v,e))}if(c.options.hideDisabled&&t)return void g--;d.push(h(j(m,"opt "+k+v,l,n),b,"",e))}else if(f.data("divider")===!0)d.push(h("",b,"divider"));else if(f.data("hidden")===!0)d.push(h(j(m,k,l,n),b,"hidden is-hidden"));else{var z=this.previousElementSibling&&"OPTGROUP"===this.previousElementSibling.tagName;if(!z&&c.options.hideDisabled)for(var A=a(this).prevAll(),B=0;B<A.length;B++)if("OPTGROUP"===A[B].tagName){for(var C=0,D=0;D<B;D++){var E=A[D];(E.disabled||a(E).data("hidden")===!0)&&C++}C===B&&(z=!0);break}z&&(g++,d.push(h("",null,"divider",e+"div"))),d.push(h(j(m,k,l,n),b))}c.liObj[b]=g}}),this.multiple||0!==this.$element.find("option:selected").length||this.options.title||this.$element.find("option").eq(0).prop("selected",!0).attr("selected","selected"),d.join("")},findLis:function(){return null==this.$lis&&(this.$lis=this.$menu.find("li")),this.$lis},render:function(b){var c,d=this;b!==!1&&this.$element.find("option").each(function(a){var b=d.findLis().eq(d.liObj[a]);d.setDisabled(a,this.disabled||"OPTGROUP"===this.parentNode.tagName&&this.parentNode.disabled,b),d.setSelected(a,this.selected,b)}),this.togglePlaceholder(),this.tabIndex();var e=this.$element.find("option").map(function(){if(this.selected){if(d.options.hideDisabled&&(this.disabled||"OPTGROUP"===this.parentNode.tagName&&this.parentNode.disabled))return;var b,c=a(this),e=c.data("icon")&&d.options.showIcon?'<i class="'+d.options.iconBase+" "+c.data("icon")+'"></i> ':"";return b=d.options.showSubtext&&c.data("subtext")&&!d.multiple?' <small class="text-muted">'+c.data("subtext")+"</small>":"","undefined"!=typeof c.attr("title")?c.attr("title"):c.data("content")&&d.options.showContent?c.data("content").toString():e+c.html()+b}}).toArray(),f=this.multiple?e.join(this.options.multipleSeparator):e[0];if(this.multiple&&this.options.selectedTextFormat.indexOf("count")>-1){var g=this.options.selectedTextFormat.split(">");if(g.length>1&&e.length>g[1]||1==g.length&&e.length>=2){c=this.options.hideDisabled?", [disabled]":"";var h=this.$element.find("option").not('[data-divider="true"], [data-hidden="true"]'+c).length,i="function"==typeof this.options.countSelectedText?this.options.countSelectedText(e.length,h):this.options.countSelectedText;f=i.replace("{0}",e.length.toString()).replace("{1}",h.toString())}}void 0==this.options.title&&(this.options.title=this.$element.attr("title")),"static"==this.options.selectedTextFormat&&(f=this.options.title),f||(f="undefined"!=typeof this.options.title?this.options.title:this.options.noneSelectedText),this.$button.attr("title",j(a.trim(f.replace(/<[^>]*>?/g,"")))),this.$button.children(".filter-option").html(f),this.$element.trigger("rendered.bs.select")},setStyle:function(a,b){this.$element.attr("class")&&this.$newElement.addClass(this.$element.attr("class").replace(/selectpicker|mobile-device|bs-select-hidden|validate\[.*\]/gi,""));var c=a?a:this.options.style;"add"==b?this.$button.addClass(c):"remove"==b?this.$button.removeClass(c):(this.$button.removeClass(this.options.style),this.$button.addClass(c))},liHeight:function(b){if(b||this.options.size!==!1&&!this.sizeInfo){var c=document.createElement("div"),d=document.createElement("div"),e=document.createElement("ul"),f=document.createElement("li"),g=document.createElement("li"),h=document.createElement("a"),i=document.createElement("span"),j=this.options.header&&this.$menu.find(".popover-title").length>0?this.$menu.find(".popover-title")[0].cloneNode(!0):null,k=this.options.liveSearch?document.createElement("div"):null,l=this.options.actionsBox&&this.multiple&&this.$menu.find(".bs-actionsbox").length>0?this.$menu.find(".bs-actionsbox")[0].cloneNode(!0):null,m=this.options.doneButton&&this.multiple&&this.$menu.find(".bs-donebutton").length>0?this.$menu.find(".bs-donebutton")[0].cloneNode(!0):null;if(i.className="text",c.className=this.$menu[0].parentNode.className+" open",d.className="dropdown-menu open",e.className="dropdown-menu inner",f.className="divider",i.appendChild(document.createTextNode("Inner text")),h.appendChild(i),g.appendChild(h),e.appendChild(g),e.appendChild(f),j&&d.appendChild(j),k){var n=document.createElement("span");k.className="bs-searchbox",n.className="form-control",k.appendChild(n),d.appendChild(k)}l&&d.appendChild(l),d.appendChild(e),m&&d.appendChild(m),c.appendChild(d),document.body.appendChild(c);var o=h.offsetHeight,p=j?j.offsetHeight:0,q=k?k.offsetHeight:0,r=l?l.offsetHeight:0,s=m?m.offsetHeight:0,t=a(f).outerHeight(!0),u="function"==typeof getComputedStyle&&getComputedStyle(d),v=u?null:a(d),w={vert:parseInt(u?u.paddingTop:v.css("paddingTop"))+parseInt(u?u.paddingBottom:v.css("paddingBottom"))+parseInt(u?u.borderTopWidth:v.css("borderTopWidth"))+parseInt(u?u.borderBottomWidth:v.css("borderBottomWidth")),horiz:parseInt(u?u.paddingLeft:v.css("paddingLeft"))+parseInt(u?u.paddingRight:v.css("paddingRight"))+parseInt(u?u.borderLeftWidth:v.css("borderLeftWidth"))+parseInt(u?u.borderRightWidth:v.css("borderRightWidth"))},x={vert:w.vert+parseInt(u?u.marginTop:v.css("marginTop"))+parseInt(u?u.marginBottom:v.css("marginBottom"))+2,horiz:w.horiz+parseInt(u?u.marginLeft:v.css("marginLeft"))+parseInt(u?u.marginRight:v.css("marginRight"))+2};document.body.removeChild(c),this.sizeInfo={liHeight:o,headerHeight:p,searchHeight:q,actionsHeight:r,doneButtonHeight:s,dividerHeight:t,menuPadding:w,menuExtras:x}}},setSize:function(){if(this.findLis(),this.liHeight(),this.options.header&&this.$menu.css("padding-top",0),this.options.size!==!1){var b,c,d,e,f,g,h,i,j=this,k=this.$menu,l=this.$menuInner,m=a(window),n=this.$newElement[0].offsetHeight,o=this.$newElement[0].offsetWidth,p=this.sizeInfo.liHeight,q=this.sizeInfo.headerHeight,r=this.sizeInfo.searchHeight,s=this.sizeInfo.actionsHeight,t=this.sizeInfo.doneButtonHeight,u=this.sizeInfo.dividerHeight,v=this.sizeInfo.menuPadding,w=this.sizeInfo.menuExtras,x=this.options.hideDisabled?".disabled":"",y=function(){var b,c=j.$newElement.offset(),d=a(j.options.container);j.options.container&&!d.is("body")?(b=d.offset(),b.top+=parseInt(d.css("borderTopWidth")),b.left+=parseInt(d.css("borderLeftWidth"))):b={top:0,left:0};var e=j.options.windowPadding;f=c.top-b.top-m.scrollTop(),g=m.height()-f-n-b.top-e[2],h=c.left-b.left-m.scrollLeft(),i=m.width()-h-o-b.left-e[1],f-=e[0],h-=e[3]};if(y(),"auto"===this.options.size){var z=function(){var m,n=function(b,c){return function(d){return c?d.classList?d.classList.contains(b):a(d).hasClass(b):!(d.classList?d.classList.contains(b):a(d).hasClass(b))}},u=j.$menuInner[0].getElementsByTagName("li"),x=Array.prototype.filter?Array.prototype.filter.call(u,n("hidden",!1)):j.$lis.not(".hidden"),z=Array.prototype.filter?Array.prototype.filter.call(x,n("dropdown-header",!0)):x.filter(".dropdown-header");y(),b=g-w.vert,c=i-w.horiz,j.options.container?(k.data("height")||k.data("height",k.height()),d=k.data("height"),k.data("width")||k.data("width",k.width()),e=k.data("width")):(d=k.height(),e=k.width()),j.options.dropupAuto&&j.$newElement.toggleClass("dropup",f>g&&b-w.vert<d),j.$newElement.hasClass("dropup")&&(b=f-w.vert),"auto"===j.options.dropdownAlignRight&&k.toggleClass("dropdown-menu-right",h>i&&c-w.horiz<e-o),m=x.length+z.length>3?3*p+w.vert-2:0,k.css({"max-height":b+"px",overflow:"hidden","min-height":m+q+r+s+t+"px"}),l.css({"max-height":b-q-r-s-t-v.vert+"px","overflow-y":"auto","min-height":Math.max(m-v.vert,0)+"px"})};z(),this.$searchbox.off("input.getSize propertychange.getSize").on("input.getSize propertychange.getSize",z),m.off("resize.getSize scroll.getSize").on("resize.getSize scroll.getSize",z)}else if(this.options.size&&"auto"!=this.options.size&&this.$lis.not(x).length>this.options.size){var A=this.$lis.not(".divider").not(x).children().slice(0,this.options.size).last().parent().index(),B=this.$lis.slice(0,A+1).filter(".divider").length;b=p*this.options.size+B*u+v.vert,j.options.container?(k.data("height")||k.data("height",k.height()),d=k.data("height")):d=k.height(),j.options.dropupAuto&&this.$newElement.toggleClass("dropup",f>g&&b-w.vert<d),k.css({"max-height":b+q+r+s+t+"px",overflow:"hidden","min-height":""}),l.css({"max-height":b-v.vert+"px","overflow-y":"auto","min-height":""})}}},setWidth:function(){if("auto"===this.options.width){this.$menu.css("min-width","0");var a=this.$menu.parent().clone().appendTo("body"),b=this.options.container?this.$newElement.clone().appendTo("body"):a,c=a.children(".dropdown-menu").outerWidth(),d=b.css("width","auto").children("button").outerWidth();a.remove(),b.remove(),this.$newElement.css("width",Math.max(c,d)+"px")}else"fit"===this.options.width?(this.$menu.css("min-width",""),this.$newElement.css("width","").addClass("fit-width")):this.options.width?(this.$menu.css("min-width",""),this.$newElement.css("width",this.options.width)):(this.$menu.css("min-width",""),this.$newElement.css("width",""));this.$newElement.hasClass("fit-width")&&"fit"!==this.options.width&&this.$newElement.removeClass("fit-width")},selectPosition:function(){this.$bsContainer=a('<div class="bs-container" />');var b,c,d,e=this,f=a(this.options.container),g=function(a){e.$bsContainer.addClass(a.attr("class").replace(/form-control|fit-width/gi,"")).toggleClass("dropup",a.hasClass("dropup")),b=a.offset(),f.is("body")?c={top:0,left:0}:(c=f.offset(),c.top+=parseInt(f.css("borderTopWidth"))-f.scrollTop(),c.left+=parseInt(f.css("borderLeftWidth"))-f.scrollLeft()),d=a.hasClass("dropup")?0:a[0].offsetHeight,e.$bsContainer.css({top:b.top-c.top+d,left:b.left-c.left,width:a[0].offsetWidth})};this.$button.on("click",function(){var b=a(this);e.isDisabled()||(g(e.$newElement),e.$bsContainer.appendTo(e.options.container).toggleClass("open",!b.hasClass("open")).append(e.$menu))}),a(window).on("resize scroll",function(){g(e.$newElement)}),this.$element.on("hide.bs.select",function(){e.$menu.data("height",e.$menu.height()),e.$bsContainer.detach()})},setSelected:function(a,b,c){c||(this.togglePlaceholder(),c=this.findLis().eq(this.liObj[a])),c.toggleClass("selected",b).find("a").attr("aria-selected",b)},setDisabled:function(a,b,c){c||(c=this.findLis().eq(this.liObj[a])),b?c.addClass("disabled").children("a").attr("href","#").attr("tabindex",-1).attr("aria-disabled",!0):c.removeClass("disabled").children("a").removeAttr("href").attr("tabindex",0).attr("aria-disabled",!1)},isDisabled:function(){return this.$element[0].disabled},checkDisabled:function(){var a=this;this.isDisabled()?(this.$newElement.addClass("disabled"),this.$button.addClass("disabled").attr("tabindex",-1).attr("aria-disabled",!0)):(this.$button.hasClass("disabled")&&(this.$newElement.removeClass("disabled"),this.$button.removeClass("disabled").attr("aria-disabled",!1)),this.$button.attr("tabindex")!=-1||this.$element.data("tabindex")||this.$button.removeAttr("tabindex")),this.$button.click(function(){return!a.isDisabled()})},togglePlaceholder:function(){var a=this.$element.val();this.$button.toggleClass("bs-placeholder",null===a||""===a||a.constructor===Array&&0===a.length)},tabIndex:function(){this.$element.data("tabindex")!==this.$element.attr("tabindex")&&this.$element.attr("tabindex")!==-98&&"-98"!==this.$element.attr("tabindex")&&(this.$element.data("tabindex",this.$element.attr("tabindex")),this.$button.attr("tabindex",this.$element.data("tabindex"))),this.$element.attr("tabindex",-98)},clickListener:function(){var b=this,c=a(document);c.data("spaceSelect",!1),this.$button.on("keyup",function(a){/(32)/.test(a.keyCode.toString(10))&&c.data("spaceSelect")&&(a.preventDefault(),c.data("spaceSelect",!1))}),this.$button.on("click",function(){b.setSize()}),this.$element.on("shown.bs.select",function(){if(b.options.liveSearch||b.multiple){if(!b.multiple){var a=b.liObj[b.$element[0].selectedIndex];if("number"!=typeof a||b.options.size===!1)return;var c=b.$lis.eq(a)[0].offsetTop-b.$menuInner[0].offsetTop;c=c-b.$menuInner[0].offsetHeight/2+b.sizeInfo.liHeight/2,b.$menuInner[0].scrollTop=c}}else b.$menuInner.find(".selected a").focus()}),this.$menuInner.on("click","li a",function(c){var d=a(this),f=d.parent().data("originalIndex"),g=b.$element.val(),h=b.$element.prop("selectedIndex"),i=!0;if(b.multiple&&1!==b.options.maxOptions&&c.stopPropagation(),c.preventDefault(),!b.isDisabled()&&!d.parent().hasClass("disabled")){var j=b.$element.find("option"),k=j.eq(f),l=k.prop("selected"),m=k.parent("optgroup"),n=b.options.maxOptions,o=m.data("maxOptions")||!1;if(b.multiple){if(k.prop("selected",!l),b.setSelected(f,!l),d.blur(),n!==!1||o!==!1){var p=n<j.filter(":selected").length,q=o<m.find("option:selected").length;if(n&&p||o&&q)if(n&&1==n)j.prop("selected",!1),k.prop("selected",!0),b.$menuInner.find(".selected").removeClass("selected"),b.setSelected(f,!0);else if(o&&1==o){m.find("option:selected").prop("selected",!1),k.prop("selected",!0);var r=d.parent().data("optgroup");b.$menuInner.find('[data-optgroup="'+r+'"]').removeClass("selected"),b.setSelected(f,!0)}else{var s="string"==typeof b.options.maxOptionsText?[b.options.maxOptionsText,b.options.maxOptionsText]:b.options.maxOptionsText,t="function"==typeof s?s(n,o):s,u=t[0].replace("{n}",n),v=t[1].replace("{n}",o),w=a('<div class="notify"></div>');t[2]&&(u=u.replace("{var}",t[2][n>1?0:1]),v=v.replace("{var}",t[2][o>1?0:1])),k.prop("selected",!1),b.$menu.append(w),n&&p&&(w.append(a("<div>"+u+"</div>")),i=!1,b.$element.trigger("maxReached.bs.select")),o&&q&&(w.append(a("<div>"+v+"</div>")),i=!1,b.$element.trigger("maxReachedGrp.bs.select")),setTimeout(function(){b.setSelected(f,!1)},10),w.delay(750).fadeOut(300,function(){a(this).remove()})}}}else j.prop("selected",!1),k.prop("selected",!0),b.$menuInner.find(".selected").removeClass("selected").find("a").attr("aria-selected",!1),b.setSelected(f,!0);!b.multiple||b.multiple&&1===b.options.maxOptions?b.$button.focus():b.options.liveSearch&&b.$searchbox.focus(),i&&(g!=b.$element.val()&&b.multiple||h!=b.$element.prop("selectedIndex")&&!b.multiple)&&(e=[f,k.prop("selected"),l],b.$element.triggerNative("change"))}}),this.$menu.on("click","li.disabled a, .popover-title, .popover-title :not(.close)",function(c){c.currentTarget==this&&(c.preventDefault(),c.stopPropagation(),b.options.liveSearch&&!a(c.target).hasClass("close")?b.$searchbox.focus():b.$button.focus())}),this.$menuInner.on("click",".divider, .dropdown-header",function(a){a.preventDefault(),a.stopPropagation(),b.options.liveSearch?b.$searchbox.focus():b.$button.focus()}),this.$menu.on("click",".popover-title .close",function(){b.$button.click()}),this.$searchbox.on("click",function(a){a.stopPropagation()}),this.$menu.on("click",".actions-btn",function(c){b.options.liveSearch?b.$searchbox.focus():b.$button.focus(),c.preventDefault(),c.stopPropagation(),a(this).hasClass("bs-select-all")?b.selectAll():b.deselectAll()}),this.$element.change(function(){b.render(!1),b.$element.trigger("changed.bs.select",e),e=null})},liveSearchListener:function(){var c=this,d=a('<li class="no-results"></li>');this.$button.on("click.dropdown.data-api",function(){c.$menuInner.find(".active").removeClass("active"),c.$searchbox.val()&&(c.$searchbox.val(""),c.$lis.not(".is-hidden").removeClass("hidden"),d.parent().length&&d.remove()),c.multiple||c.$menuInner.find(".selected").addClass("active"),setTimeout(function(){c.$searchbox.focus()},10)}),this.$searchbox.on("click.dropdown.data-api focus.dropdown.data-api touchend.dropdown.data-api",function(a){a.stopPropagation()}),this.$searchbox.on("input propertychange",function(){if(c.$lis.not(".is-hidden").removeClass("hidden"),c.$lis.filter(".active").removeClass("active"),d.remove(),c.$searchbox.val()){var e,f=c.$lis.not(".is-hidden, .divider, .dropdown-header");if(e=c.options.liveSearchNormalize?f.not(":a"+c._searchStyle()+'("'+b(c.$searchbox.val())+'")'):f.not(":"+c._searchStyle()+'("'+c.$searchbox.val()+'")'),e.length===f.length)d.html(c.options.noneResultsText.replace("{0}",'"'+i(c.$searchbox.val())+'"')),c.$menuInner.append(d),c.$lis.addClass("hidden");else{e.addClass("hidden");var g,h=c.$lis.not(".hidden");h.each(function(b){var c=a(this);c.hasClass("divider")?void 0===g?c.addClass("hidden"):(g&&g.addClass("hidden"),g=c):c.hasClass("dropdown-header")&&h.eq(b+1).data("optgroup")!==c.data("optgroup")?c.addClass("hidden"):g=null}),g&&g.addClass("hidden"),f.not(".hidden").first().addClass("active")}}})},_searchStyle:function(){var a={begins:"ibegins",startsWith:"ibegins"};return a[this.options.liveSearchStyle]||"icontains"},val:function(a){return"undefined"!=typeof a?(this.$element.val(a),this.render(),this.$element):this.$element.val()},changeAll:function(b){if(this.multiple){"undefined"==typeof b&&(b=!0),this.findLis();var c=this.$element.find("option"),d=this.$lis.not(".divider, .dropdown-header, .disabled, .hidden"),e=d.length,f=[];if(b){if(d.filter(".selected").length===d.length)return}else if(0===d.filter(".selected").length)return;d.toggleClass("selected",b);for(var g=0;g<e;g++){var h=d[g].getAttribute("data-original-index");f[f.length]=c.eq(h)[0]}a(f).prop("selected",b),this.render(!1),this.togglePlaceholder(),this.$element.triggerNative("change")}},selectAll:function(){return this.changeAll(!0)},deselectAll:function(){return this.changeAll(!1)},toggle:function(a){a=a||window.event,a&&a.stopPropagation(),this.$button.trigger("click")},keydown:function(c){var d,e,f,g,h,i,j,k,l,m=a(this),n=m.is("input")?m.parent().parent():m.parent(),o=n.data("this"),p=":not(.disabled, .hidden, .dropdown-header, .divider)",q={32:" ",48:"0",49:"1",50:"2",51:"3",52:"4",53:"5",54:"6",55:"7",56:"8",57:"9",59:";",65:"a",66:"b",67:"c",68:"d",69:"e",70:"f",71:"g",72:"h",73:"i",74:"j",75:"k",76:"l",77:"m",78:"n",79:"o",80:"p",81:"q",82:"r",83:"s",84:"t",85:"u",86:"v",87:"w",88:"x",89:"y",90:"z",96:"0",97:"1",98:"2",99:"3",100:"4",101:"5",102:"6",103:"7",104:"8",105:"9"};if(o.options.liveSearch&&(n=m.parent().parent()),o.options.container&&(n=o.$menu),d=a('[role="listbox"] li',n),l=o.$newElement.hasClass("open"),!l&&(c.keyCode>=48&&c.keyCode<=57||c.keyCode>=96&&c.keyCode<=105||c.keyCode>=65&&c.keyCode<=90))return o.options.container?o.$button.trigger("click"):(o.setSize(),o.$menu.parent().addClass("open"),l=!0),void o.$searchbox.focus();if(o.options.liveSearch&&(/(^9$|27)/.test(c.keyCode.toString(10))&&l&&(c.preventDefault(),c.stopPropagation(),o.$menuInner.click(),o.$button.focus()),d=a('[role="listbox"] li'+p,n),m.val()||/(38|40)/.test(c.keyCode.toString(10))||0===d.filter(".active").length&&(d=o.$menuInner.find("li"),d=o.options.liveSearchNormalize?d.filter(":a"+o._searchStyle()+"("+b(q[c.keyCode])+")"):d.filter(":"+o._searchStyle()+"("+q[c.keyCode]+")"))),d.length){if(/(38|40)/.test(c.keyCode.toString(10)))e=d.index(d.find("a").filter(":focus").parent()),g=d.filter(p).first().index(),h=d.filter(p).last().index(),f=d.eq(e).nextAll(p).eq(0).index(),i=d.eq(e).prevAll(p).eq(0).index(),j=d.eq(f).prevAll(p).eq(0).index(),o.options.liveSearch&&(d.each(function(b){a(this).hasClass("disabled")||a(this).data("index",b)}),e=d.index(d.filter(".active")),g=d.first().data("index"),h=d.last().data("index"),f=d.eq(e).nextAll().eq(0).data("index"),i=d.eq(e).prevAll().eq(0).data("index"),j=d.eq(f).prevAll().eq(0).data("index")),k=m.data("prevIndex"),38==c.keyCode?(o.options.liveSearch&&e--,e!=j&&e>i&&(e=i),e<g&&(e=g),e==k&&(e=h)):40==c.keyCode&&(o.options.liveSearch&&e++,e==-1&&(e=0),e!=j&&e<f&&(e=f),e>h&&(e=h),e==k&&(e=g)),m.data("prevIndex",e),o.options.liveSearch?(c.preventDefault(),m.hasClass("dropdown-toggle")||(d.removeClass("active").eq(e).addClass("active").children("a").focus(),m.focus())):d.eq(e).children("a").focus();else if(!m.is("input")){var r,s,t=[];d.each(function(){a(this).hasClass("disabled")||a.trim(a(this).children("a").text().toLowerCase()).substring(0,1)==q[c.keyCode]&&t.push(a(this).index())}),r=a(document).data("keycount"),r++,a(document).data("keycount",r),s=a.trim(a(":focus").text().toLowerCase()).substring(0,1),s!=q[c.keyCode]?(r=1,a(document).data("keycount",r)):r>=t.length&&(a(document).data("keycount",0),r>t.length&&(r=1)),d.eq(t[r-1]).children("a").focus()}if((/(13|32)/.test(c.keyCode.toString(10))||/(^9$)/.test(c.keyCode.toString(10))&&o.options.selectOnTab)&&l){if(/(32)/.test(c.keyCode.toString(10))||c.preventDefault(),o.options.liveSearch)/(32)/.test(c.keyCode.toString(10))||(o.$menuInner.find(".active a").click(),m.focus());else{
-var u=a(":focus");u.click(),u.focus(),c.preventDefault(),a(document).data("spaceSelect",!0)}a(document).data("keycount",0)}(/(^9$|27)/.test(c.keyCode.toString(10))&&l&&(o.multiple||o.options.liveSearch)||/(27)/.test(c.keyCode.toString(10))&&!l)&&(o.$menu.parent().removeClass("open"),o.options.container&&o.$newElement.removeClass("open"),o.$button.focus())}},mobile:function(){this.$element.addClass("mobile-device")},refresh:function(){this.$lis=null,this.liObj={},this.reloadLi(),this.render(),this.checkDisabled(),this.liHeight(!0),this.setStyle(),this.setWidth(),this.$lis&&this.$searchbox.trigger("propertychange"),this.$element.trigger("refreshed.bs.select")},hide:function(){this.$newElement.hide()},show:function(){this.$newElement.show()},remove:function(){this.$newElement.remove(),this.$element.remove()},destroy:function(){this.$newElement.before(this.$element).remove(),this.$bsContainer?this.$bsContainer.remove():this.$menu.remove(),this.$element.off(".bs.select").removeData("selectpicker").removeClass("bs-select-hidden selectpicker")}};var l=a.fn.selectpicker;a.fn.selectpicker=c,a.fn.selectpicker.Constructor=k,a.fn.selectpicker.noConflict=function(){return a.fn.selectpicker=l,this},a(document).data("keycount",0).on("keydown.bs.select",'.bootstrap-select [data-toggle=dropdown], .bootstrap-select [role="listbox"], .bs-searchbox input',k.prototype.keydown).on("focusin.modal",'.bootstrap-select [data-toggle=dropdown], .bootstrap-select [role="listbox"], .bs-searchbox input',function(a){a.stopPropagation()}),a(window).on("load.bs.select.data-api",function(){a(".selectpicker").each(function(){var b=a(this);c.call(b,b.data())})})}(a)});
-//# sourceMappingURL=bootstrap-select.js.map</script>
-<script>HTMLWidgets.widget({
-
-  name: 'bsselectR',
-
-  type: 'output',
-
-  factory: function(el, width, height) {
-
-    // TODO: define shared variables for this instance
-
-    return {
-
-      renderValue: function() {
-
-      },
-
-      resize: function(width, height) {
-
-        // TODO: code to re-render the widget with a new size
-
-      }
-
-    };
-  }
-});</script>
 
 
 <style type="text/css">code{white-space: pre;}</style>
@@ -1574,133 +635,268 @@ Parkinson’s Disease
 <a class="sourceLine" id="cb2-11" data-line-number="11">  <span class="co">#           paste0(top_loci_sort$Locus,&quot;_ggbio.png&quot;)))</span></a>
 <a class="sourceLine" id="cb2-12" data-line-number="12">  <span class="co"># top_loci_sort &lt;- cbind(links, top_loci_sort)</span></a>
 <a class="sourceLine" id="cb2-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb2-14" data-line-number="14">genes &lt;-<span class="st">  </span><span class="kw">basename</span>(<span class="kw">dirname</span>(<span class="kw">dirname</span>(plot.paths)))</a>
-<a class="sourceLine" id="cb2-15" data-line-number="15"> <span class="st">&quot;https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD_results.html&quot;</span></a></code></pre></div>
-<pre><code>## [1] &quot;https://rajlabmssm.github.io/Fine_Mapping/Fine_Mapping_PD_results.html&quot;</code></pre>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="co"># file.path(&quot;https://rajlabmssm.github.io/Fine_Mapping/Data/Nalls23andMe_2019&quot;,</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="co">#           genes,&quot;Multi-finemap&quot;, paste0(genes,&quot;_ggbio.png&quot;))</span></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="co"># Dropdown</span></a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb4-5" data-line-number="5">plot.paths &lt;-<span class="st"> </span><span class="kw">file.path</span>(<span class="st">&quot;https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019&quot;</span>,genes,<span class="st">&quot;Multi-finemap&quot;</span>,<span class="kw">paste0</span>(genes,<span class="st">&quot;_ggbio.png&quot;</span>))</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="kw">names</span>(plot.paths) &lt;-<span class="st">  </span>genes</a>
-<a class="sourceLine" id="cb4-7" data-line-number="7"> </a>
-<a class="sourceLine" id="cb4-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb4-9" data-line-number="9"><span class="kw">bsselect</span>(<span class="dt">vector =</span> plot.paths, </a>
-<a class="sourceLine" id="cb4-10" data-line-number="10">         <span class="dt">type =</span> <span class="st">&quot;img&quot;</span>, </a>
-<a class="sourceLine" id="cb4-11" data-line-number="11">         <span class="dt">selected =</span> <span class="st">&quot;LRRK2&quot;</span>, </a>
-<a class="sourceLine" id="cb4-12" data-line-number="12">         <span class="dt">frame_height =</span> <span class="st">&quot;1000&quot;</span>, </a>
-<a class="sourceLine" id="cb4-13" data-line-number="13">         <span class="dt">live_search =</span> T, </a>
-<a class="sourceLine" id="cb4-14" data-line-number="14">         <span class="dt">show_tick =</span> T)</a></code></pre></div>
-
-<html>
-<select id="JmHEKpBbXN" class="selectpicker" data-dropdown-align-right="false" data-dropup-auto="true" data-header="false" data-live-search="true" data-live-search-style="contains" data-show-tick="true" data-width="false" data-size="auto"><option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/ASXL3/Multi-finemap/ASXL3_ggbio.png">ASXL3</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/ATG14/Multi-finemap/ATG14_ggbio.png">ATG14</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/ATP6V0A1/Multi-finemap/ATP6V0A1_ggbio.png">ATP6V0A1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/BIN3/Multi-finemap/BIN3_ggbio.png">BIN3</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/BRIP1/Multi-finemap/BRIP1_ggbio.png">BRIP1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/BST1/Multi-finemap/BST1_ggbio.png">BST1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/C5orf24/Multi-finemap/C5orf24_ggbio.png">C5orf24</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/CAB39L/Multi-finemap/CAB39L_ggbio.png">CAB39L</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/CAMK2D/Multi-finemap/CAMK2D_ggbio.png">CAMK2D</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/CASC16/Multi-finemap/CASC16_ggbio.png">CASC16</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/CD19/Multi-finemap/CD19_ggbio.png">CD19</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/CHD9/Multi-finemap/CHD9_ggbio.png">CHD9</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/CHRNB1/Multi-finemap/CHRNB1_ggbio.png">CHRNB1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/CLCN3/Multi-finemap/CLCN3_ggbio.png">CLCN3</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/CRHR1/Multi-finemap/CRHR1_ggbio.png">CRHR1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/CRLS1/Multi-finemap/CRLS1_ggbio.png">CRLS1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/CTSB/Multi-finemap/CTSB_ggbio.png">CTSB</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/DLG2/Multi-finemap/DLG2_ggbio.png">DLG2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/DNAH17/Multi-finemap/DNAH17_ggbio.png">DNAH17</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/DYRK1A/Multi-finemap/DYRK1A_ggbio.png">DYRK1A</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/ELOVL7/Multi-finemap/ELOVL7_ggbio.png">ELOVL7</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/FAM171A2/Multi-finemap/FAM171A2_ggbio.png">FAM171A2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/FAM47E-STBD1/Multi-finemap/FAM47E-STBD1_ggbio.png">FAM47E-STBD1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/FAM49B/Multi-finemap/FAM49B_ggbio.png">FAM49B</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/FBRSL1/Multi-finemap/FBRSL1_ggbio.png">FBRSL1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/FCGR2A/Multi-finemap/FCGR2A_ggbio.png">FCGR2A</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/FGF20/Multi-finemap/FGF20_ggbio.png">FGF20</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/FYN/Multi-finemap/FYN_ggbio.png">FYN</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/GALC/Multi-finemap/GALC_ggbio.png">GALC</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/GBF1/Multi-finemap/GBF1_ggbio.png">GBF1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/GCH1/Multi-finemap/GCH1_ggbio.png">GCH1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/GPNMB/Multi-finemap/GPNMB_ggbio.png">GPNMB</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/GS1-124K5.11/Multi-finemap/GS1-124K5.11_ggbio.png">GS1-124K5.11</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/HIP1R/Multi-finemap/HIP1R_ggbio.png">HIP1R</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/HLA-DRB5/Multi-finemap/HLA-DRB5_ggbio.png">HLA-DRB5</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/IGSF9B/Multi-finemap/IGSF9B_ggbio.png">IGSF9B</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/INPP5F/Multi-finemap/INPP5F_ggbio.png">INPP5F</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/IP6K2/Multi-finemap/IP6K2_ggbio.png">IP6K2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/ITGA8/Multi-finemap/ITGA8_ggbio.png">ITGA8</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/ITPKB/Multi-finemap/ITPKB_ggbio.png">ITPKB</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/KCNIP3/Multi-finemap/KCNIP3_ggbio.png">KCNIP3</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/KCNS3/Multi-finemap/KCNS3_ggbio.png">KCNS3</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/KPNA1/Multi-finemap/KPNA1_ggbio.png">KPNA1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/KRTCAP2/Multi-finemap/KRTCAP2_ggbio.png">KRTCAP2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/LCORL/Multi-finemap/LCORL_ggbio.png">LCORL</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/LINC00693/Multi-finemap/LINC00693_ggbio.png">LINC00693</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/LMNB1/Multi-finemap/LMNB1_ggbio.png">LMNB1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/LOC100131289/Multi-finemap/LOC100131289_ggbio.png">LOC100131289</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/LRRK2_ggbio.png" selected>LRRK2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/MAP4K4/Multi-finemap/MAP4K4_ggbio.png">MAP4K4</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/MBNL2/Multi-finemap/MBNL2_ggbio.png">MBNL2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/MCCC1/Multi-finemap/MCCC1_ggbio.png">MCCC1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/MED12L/Multi-finemap/MED12L_ggbio.png">MED12L</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/MEX3C/Multi-finemap/MEX3C_ggbio.png">MEX3C</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/MIPOL1/Multi-finemap/MIPOL1_ggbio.png">MIPOL1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/NOD2/Multi-finemap/NOD2_ggbio.png">NOD2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/NUCKS1/Multi-finemap/NUCKS1_ggbio.png">NUCKS1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/PAM/Multi-finemap/PAM_ggbio.png">PAM</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/RETREG3/Multi-finemap/RETREG3_ggbio.png">RETREG3</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/RIMS1/Multi-finemap/RIMS1_ggbio.png">RIMS1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/RIT2/Multi-finemap/RIT2_ggbio.png">RIT2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/RNF141/Multi-finemap/RNF141_ggbio.png">RNF141</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/RPS12/Multi-finemap/RPS12_ggbio.png">RPS12</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/RPS6KL1/Multi-finemap/RPS6KL1_ggbio.png">RPS6KL1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/SATB1/Multi-finemap/SATB1_ggbio.png">SATB1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/SCAF11/Multi-finemap/SCAF11_ggbio.png">SCAF11</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/SETD1A/Multi-finemap/SETD1A_ggbio.png">SETD1A</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/SH3GL2/Multi-finemap/SH3GL2_ggbio.png">SH3GL2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/SIPA1L2/Multi-finemap/SIPA1L2_ggbio.png">SIPA1L2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/SNCA/Multi-finemap/SNCA_ggbio.png">SNCA</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/SP1/Multi-finemap/SP1_ggbio.png">SP1</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/SPPL2B/Multi-finemap/SPPL2B_ggbio.png">SPPL2B</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/SPTSSB/Multi-finemap/SPTSSB_ggbio.png">SPTSSB</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/STK39/Multi-finemap/STK39_ggbio.png">STK39</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/SYT17/Multi-finemap/SYT17_ggbio.png">SYT17</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/TMEM163/Multi-finemap/TMEM163_ggbio.png">TMEM163</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/TMEM175/Multi-finemap/TMEM175_ggbio.png">TMEM175</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/TRIM40/Multi-finemap/TRIM40_ggbio.png">TRIM40</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/UBAP2/Multi-finemap/UBAP2_ggbio.png">UBAP2</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/VAMP4/Multi-finemap/VAMP4_ggbio.png">VAMP4</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/VPS13C/Multi-finemap/VPS13C_ggbio.png">VPS13C</option>
-<option value="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/WNT3/Multi-finemap/WNT3_ggbio.png">WNT3</option></select>
-<img src="https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/LRRK2_ggbio.png" name="Y5IYdvuicf" height="1000" width="100%"/>
-<script>$(document).ready(function(){
-                 $("#JmHEKpBbXN").change(function(){
-                 $("img[name=Y5IYdvuicf]").attr("src",$(this).val());
-
-                 });
-
-  });</script>
-</html>
-<div id="htmlwidget-733106627063afc57532" style="width:672px;height:480px;" class="bsselect html-widget" width="672" height="480"></div>
-<script type="application/json" data-for="htmlwidget-733106627063afc57532">{"x":[],"evals":[],"jsHooks":[]}</script>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="co"># for (p in plot.paths){</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="co">#   if(file.exists(p)){</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="co">#     try({ </span></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="co">#     gene &lt;- basename(dirname(dirname(p)))</span></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="co">#     cat('  \n###', gene, '  \n')</span></a>
-<a class="sourceLine" id="cb5-6" data-line-number="6"><span class="co">#     cat(paste0('![',gene,'](',p,')'))</span></a>
-<a class="sourceLine" id="cb5-7" data-line-number="7"><span class="co">#     cat('  \n')</span></a>
-<a class="sourceLine" id="cb5-8" data-line-number="8"><span class="co">#     })</span></a>
-<a class="sourceLine" id="cb5-9" data-line-number="9"><span class="co">#   }</span></a>
-<a class="sourceLine" id="cb5-10" data-line-number="10"><span class="co"># }</span></a></code></pre></div>
+<a class="sourceLine" id="cb2-14" data-line-number="14"><span class="co"># file.path(&quot;https://rajlabmssm.github.io/Fine_Mapping/Data/Nalls23andMe_2019&quot;,</span></a>
+<a class="sourceLine" id="cb2-15" data-line-number="15"><span class="co">#           genes,&quot;Multi-finemap&quot;, paste0(genes,&quot;_ggbio.png&quot;))</span></a>
+<a class="sourceLine" id="cb2-16" data-line-number="16"><span class="co"># Dropdown</span></a>
+<a class="sourceLine" id="cb2-17" data-line-number="17"></a>
+<a class="sourceLine" id="cb2-18" data-line-number="18"><span class="co"># genes &lt;-  basename(dirname(dirname(plot.paths)))</span></a>
+<a class="sourceLine" id="cb2-19" data-line-number="19"><span class="co"># plot.paths &lt;- file.path(&quot;https://rajlabmssm.github.io/Fine_Mapping/Data/GWAS/Nalls23andMe_2019&quot;,genes,&quot;Multi-finemap&quot;,paste0(genes,&quot;_ggbio.png&quot;))</span></a>
+<a class="sourceLine" id="cb2-20" data-line-number="20"><span class="co"># names(plot.paths) &lt;-  genes</span></a>
+<a class="sourceLine" id="cb2-21" data-line-number="21"><span class="co">#  </span></a>
+<a class="sourceLine" id="cb2-22" data-line-number="22"><span class="co"># </span></a>
+<a class="sourceLine" id="cb2-23" data-line-number="23"><span class="co"># bsselect(vector = plot.paths, </span></a>
+<a class="sourceLine" id="cb2-24" data-line-number="24"><span class="co">#          type = &quot;img&quot;, </span></a>
+<a class="sourceLine" id="cb2-25" data-line-number="25"><span class="co">#          selected = &quot;LRRK2&quot;, </span></a>
+<a class="sourceLine" id="cb2-26" data-line-number="26"><span class="co">#          frame_height = &quot;1000&quot;, </span></a>
+<a class="sourceLine" id="cb2-27" data-line-number="27"><span class="co">#          live_search = T, </span></a>
+<a class="sourceLine" id="cb2-28" data-line-number="28"><span class="co">#          show_tick = T)</span></a>
+<a class="sourceLine" id="cb2-29" data-line-number="29"></a>
+<a class="sourceLine" id="cb2-30" data-line-number="30"><span class="cf">for</span> (p <span class="cf">in</span> plot.paths){</a>
+<a class="sourceLine" id="cb2-31" data-line-number="31">  <span class="cf">if</span>(<span class="kw">file.exists</span>(p)){</a>
+<a class="sourceLine" id="cb2-32" data-line-number="32">    <span class="kw">try</span>({</a>
+<a class="sourceLine" id="cb2-33" data-line-number="33">    gene &lt;-<span class="st"> </span><span class="kw">basename</span>(<span class="kw">dirname</span>(<span class="kw">dirname</span>(p)))</a>
+<a class="sourceLine" id="cb2-34" data-line-number="34">    <span class="kw">cat</span>(<span class="st">'  </span><span class="ch">\n</span><span class="st">###'</span>, gene, <span class="st">'  </span><span class="ch">\n</span><span class="st">'</span>)</a>
+<a class="sourceLine" id="cb2-35" data-line-number="35">    <span class="kw">cat</span>(<span class="kw">paste0</span>(<span class="st">'!['</span>,gene,<span class="st">']('</span>,p,<span class="st">')'</span>))</a>
+<a class="sourceLine" id="cb2-36" data-line-number="36">    <span class="kw">cat</span>(<span class="st">'  </span><span class="ch">\n</span><span class="st">'</span>)</a>
+<a class="sourceLine" id="cb2-37" data-line-number="37">    })</a>
+<a class="sourceLine" id="cb2-38" data-line-number="38">  }</a>
+<a class="sourceLine" id="cb2-39" data-line-number="39">}</a></code></pre></div>
+<pre><code>##   
+## ### ASXL3   
+## ![ASXL3](./Data/GWAS/Nalls23andMe_2019/ASXL3/Multi-finemap/ASXL3_ggbio.png)  
+##   
+## ### ATG14   
+## ![ATG14](./Data/GWAS/Nalls23andMe_2019/ATG14/Multi-finemap/ATG14_ggbio.png)  
+##   
+## ### ATP6V0A1   
+## ![ATP6V0A1](./Data/GWAS/Nalls23andMe_2019/ATP6V0A1/Multi-finemap/ATP6V0A1_ggbio.png)  
+##   
+## ### BIN3   
+## ![BIN3](./Data/GWAS/Nalls23andMe_2019/BIN3/Multi-finemap/BIN3_ggbio.png)  
+##   
+## ### BRIP1   
+## ![BRIP1](./Data/GWAS/Nalls23andMe_2019/BRIP1/Multi-finemap/BRIP1_ggbio.png)  
+##   
+## ### BST1   
+## ![BST1](./Data/GWAS/Nalls23andMe_2019/BST1/Multi-finemap/BST1_ggbio.png)  
+##   
+## ### C5orf24   
+## ![C5orf24](./Data/GWAS/Nalls23andMe_2019/C5orf24/Multi-finemap/C5orf24_ggbio.png)  
+##   
+## ### CAB39L   
+## ![CAB39L](./Data/GWAS/Nalls23andMe_2019/CAB39L/Multi-finemap/CAB39L_ggbio.png)  
+##   
+## ### CAMK2D   
+## ![CAMK2D](./Data/GWAS/Nalls23andMe_2019/CAMK2D/Multi-finemap/CAMK2D_ggbio.png)  
+##   
+## ### CASC16   
+## ![CASC16](./Data/GWAS/Nalls23andMe_2019/CASC16/Multi-finemap/CASC16_ggbio.png)  
+##   
+## ### CD19   
+## ![CD19](./Data/GWAS/Nalls23andMe_2019/CD19/Multi-finemap/CD19_ggbio.png)  
+##   
+## ### CHRNB1   
+## ![CHRNB1](./Data/GWAS/Nalls23andMe_2019/CHRNB1/Multi-finemap/CHRNB1_ggbio.png)  
+##   
+## ### CLCN3   
+## ![CLCN3](./Data/GWAS/Nalls23andMe_2019/CLCN3/Multi-finemap/CLCN3_ggbio.png)  
+##   
+## ### CRHR1   
+## ![CRHR1](./Data/GWAS/Nalls23andMe_2019/CRHR1/Multi-finemap/CRHR1_ggbio.png)  
+##   
+## ### CRLS1   
+## ![CRLS1](./Data/GWAS/Nalls23andMe_2019/CRLS1/Multi-finemap/CRLS1_ggbio.png)  
+##   
+## ### CTSB   
+## ![CTSB](./Data/GWAS/Nalls23andMe_2019/CTSB/Multi-finemap/CTSB_ggbio.png)  
+##   
+## ### DLG2   
+## ![DLG2](./Data/GWAS/Nalls23andMe_2019/DLG2/Multi-finemap/DLG2_ggbio.png)  
+##   
+## ### DNAH17   
+## ![DNAH17](./Data/GWAS/Nalls23andMe_2019/DNAH17/Multi-finemap/DNAH17_ggbio.png)  
+##   
+## ### DYRK1A   
+## ![DYRK1A](./Data/GWAS/Nalls23andMe_2019/DYRK1A/Multi-finemap/DYRK1A_ggbio.png)  
+##   
+## ### ELOVL7   
+## ![ELOVL7](./Data/GWAS/Nalls23andMe_2019/ELOVL7/Multi-finemap/ELOVL7_ggbio.png)  
+##   
+## ### FAM171A2   
+## ![FAM171A2](./Data/GWAS/Nalls23andMe_2019/FAM171A2/Multi-finemap/FAM171A2_ggbio.png)  
+##   
+## ### FAM47E-STBD1   
+## ![FAM47E-STBD1](./Data/GWAS/Nalls23andMe_2019/FAM47E-STBD1/Multi-finemap/FAM47E-STBD1_ggbio.png)  
+##   
+## ### FAM49B   
+## ![FAM49B](./Data/GWAS/Nalls23andMe_2019/FAM49B/Multi-finemap/FAM49B_ggbio.png)  
+##   
+## ### FBRSL1   
+## ![FBRSL1](./Data/GWAS/Nalls23andMe_2019/FBRSL1/Multi-finemap/FBRSL1_ggbio.png)  
+##   
+## ### FCGR2A   
+## ![FCGR2A](./Data/GWAS/Nalls23andMe_2019/FCGR2A/Multi-finemap/FCGR2A_ggbio.png)  
+##   
+## ### FGF20   
+## ![FGF20](./Data/GWAS/Nalls23andMe_2019/FGF20/Multi-finemap/FGF20_ggbio.png)  
+##   
+## ### FYN   
+## ![FYN](./Data/GWAS/Nalls23andMe_2019/FYN/Multi-finemap/FYN_ggbio.png)  
+##   
+## ### GALC   
+## ![GALC](./Data/GWAS/Nalls23andMe_2019/GALC/Multi-finemap/GALC_ggbio.png)  
+##   
+## ### GBF1   
+## ![GBF1](./Data/GWAS/Nalls23andMe_2019/GBF1/Multi-finemap/GBF1_ggbio.png)  
+##   
+## ### GCH1   
+## ![GCH1](./Data/GWAS/Nalls23andMe_2019/GCH1/Multi-finemap/GCH1_ggbio.png)  
+##   
+## ### GPNMB   
+## ![GPNMB](./Data/GWAS/Nalls23andMe_2019/GPNMB/Multi-finemap/GPNMB_ggbio.png)  
+##   
+## ### GS1-124K5.11   
+## ![GS1-124K5.11](./Data/GWAS/Nalls23andMe_2019/GS1-124K5.11/Multi-finemap/GS1-124K5.11_ggbio.png)  
+##   
+## ### HIP1R   
+## ![HIP1R](./Data/GWAS/Nalls23andMe_2019/HIP1R/Multi-finemap/HIP1R_ggbio.png)  
+##   
+## ### IGSF9B   
+## ![IGSF9B](./Data/GWAS/Nalls23andMe_2019/IGSF9B/Multi-finemap/IGSF9B_ggbio.png)  
+##   
+## ### INPP5F   
+## ![INPP5F](./Data/GWAS/Nalls23andMe_2019/INPP5F/Multi-finemap/INPP5F_ggbio.png)  
+##   
+## ### IP6K2   
+## ![IP6K2](./Data/GWAS/Nalls23andMe_2019/IP6K2/Multi-finemap/IP6K2_ggbio.png)  
+##   
+## ### ITGA8   
+## ![ITGA8](./Data/GWAS/Nalls23andMe_2019/ITGA8/Multi-finemap/ITGA8_ggbio.png)  
+##   
+## ### ITPKB   
+## ![ITPKB](./Data/GWAS/Nalls23andMe_2019/ITPKB/Multi-finemap/ITPKB_ggbio.png)  
+##   
+## ### KCNIP3   
+## ![KCNIP3](./Data/GWAS/Nalls23andMe_2019/KCNIP3/Multi-finemap/KCNIP3_ggbio.png)  
+##   
+## ### KCNS3   
+## ![KCNS3](./Data/GWAS/Nalls23andMe_2019/KCNS3/Multi-finemap/KCNS3_ggbio.png)  
+##   
+## ### KPNA1   
+## ![KPNA1](./Data/GWAS/Nalls23andMe_2019/KPNA1/Multi-finemap/KPNA1_ggbio.png)  
+##   
+## ### KRTCAP2   
+## ![KRTCAP2](./Data/GWAS/Nalls23andMe_2019/KRTCAP2/Multi-finemap/KRTCAP2_ggbio.png)  
+##   
+## ### LCORL   
+## ![LCORL](./Data/GWAS/Nalls23andMe_2019/LCORL/Multi-finemap/LCORL_ggbio.png)  
+##   
+## ### LINC00693   
+## ![LINC00693](./Data/GWAS/Nalls23andMe_2019/LINC00693/Multi-finemap/LINC00693_ggbio.png)  
+##   
+## ### LRRK2   
+## ![LRRK2](./Data/GWAS/Nalls23andMe_2019/LRRK2/Multi-finemap/LRRK2_ggbio.png)  
+##   
+## ### MAP4K4   
+## ![MAP4K4](./Data/GWAS/Nalls23andMe_2019/MAP4K4/Multi-finemap/MAP4K4_ggbio.png)  
+##   
+## ### MBNL2   
+## ![MBNL2](./Data/GWAS/Nalls23andMe_2019/MBNL2/Multi-finemap/MBNL2_ggbio.png)  
+##   
+## ### MCCC1   
+## ![MCCC1](./Data/GWAS/Nalls23andMe_2019/MCCC1/Multi-finemap/MCCC1_ggbio.png)  
+##   
+## ### MED12L   
+## ![MED12L](./Data/GWAS/Nalls23andMe_2019/MED12L/Multi-finemap/MED12L_ggbio.png)  
+##   
+## ### MEX3C   
+## ![MEX3C](./Data/GWAS/Nalls23andMe_2019/MEX3C/Multi-finemap/MEX3C_ggbio.png)  
+##   
+## ### MIPOL1   
+## ![MIPOL1](./Data/GWAS/Nalls23andMe_2019/MIPOL1/Multi-finemap/MIPOL1_ggbio.png)  
+##   
+## ### NOD2   
+## ![NOD2](./Data/GWAS/Nalls23andMe_2019/NOD2/Multi-finemap/NOD2_ggbio.png)  
+##   
+## ### NUCKS1   
+## ![NUCKS1](./Data/GWAS/Nalls23andMe_2019/NUCKS1/Multi-finemap/NUCKS1_ggbio.png)  
+##   
+## ### PAM   
+## ![PAM](./Data/GWAS/Nalls23andMe_2019/PAM/Multi-finemap/PAM_ggbio.png)  
+##   
+## ### RETREG3   
+## ![RETREG3](./Data/GWAS/Nalls23andMe_2019/RETREG3/Multi-finemap/RETREG3_ggbio.png)  
+##   
+## ### RIMS1   
+## ![RIMS1](./Data/GWAS/Nalls23andMe_2019/RIMS1/Multi-finemap/RIMS1_ggbio.png)  
+##   
+## ### RIT2   
+## ![RIT2](./Data/GWAS/Nalls23andMe_2019/RIT2/Multi-finemap/RIT2_ggbio.png)  
+##   
+## ### RNF141   
+## ![RNF141](./Data/GWAS/Nalls23andMe_2019/RNF141/Multi-finemap/RNF141_ggbio.png)  
+##   
+## ### RPS12   
+## ![RPS12](./Data/GWAS/Nalls23andMe_2019/RPS12/Multi-finemap/RPS12_ggbio.png)  
+##   
+## ### RPS6KL1   
+## ![RPS6KL1](./Data/GWAS/Nalls23andMe_2019/RPS6KL1/Multi-finemap/RPS6KL1_ggbio.png)  
+##   
+## ### SATB1   
+## ![SATB1](./Data/GWAS/Nalls23andMe_2019/SATB1/Multi-finemap/SATB1_ggbio.png)  
+##   
+## ### SCAF11   
+## ![SCAF11](./Data/GWAS/Nalls23andMe_2019/SCAF11/Multi-finemap/SCAF11_ggbio.png)  
+##   
+## ### SETD1A   
+## ![SETD1A](./Data/GWAS/Nalls23andMe_2019/SETD1A/Multi-finemap/SETD1A_ggbio.png)  
+##   
+## ### SH3GL2   
+## ![SH3GL2](./Data/GWAS/Nalls23andMe_2019/SH3GL2/Multi-finemap/SH3GL2_ggbio.png)  
+##   
+## ### SIPA1L2   
+## ![SIPA1L2](./Data/GWAS/Nalls23andMe_2019/SIPA1L2/Multi-finemap/SIPA1L2_ggbio.png)  
+##   
+## ### SNCA   
+## ![SNCA](./Data/GWAS/Nalls23andMe_2019/SNCA/Multi-finemap/SNCA_ggbio.png)  
+##   
+## ### SP1   
+## ![SP1](./Data/GWAS/Nalls23andMe_2019/SP1/Multi-finemap/SP1_ggbio.png)  
+##   
+## ### SPPL2B   
+## ![SPPL2B](./Data/GWAS/Nalls23andMe_2019/SPPL2B/Multi-finemap/SPPL2B_ggbio.png)  
+##   
+## ### SPTSSB   
+## ![SPTSSB](./Data/GWAS/Nalls23andMe_2019/SPTSSB/Multi-finemap/SPTSSB_ggbio.png)  
+##   
+## ### STK39   
+## ![STK39](./Data/GWAS/Nalls23andMe_2019/STK39/Multi-finemap/STK39_ggbio.png)  
+##   
+## ### SYT17   
+## ![SYT17](./Data/GWAS/Nalls23andMe_2019/SYT17/Multi-finemap/SYT17_ggbio.png)  
+##   
+## ### TMEM163   
+## ![TMEM163](./Data/GWAS/Nalls23andMe_2019/TMEM163/Multi-finemap/TMEM163_ggbio.png)  
+##   
+## ### TMEM175   
+## ![TMEM175](./Data/GWAS/Nalls23andMe_2019/TMEM175/Multi-finemap/TMEM175_ggbio.png)  
+##   
+## ### UBAP2   
+## ![UBAP2](./Data/GWAS/Nalls23andMe_2019/UBAP2/Multi-finemap/UBAP2_ggbio.png)  
+##   
+## ### VAMP4   
+## ![VAMP4](./Data/GWAS/Nalls23andMe_2019/VAMP4/Multi-finemap/VAMP4_ggbio.png)  
+##   
+## ### VPS13C   
+## ![VPS13C](./Data/GWAS/Nalls23andMe_2019/VPS13C/Multi-finemap/VPS13C_ggbio.png)  
+##   
+## ### WNT3   
+## ![WNT3](./Data/GWAS/Nalls23andMe_2019/WNT3/Multi-finemap/WNT3_ggbio.png)</code></pre>
 </div>
 </div>
 <div id="session-information" class="section level1">
 <h1>Session Information</h1>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">sessionInfo</span>()</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">sessionInfo</span>()</a></code></pre></div>
 <pre><code>## R version 3.6.1 (2019-07-05)
 ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
 ## Running under: macOS Mojave 10.14.5
@@ -1720,12 +916,12 @@ Parkinson’s Disease
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] Rcpp_1.0.3        crayon_1.3.4      digest_0.6.23     assertthat_0.2.1 
-##  [5] R6_2.4.1          jsonlite_1.6      magrittr_1.5      evaluate_0.14    
-##  [9] pillar_1.4.3      rlang_0.4.2       stringi_1.4.5     rmarkdown_2.0    
-## [13] tools_3.6.1       htmlwidgets_1.5.1 glue_1.3.1        purrr_0.3.3      
-## [17] xfun_0.12         yaml_2.2.0        compiler_3.6.1    pkgconfig_2.0.3  
-## [21] htmltools_0.4.0   tidyselect_0.2.5  knitr_1.26        tibble_2.1.3</code></pre>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">print</span>(<span class="kw">paste</span>(<span class="st">&quot;susieR &quot;</span>, <span class="kw">packageVersion</span>(<span class="st">&quot;susieR&quot;</span>)))</a></code></pre></div>
+##  [5] R6_2.4.1          magrittr_1.5      evaluate_0.14     pillar_1.4.3     
+##  [9] rlang_0.4.2       stringi_1.4.5     rmarkdown_2.0     tools_3.6.1      
+## [13] htmlwidgets_1.5.1 glue_1.3.1        purrr_0.3.3       xfun_0.12        
+## [17] yaml_2.2.0        compiler_3.6.1    pkgconfig_2.0.3   htmltools_0.4.0  
+## [21] tidyselect_0.2.5  knitr_1.26        tibble_2.1.3</code></pre>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw">print</span>(<span class="kw">paste</span>(<span class="st">&quot;susieR &quot;</span>, <span class="kw">packageVersion</span>(<span class="st">&quot;susieR&quot;</span>)))</a></code></pre></div>
 <pre><code>## [1] &quot;susieR  0.8.0&quot;</code></pre>
 </div>
 

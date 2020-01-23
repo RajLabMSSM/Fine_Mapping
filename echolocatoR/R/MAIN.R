@@ -98,31 +98,33 @@ library(crayon)
 
 # General
 source("./echolocatoR/R/directory.R")
-source("./echolocatoR/R/query.R")
+# Download
+source("./echolocatoR/R/Download/query.R")
+source("./echolocatoR/R/Download/downloaders.R")
 # LD
 source("./echolocatoR/R/LD/LD.R")
 source("./echolocatoR/R/LD/UKBiobank_LD.R")
-# Fine-mapping
-source("./echolocatoR/R/Finemapping/multi_finemap.R")
-source("./echolocatoR/R/Finemapping/SUSIE.R")
-source("./echolocatoR/R/Finemapping/ABF.R")
-source("./echolocatoR/R/Finemapping/FINEMAP.R") 
-source("./echolocatoR/R/Finemapping/PAINTOR.R")
-source("./echolocatoR/R/Finemapping/COJO.R")
-source("./echolocatoR/R/Finemapping/COLOC.R")
-source("./echolocatoR/R/Finemapping/fGWAS.R")
-source("./echolocatoR/R/Finemapping/POLYFUN.R")
-# Plotting
-source("./echolocatoR/R/Plotting/plot.R")
-source("./echolocatoR/R/Plotting/ggbio.R")
-source("./echolocatoR/R/Plotting/QTL_boxplots.R")
-# Annotation
-source("./echolocatoR/R/Annotation/annotate.R")
-source("./echolocatoR/R/Annotation/GoShifter.R") # ***
-source("./echolocatoR/R/Annotation/XGR.R")
-source("./echolocatoR/R/Annotation/psychENCODE.R")
-source("./echolocatoR/R/Annotation/mergeQTL.R")
-source("./echolocatoR/R/Annotation/Nott_2019.R")
+# Fine-map
+source("./echolocatoR/R/Finemap/multi_finemap.R")
+source("./echolocatoR/R/Finemap/SUSIE.R")
+source("./echolocatoR/R/Finemap/ABF.R")
+source("./echolocatoR/R/Finemap/FINEMAP.R") 
+source("./echolocatoR/R/Finemap/PAINTOR.R")
+source("./echolocatoR/R/Finemap/COJO.R")
+source("./echolocatoR/R/Finemap/COLOC.R")
+source("./echolocatoR/R/Finemap/fGWAS.R")
+source("./echolocatoR/R/Finemap/POLYFUN.R")
+# Plot
+source("./echolocatoR/R/Plot/plot.R")
+source("./echolocatoR/R/Plot/ggbio.R")
+source("./echolocatoR/R/Plot/QTL_boxplots.R")
+# Annotate
+source("./echolocatoR/R/Annotate/annotate.R")
+source("./echolocatoR/R/Annotate/GoShifter.R") # ***
+source("./echolocatoR/R/Annotate/XGR.R")
+source("./echolocatoR/R/Annotate/psychENCODE.R")
+source("./echolocatoR/R/Annotate/mergeQTL.R")
+source("./echolocatoR/R/Annotate/Nott_2019.R")
 
 
 
@@ -169,12 +171,12 @@ rbind.file.list <- function(file.list, verbose=T){
 
 # data.table::fwrite( subset(subset_DT, SNP != "rs34637584"), "Data/GWAS/Nalls23andMe_2019/LRRK2/LocusZoomData_-rs34637584.txt", sep="\t")
 
-quick_finemap <- function(locus="LRRK2"){ 
+quick_finemap <- function(locus="LRRK2", consensus_thresh = 3){ 
   gene <<- locus
   # locus <<- locus
   results_path <<- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
   finemap_DT <<- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt")) 
-  finemap_DT <<- find_consensus_SNPs(finemap_DT)
+  finemap_DT <<- find_consensus_SNPs(finemap_DT, consensus_thresh = consensus_thresh)
   
   if(file.exists(file.path(results_path,"plink","UKB_LD.RDS"))){
     LD_matrix <<- readRDS(file.path(results_path,"plink","UKB_LD.RDS"))
@@ -186,6 +188,12 @@ quick_finemap <- function(locus="LRRK2"){
   LD_matrix <<- sub.out$LD
   finemap_DT <<- sub.out$DT  
   subset_DT <<- finemap_DT
+}
+
+effective_sample_size <- function(finemap_DT){ 
+  finemap_DT$N <- (4.0 / (1.0/finemap_DT$N_cases + 1.0/finemap_DT$N_controls) ) 
+  sample_size <- as.integer(median(finemap_DT$N))
+  return(sample_size)
 }
 
 quick_finemap_soft <- function(locus="LRRK2"){
@@ -649,7 +657,8 @@ finemap_pipeline <- function(gene,
                                  min_Dprime=min_Dprime,
                                  remove_correlates=remove_correlates,
                                  verbose=verbose, 
-                                 server=server)
+                                 server=server,
+                                 remove_tmps=remove_tmps)
   
   #### ***** SNP Filters ***** ###
   # Remove pre-specified SNPs

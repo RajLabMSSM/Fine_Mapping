@@ -30,13 +30,18 @@ LD.load_or_create <- function(results_path,
                               remove_correlates=F,
                               fillNA=0,
                               verbose=T,
-                              server=F){
+                              server=F,
+                              remove_tmps=T){
   if(LD_reference=="UKB"){
-    printer("LD:: Using UK Biobank LD reference panel...")
-    LD_matrix <- LD.UKBiobank(finemap_DT = subset_DT, 
-                              results_path = results_path, 
-                              force_new_LD = force_new_LD,
-                              server = server)
+    printer("LD:: Using UK Biobank LD reference panel...") 
+    LD_matrix <- LD.UKBiobank(subset_DT = subset_DT,
+                               output.path = results_path,
+                               force_new_LD = force_new_LD,
+                               chimera = F,  
+                               download_method = "axel", 
+                               nThreads = 4,
+                               return_matrix = T,
+                               remove_tmps = remove_tmps)
   } else if (LD_reference == "1KG_Phase1" | LD_reference == "1KG_Phase3") { 
     LD_path <- file.path(results_path,"plink",paste0(LD_reference,"_LD.RDS")) 
     if(!file.exists(LD_path) | force_new_LD==T){

@@ -1,6 +1,7 @@
 
 ### Summarise fine-mapping results from all loci ###
-
+# merged_DT <- merge_finemapping_results(consensus_thresh = 3)
+# (merged_DT %>% subset(P<5e-8) %>%dplyr::group_by(Gene) %>% count())$n %>% mean()
 
 
 lead.SNP.coords <- function(){
