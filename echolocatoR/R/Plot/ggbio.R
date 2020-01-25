@@ -485,7 +485,7 @@ GGBIO.plot <- function(finemap_DT,
   lead.pos <- subset(finemap_DT, leadSNP)$POS
   consensus.pos <- subset(finemap_DT, Consensus_SNP==T)$POS
   trks_plus_lines <- trks + 
-    geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=1, size=.3, linetype='solid') +
+    geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=.3, size=.3, linetype='solid') +
     geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') + 
     theme(legend.key.width=unit(.5,"line"),                                                                      legend.key.height=unit(.5,"line"),
           strip.text.y = element_text(angle = 0),

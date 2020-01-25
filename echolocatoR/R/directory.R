@@ -272,11 +272,11 @@ make_results_path <- function(dataset_name, dataset_type, gene){
   return(results_path)
 }
 
-get_subset_path <- function(results_path, gene, subset_path="auto"){
+get_subset_path <- function(results_path, gene, subset_path="auto", suffix=".tsv.gz"){
   # Specify subset file name 
   if(subset_path=="auto"){  
     dataset_name <- basename(dirname(results_path))
-    created_sub_path <- file.path(results_path, paste(gene,"_",dataset_name,"_subset.txt",sep="") )
+    created_sub_path <- file.path(results_path, paste0(gene,"_",dataset_name,"_subset",suffix) )
     return(created_sub_path)
   } else{return(subset_path)}
 }

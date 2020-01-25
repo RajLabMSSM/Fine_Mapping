@@ -1,0 +1,1 @@
+CHR	POS	RSID	A1	A2	freq	beta	se	p	N_cases	N_controls

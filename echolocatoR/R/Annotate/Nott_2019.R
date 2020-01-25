@@ -56,7 +56,8 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
     bw.name <- gsub("_pooled|pooled_","",bigWigFiles$name[i])
     printer("GVIZ:: Importing...",bw.name)
     bw.filt <- import.bw.filt(bw.file=bw.file, 
-                              gr.dat=gr.dat, full_data=full_data) 
+                              gr.dat=gr.dat, 
+                              full_data=full_data) 
     bw.filt$Cell_type <- bigWigFiles$cell_type[i]
     bw.filt$Assay <- bigWigFiles$assay[i]
     bw.filt$Experiment <- gsub("_"," ",bw.name)
@@ -259,7 +260,8 @@ NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
     scale_colour_brewer(palette = "Set2") + 
     labs(subtitle = paste0(annot_sub$Annotation[[1]]," - ",promoter_celltypes) ) +
     theme(legend.key.width=unit(1.5,"line"),
-          legend.key.height=unit(1.5,"line"))
+          legend.key.height=unit(1.5,"line"), 
+          axis.text.y = element_blank() )
   if(return_interaction_track){
     printer("++ Nott sn-epigenomics:: Returning PLAC-seq track.")
     return(NOTT.interact_trk +  

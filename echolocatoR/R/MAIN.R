@@ -100,6 +100,8 @@ library(crayon)
 source("./echolocatoR/R/directory.R")
 # Download
 source("./echolocatoR/R/Download/query.R")
+source("./echolocatoR/R/Download/standardize.R")
+source("./echolocatoR/R/Download/tabix.R") 
 source("./echolocatoR/R/Download/downloaders.R")
 # LD
 source("./echolocatoR/R/LD/LD.R")
@@ -557,6 +559,49 @@ printer <- function(..., v=T){if(v){print(paste(...))}}
 # + coefficient estimate (Beta)
 # + Effect allele frequency (EAF)
 # + The I^2 statistic describes the percentage of variation across studies that seems not to be due to chance.
+
+echoR.filter_snps <- function(subset_DT, 
+                              bp_distance,
+                              remove_variants,
+                              gene,
+                              verbose=T,
+                              min_POS=NULL,
+                              max_POS=NULL,
+                              max_snps=NULL,
+                              min_MAF=NULL,
+                              trim_gene_limits=F){
+  if(remove_variants!=F){
+    printer("Removing specified variants:",paste(remove_variants, collapse=','), v=verbose)
+    try({subset_DT <- subset(subset_DT, !(SNP %in% remove_variants) )}) 
+  } 
+  # Trim subset according to annotations of where the gene's limit are
+  if(trim_gene_limits){
+    subset_DT <- gene_trimmer(subset_DT=subset_DT, 
+                              gene=gene, 
+                              min_POS=min_POS,
+                              max_POS=min_POS) 
+  }
+  if(!is.null(max_snps)){
+    subset_DT <- limit_SNPs(max_snps = max_snps, subset_DT = subset_DT) 
+  }
+  if(!is.null(min_MAF) & length(min_MAF>0)>0){
+    printer("echolocatoR:: Removing SNPs w/ MAF <",min_MAF)
+    subset_DT <- subset(subset_DT, MAF>=min_MAF)  
+  }
+  # Limit range
+  if(!is.null(bp_distance)){
+    lead.snp <- subset(subset_DT, leadSNP)
+    subset_DT <- subset(subset_DT, 
+                        POS >= lead.snp$POS - bp_distance & 
+                        POS <= lead.snp$POS + bp_distance)
+  }
+  if(!is.na(min_POS)){subset_DT <- subset(subset_DT, POS>=min_POS)}
+  if(!is.na(max_POS)){subset_DT <- subset(subset_DT, POS<=max_POS)}
+  printer("++ Post-filtered data:",paste(dim(subset_DT), collapse=" x "))
+  return(subset_DT)
+}
+
+
 finemap_pipeline <- function(gene, 
                              fullSS_path, 
                              dataset_name, dataset_type="general", 
@@ -610,37 +655,34 @@ finemap_pipeline <- function(gene,
                              PP_threshold=.95){
    # Create paths 
    results_path <- make_results_path(dataset_name, dataset_type, gene)
-   subset_path <- get_subset_path(results_path=results_path, gene=gene, subset_path="auto")
-   # delete_subset(force_new_subset, subset_path) 
-   
    # Extract subset 
    subset_DT <- extract_SNP_subset(gene = gene, 
-                      top_SNPs = top_SNPs, 
-                      fullSS_path = fullSS_path,
-                      subset_path  =  subset_path,
-                      force_new_subset = force_new_subset,
-                      
-                      chrom_col = chrom_col, 
-                      position_col = position_col, 
-                      snp_col = snp_col,
-                      pval_col = pval_col, 
-                      effect_col = effect_col, 
-                      stderr_col = stderr_col,
-                      gene_col = gene_col, 
-                      tstat_col = tstat_col,
-                      MAF_col = MAF_col,
-                      freq_col = freq_col,
-                      A1_col = A1_col,
-                      A2_col = A2_col,
-                      
-                      bp_distance = bp_distance,
-                      superpopulation = superpopulation,  
-                      min_POS = min_POS, 
-                      max_POS = max_POS, 
-                      file_sep = file_sep, 
-                      query_by = query_by,
-                      probe_path = probe_path,
-                      remove_tmps = remove_tmps)
+                                    top_SNPs = top_SNPs, 
+                                    fullSS_path = fullSS_path,
+                                    results_path  =  results_path,
+                                    force_new_subset = force_new_subset,
+                                    
+                                    chrom_col = chrom_col, 
+                                    position_col = position_col, 
+                                    snp_col = snp_col,
+                                    pval_col = pval_col, 
+                                    effect_col = effect_col, 
+                                    stderr_col = stderr_col,
+                                    gene_col = gene_col, 
+                                    tstat_col = tstat_col,
+                                    MAF_col = MAF_col,
+                                    freq_col = freq_col,
+                                    A1_col = A1_col,
+                                    A2_col = A2_col,
+                                    
+                                    bp_distance = bp_distance,
+                                    superpopulation = superpopulation,  
+                                    min_POS = min_POS, 
+                                    max_POS = max_POS, 
+                                    file_sep = file_sep, 
+                                    query_by = query_by,
+                                    probe_path = probe_path,
+                                    remove_tmps = remove_tmps)
    
   ### Compute LD matrix 
   message("--- Step 2: Calculate Linkage Disequilibrium ---")
@@ -662,46 +704,21 @@ finemap_pipeline <- function(gene,
   
   #### ***** SNP Filters ***** ###
   # Remove pre-specified SNPs
-  ## Do this step AFTER saving the LD to disk so that it's easier to re-subset in different ways later without having to redownload LD.
-  if(remove_variants!=F){
-    printer("Removing specified variants:",paste(remove_variants, collapse=','), v=verbose)
-    try({subset_DT <- subset(subset_DT, !(SNP %in% remove_variants) )}) 
-  } 
-  # Trim subset according to annotations of where the gene's limit are
-  if(trim_gene_limits){
-    subset_DT <- gene_trimmer(subset_DT=subset_DT, 
-                              gene=gene, 
-                              min_POS=min_POS,
-                              max_POS=min_POS) 
-  }
-  if(!is.null(max_snps)){
-    subset_DT <- limit_SNPs(max_snps = max_snps, subset_DT = subset_DT) 
-  }
-  if(!is.null(min_MAF) & min_MAF>0){
-    printer("echolocatoR:: Removing SNPs w/ MAF <",min_MAF)
-    subset_DT <- subset(subset_DT, MAF>=min_MAF)  
-  }
-  
-  
+  ## Do this step AFTER saving the LD to disk so that it's easier to re-subset in different ways later without having to redownload LD. 
+  message("-------------- Step 3: Filter SNPs -------------") 
+  subset_DT <- echoR.filter_snps(subset_DT=subset_DT, 
+                                  bp_distance=bp_distance,
+                                  remove_variants=remove_variants,
+                                  gene=gene,
+                                  verbose=verbose,
+                                  min_POS=min_POS,
+                                  max_POS=max_POS,
+                                  max_snps=max_snps, 
+                                  trim_gene_limits=trim_gene_limits) 
   # Subset LD and df to only overlapping SNPs 
   sub.out <- subset_common_snps(LD_matrix, subset_DT)
   LD_matrix <- sub.out$LD
-  subset_DT <- sub.out$DT  
-  # Plot LD 
-  if(plot_LD){
-    try({ 
-      LD_plot(LD_matrix=LD_matrix, subset_DT=subset_DT, span=10)
-    })
-  }
-  
-  
-  # Final filtering   
-  message("-------------- Step 3: Filter SNPs -------------") 
-  ## Subset summary stats to only include SNPs found in query
-  # subset_DT <- subset(subset_DT, SNP %in% unique(row.names(LD_matrix), colnames(LD_matrix) ) )
-  # subset_DT <- subset_DT[complete.cases(subset_DT),] # Remove any NAs
-  # LD_matrix <- LD_matrix[row.names(LD_matrix) %in% subset_DT$SNP,  colnames(LD_matrix) %in% subset_DT$SNP]
-  
+  subset_DT <- sub.out$DT   
   # finemap 
   finemap_DT <- finemap_handler(results_path = results_path, 
                                 fullSS_path = fullSS_path,
@@ -763,7 +780,13 @@ finemap_pipeline <- function(gene,
                                          "ENCODE_DNaseI_ClusteredV3_CellTypes")) 
     }) 
   }
-
+  
+  # Plot LD 
+  if(plot_LD){
+    try({ 
+      LD_plot(LD_matrix=LD_matrix, subset_DT=subset_DT, span=10)
+    })
+  } 
  
   
   
