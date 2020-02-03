@@ -58,19 +58,19 @@ top_SNPs <- import_topSNPs(
               caption= "Kunkle et al. (2019) GWAS Summary Stats",
               group_by_locus = T)  
 
-
-finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
-                                               gene_list = "PTK2B",
+# query <- data.table::fread("Data/GWAS/Kunkle_2019/PTK2B/PTK2B_Kunkle_2019_subset.tsv.gz")
+finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
+                                               loci = "PTK2B",
                                                trim_gene_limits = F,
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
-                                               query_by ="coordinates",
+                                               query_by ="tabix",
                                                subset_path = "auto",
-                                               finemap_method = c("SUSIE","FINEMAP"), 
-                                               force_new_LD = T,  
-                                               force_new_subset = F,
-                                               force_new_finemap = T,
-                                               file_sep = " ",  
+                                               finemap_method = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),
+                                               force_new_subset = T,
+                                               force_new_LD = F,
+                                               force_new_finemap = T, 
+                                               # file_sep = " ",  
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "Chromosome", 
                  position_col = "Position", 
@@ -80,14 +80,20 @@ finemap_results[[dataset_name]] <- finemap_gene_list(top_SNPs,
                  stderr_col = "SE",
                  A1_col = "Effect_allele",
                  A2_col = "Non_Effect_allele",
+                 N_cases = 21982,
+                 N_controls = 41944, 
+                 proportion_cases = "calculate",
+                 
                  bp_distance = 500000,
                  download_reference = T, 
-                 LD_reference = "1KG_Phase1",
+                 LD_reference = "UKB",
                  superpopulation = "EUR", 
                  LD_block = F,  
+                 min_MAF = 0.001,
+                 PP_threshold = .95,
                  n_causal = 5, 
-                 remove_tmps = T) 
-
+                 remove_tmps = F,
+                 server = F)  
 ```
 
 

@@ -41,24 +41,24 @@
 # Load libraries
 # .libPaths()  
 
-library(R.utils)
-library(devtools)
-library(readxl)
+# library(R.utils)
+# library(devtools)
+# library(readxl)
 # library(DT)
-library(data.table)
+# library(data.table)
 library(dplyr)
 library(ggplot2)
 library(plotly)
 library(patchwork) #devtools::install_github("thomasp85/patchwork")
 # library(cowplot)
-library(ggrepel)
-library(curl) 
+# library(ggrepel)
+# library(curl) 
 # library(gaston)
-library(tidyr)
+# library(tidyr)
 # library(BiocManager)
-library(biomaRt) # BiocManager::install("biomaRt") 
+# library(biomaRt) # BiocManager::install("biomaRt") 
 # library(refGenome)
-library(crayon) 
+# library(crayon) 
 
 # library(coloc)
 # install.packages("haploR", dependencies = TRUE)
@@ -128,7 +128,8 @@ source("./echolocatoR/R/Annotate/psychENCODE.R")
 source("./echolocatoR/R/Annotate/mergeQTL.R")
 source("./echolocatoR/R/Annotate/Nott_2019.R")
 
-
+# When there's a ton of files, turn off indexing to speed up Rstudio:
+# https://stackoverflow.com/questions/14599359/rsession-cpu-usage-when-idle
 
 
 startup_image <- function(){
@@ -154,7 +155,7 @@ startup_image <- function(){
     grid::grid.raster(img)   
   })
 }
-startup_image()
+# startup_image()
 
 
 reload <- function(){
@@ -388,46 +389,50 @@ quickstart <- function(){
   populations <<- "EUR"
   use_annotations <<- F 
 }
-# quickstart()
 
-# 
-# quickstart_eQTL <- function(){
-#   # Assign global variables to test functions
-#   gene <<- "LRRK2"
-#   leadSNP <<- "rs76904798"
-#   loci <<- c("LRRK2")
-#   chrom_col <<- "chr"
-#   position_col <<- "pos_snps"
-#   snp_col <<- "snps"
-#   pval_col <<- "pvalue"
-#   effect_col <<- "beta"
-#   gene_col <<- "gene_name"
-#   stderr_col <<- "calculate"
-#   freq_col <<- "freq"
-# 
-#   fullSS_path <<- "Data/eQTL/MESA/CAU_cis_eqtl_summary_statistics.txt"
-#   subset_path <<- "Data/eQTL/MESA/LRRK2_MESA_CAU_subset.txt"
-#   vcf_folder <<- F#"../1000_Genomes_VCFs/Phase1"
-#   superpopulation <<- "CAU"
-#   force_new_subset <<- F
-#   min_POS <<- NA
-#   max_POS <<- NA
-#   file_sep <<- "\t"
-#   min_r2 <<- .2
-#   LD_block <<- F
-#   block_size <<- .7
-#   min_Dprime <<- 1
-#   plink_folder <<- "./plink_tmp"
-#   reference <<- "1KG_Phase1"
-#   LD_reference <<- "1KG_Phase1"
-#   bp_distance <<- 500000
-#   n_causal <<- 1
-#   vcf_URL <<- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr8.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
-#   popDat_URL <<- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel"
-#   chr <<- 8
-#   vcf_name <<- "ALL.chr8.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
-# }
-# quickstart_eQTL()
+
+quickstart_AD <- function(){
+  subset_path <<- "Data/GWAS/Kunkle_2019/PTK2B/PTK2B_Kunkle_2019_subset.tsv.gz"
+  query <<- data.table::fread(subset_path)
+  loci <<- "PTK2B"
+  trim_gene_limits <<- F
+  dataset_name <<- dataset_name
+  dataset_type <<- "GWAS"
+  query_by <<-"tabix"
+  subset_path <<- "auto"
+  finemap_method <<- c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP")
+  force_new_subset <<- T
+  force_new_LD <<- F
+  force_new_finemap <<- T
+  # file_sep <<- " "
+  fullSS_path <<- Directory_info(dataset_name, "fullSS.local")
+  chrom_col <<- "Chromosome"
+  position_col <<- "Position"
+  snp_col <<- "MarkerName"
+  pval_col <<- "Pvalue"
+  effect_col <<- "Beta"
+  stderr_col <<- "SE"
+  A1_col <<- "Effect_allele"
+  A2_col <<- "Non_Effect_allele"
+  N_cases <<- 21982
+  N_controls <<- 41944
+  proportion_cases <<- "calculate"
+  
+  bp_distance <<- 500000
+  download_reference <<- T
+  LD_reference <<- "UKB"
+  superpopulation <<- "EUR"
+  LD_block <<- F
+  min_MAF <<- 0.001
+  PP_threshold <<- .95
+  n_causal <<- 5
+  remove_tmps <<- F
+  server <<- F
+}
+ 
+
+
+
 
 ## ---------------- General Functions ----------------  ##
 createDT <- function(DF, caption="", scrollY=400){
@@ -622,11 +627,15 @@ finemap_pipeline <- function(gene,
                              tstat_col="t-stat", 
                              gene_col="Gene",
                              freq_col="Freq",
-                             MAF_col="MAF",
-                             N_cases_col="N_cases",
-                             N_controls_col="N_controls",
+                             MAF_col="MAF", 
                              A1_col = "A1",
                              A2_col = "A2",
+                             N_cases_col="N_cases",
+                             N_controls_col="N_controls", 
+                             N_cases=NULL,
+                             N_controls=NULL,
+                             proportion_cases="calculate",
+                             
                              LD_reference="1KG_Phase1", 
                              superpopulation="EUR", 
                              download_reference=T,
@@ -674,6 +683,12 @@ finemap_pipeline <- function(gene,
                                     freq_col = freq_col,
                                     A1_col = A1_col,
                                     A2_col = A2_col,
+                                   
+                                    N_cases_col = N_cases_col,
+                                    N_controls_col = N_controls_col, 
+                                    N_cases = N_cases,
+                                    N_controls = N_controls,
+                                    proportion_cases = proportion_cases,
                                     
                                     bp_distance = bp_distance,
                                     superpopulation = superpopulation,  
@@ -827,53 +842,60 @@ snps_to_condition <- function(conditioned_snps, top_SNPs, loci){
 }
 
 # Fine-ap iteratively over genes/loci
-finemap_loci <- function(loci, fullSS_path, 
-                             dataset_name,
-                             dataset_type="general",
-                             force_new_subset=F, 
-                             force_new_LD=F,
-                             force_new_finemap=T,
-                             subset_path="auto", 
-                             top_SNPs="auto", 
-                             finemap_methods=c("SUSIE","FINEMAP"),
-                             bp_distance=500000, 
-                             n_causal=5, 
-                             sample_size=NA,
-                             chrom_col="CHR", 
-                             position_col="POS", 
-                             snp_col="SNP",
-                             pval_col="P", 
-                             effect_col="Effect", 
-                             stderr_col="StdErr",
-                             tstat_col = "t-stat", 
-                             MAF_col="MAF", 
-                             gene_col="Gene",
-                             freq_col="Freq",
-                             A1_col = "A1",
-                             A2_col = "A2",
-                             LD_reference="1KG_Phase1", 
-                             superpopulation="EUR",
-                             topVariants=3, 
-                             download_reference=T, 
-                             min_POS=NA, 
-                             max_POS=NA,
-                             min_MAF=NA,
-                             trim_gene_limits=F,
-                             max_snps=NULL,
-                             file_sep="\t",
-                             min_r2=0, LD_block=F, block_size=.7, min_Dprime=F, 
-                             query_by="coordinates", 
-                             remove_variants=F,
-                             remove_correlates=F,
-                             probe_path = "./Data/eQTL/gene.ILMN.map",
-                             conditioned_snps="auto",
-                             plot_LD=F,
-                             verbose=T,
-                             remove_tmps=T,
-                             plot_types = c("simple","fancy"),
-                             PAINTOR_QTL_datasets=NULL,
-                             server=F,
-                             PP_threshold=.95){ 
+finemap_loci <- function(loci, 
+                         fullSS_path, 
+                         dataset_name,
+                         dataset_type="general",
+                         force_new_subset=F, 
+                         force_new_LD=F,
+                         force_new_finemap=T,
+                         subset_path="auto", 
+                         top_SNPs="auto", 
+                         finemap_methods=c("SUSIE","FINEMAP"),
+                         bp_distance=500000, 
+                         n_causal=5, 
+                         sample_size=NA,
+                         chrom_col="CHR", 
+                         position_col="POS", 
+                         snp_col="SNP",
+                         pval_col="P", 
+                         effect_col="Effect", 
+                         stderr_col="StdErr",
+                         tstat_col = "t-stat", 
+                         MAF_col="MAF", 
+                         gene_col="Gene",
+                         freq_col="Freq",
+                         A1_col = "A1",
+                         A2_col = "A2",
+                         N_cases_col="N_cases",
+                         N_controls_col="N_controls", 
+                         N_cases=NULL,
+                         N_controls=NULL,
+                         proportion_cases="calculate",
+                         
+                         LD_reference="1KG_Phase1", 
+                         superpopulation="EUR",
+                         topVariants=3, 
+                         download_reference=T, 
+                         min_POS=NA, 
+                         max_POS=NA,
+                         min_MAF=NA,
+                         trim_gene_limits=F,
+                         max_snps=NULL,
+                         file_sep="\t",
+                         min_r2=0, LD_block=F, block_size=.7, min_Dprime=F, 
+                         query_by="coordinates", 
+                         remove_variants=F,
+                         remove_correlates=F,
+                         probe_path = "./Data/eQTL/gene.ILMN.map",
+                         conditioned_snps="auto",
+                         plot_LD=F,
+                         verbose=T,
+                         remove_tmps=T,
+                         plot_types = c("simple","fancy"),
+                         PAINTOR_QTL_datasets=NULL,
+                         server=F,
+                         PP_threshold=.95){ 
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
   lead_SNPs <- snps_to_condition(conditioned_snps, top_SNPs, loci)
@@ -913,6 +935,11 @@ finemap_loci <- function(loci, fullSS_path,
                                      freq_col=freq_col,
                                      A1_col = A1_col,
                                      A2_col = A2_col,
+                                     N_cases_col = N_cases_col,
+                                     N_controls_col = N_controls_col, 
+                                     N_cases = N_cases,
+                                     N_controls = N_controls,
+                                     proportion_cases = proportion_cases,
                                      
                                      LD_reference=LD_reference, 
                                      superpopulation=superpopulation,

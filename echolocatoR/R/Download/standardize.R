@@ -51,6 +51,34 @@ calculate.tstat <- function(finemap_DT, tstat_col="t_stat"){
 }
 
 
+
+UKB.get_MAF <- function(subset_DT,
+                        output.path = "/Volumes/Scizor/UKB_MAF",
+                        force_new_maf = F){
+  printer("UKB MAF:: Extracting MAF from UKB reference.")
+  # Documentation: http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=22801
+  # subset_DT = data.table::fread("Data/GWAS/Kunkle_2019/PTK2B/PTK2B_Kunkle_2019_subset.tsv.gz")
+  chrom <- unique(subset_DT$CHR) 
+  input.url <- paste0("biobank.ctsu.ox.ac.uk/showcase/showcase/auxdata/ukb_mfi_chr",chrom,"_v3.txt")
+  out.file <- file.path(output.path, basename(input.url))
+  if(file.exists(out.file) & force_new_maf==F){
+    printer("+ UKB MAF:: Importing pre-existing file") 
+  } else{
+    out.file <- axel(input.url = input.url,
+                     output.path = output.path)
+  }
+  maf <- data.table::fread(out.file, nThread = 4, 
+                           select = c(3,6),
+                           col.names = c("POS","MAF"))
+  maf <- subset(maf, POS %in% subset_DT$POS)
+  merged_DT <- data.table:::merge.data.table(subset_DT, maf, 
+                                             by = "POS") 
+  return(merged_DT)
+}
+
+
+
+
 standardize_subset <- function(gene, 
                               top_SNPs=NULL, 
                               subset_path="./Data", 
@@ -66,6 +94,8 @@ standardize_subset <- function(gene,
                               freq_col="Freq",
                               N_cases_col="N_cases",
                               N_controls_col="N_controls", 
+                              N_cases=NULL,
+                              N_controls=NULL,
                               proportion_cases="calculate", 
                               A1_col="A1",
                               A2_col="A2",
@@ -104,6 +134,11 @@ standardize_subset <- function(gene,
         printer("+Inferring MAF from frequency column...")
         query_mod$MAF <- ifelse(query$Freq<0.5, query$Freq, 1-query$Freq)
       } 
+    } else {
+      # As a last resort download UKB MAF 
+      query_mod <- UKB.get_MAF(subset_DT = query_mod,
+                                output.path = "/Volumes/Scizor/UKB_MAF",
+                                force_new_maf = F)
     }
     
     
@@ -113,10 +148,20 @@ standardize_subset <- function(gene,
       query <- query %>% dplyr::rename(N_cases=N_cases_col, N_controls=N_controls_col)
       query_mod$N_cases <- query$N_cases
       query_mod$N_controls <- query$N_controls
+    } else {
+      query_mod$N_cases <- N_cases
+      query$N_cases <- N_cases
+      N_cases_col <- "N_cases"
+      query_mod$N_controls <- N_controls
+      query$N_controls <- N_controls
+      N_controls_col <- "N_controls"
     }
+    
     if(proportion_cases !="calculate"){
       query_mod$proportion_cases <- query[proportion_cases]
-    } else if(proportion_cases=="calculate" & N_cases_col %in% colnames(query) & N_controls_col %in% colnames(query)){
+    } else if(proportion_cases=="calculate" & 
+              N_cases_col %in% colnames(query) & 
+              N_controls_col %in% colnames(query)){
       ### Calculate proportion of cases if N_cases and N_controls available
       query_mod$proportion_cases <- query$N_cases / (query$N_controls + query$N_cases)
     } else { 
@@ -176,6 +221,13 @@ extract_SNP_subset <- function(gene,
                                tstat_col="t-stat", 
                                A1_col = "A1",
                                A2_col = "A2",
+                               
+                               N_cases_col="N_cases",
+                               N_controls_col="N_controls", 
+                               N_cases=NULL,
+                               N_controls=NULL,
+                               proportion_cases="calculate",
+                               
                                superpopulation="",
                                min_POS=NA, 
                                max_POS=NA, 
@@ -234,7 +286,13 @@ extract_SNP_subset <- function(gene,
                                MAF_col=MAF_col,
                                freq_col=freq_col,
                                A1_col = A1_col,
-                               A2_col = A2_col,)
+                               A2_col = A2_col,
+                               
+                               N_cases_col=N_cases_col,
+                               N_controls_col=N_controls_col, 
+                               N_cases=N_cases,
+                               N_controls=N_controls, 
+                               proportion_cases = proportion_cases)
     end_query <- Sys.time()
     printer("+ Extraction completed in", round(end_query-start_query, 2),"seconds")
     printer("+", dim(query)[1], "SNPs x ",dim(query)[2],"columns")

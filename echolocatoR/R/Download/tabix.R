@@ -10,14 +10,19 @@ TABIX.convert_file <- function(fullSS_path="./Data/GWAS/Nalls23andMe_2019/nallsE
   system(paste("head -1",fullSS_path,">",header.path))
   cDict <-  column_dictionary(file_path = fullSS_path)
   
+  
   print("TABIX:: Converting full summary stats file to tabix format for fast querying...")
   fullSS.gz <- ifelse(endsWith(fullSS_path,".gz"), fullSS_path, paste0(fullSS_path,".gz"))
   gz_cat <- ifelse(endsWith(fullSS_path,".gz"),"gunzip -c","cat")
   cmd <- paste(gz_cat,
                fullSS_path,
-               "| tail -n +2", # Get rid of header
-               "| sort -k1,1 -k2,2n", #
+               # Get rid of header
+               "| tail -n +2",
+               # Sort (sort -k1,1 -k2,2n)
+               paste0("| sort -k",cDict[[chrom_col]],",",cDict[[chrom_col]]), 
+               paste0("-k",cDict[[position_col]],",",cDict[[position_col]],"n"),
                # ">",fullSS_path)
+               # Compress with bgzip
                "| bgzip >",fullSS.gz)
   print(cmd)
   system(cmd)

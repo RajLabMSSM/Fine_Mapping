@@ -80,22 +80,22 @@ top_SNPs <- data.table::rbindlist(list(top_SNPs,
                                       ), use.names = T)
 loci <- unique(top_SNPs$Gene)
 # # Filter loci
-# finished_loci <- list.files("./Data/GWAS/Nalls23andMe_2019",pattern = ".npz$", 
-#            recursive = T, full.names = T) %>% dirname() %>% dirname() %>% basename()
-# loci <- loci[!loci%in% finished_loci]
-# Limit LRRK2
+finished_loci <- list.files("./Data/GWAS/Nalls23andMe_2019",pattern = "_ggbio.png$",
+           recursive = T, full.names = T) 
+info <- file.info(finished_loci)$ctime %>% as.character()
+loci <- finished_loci[which(!startsWith(info,"2020-01-24"))]%>% dirname() %>% dirname() %>% basename()
  
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci = "SLC2A13",#unique(c("LRRK2", loci)),
+                                               loci = loci,#unique(c("LRRK2", loci)),
                                                trim_gene_limits = F,#c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
                                                query_by ="tabix", # coordinates
                                                subset_path = "auto", 
-                                               finemap_methods= c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),  
-                                               force_new_subset = F,
-                                               force_new_LD = F,
+                                               finemap_methods = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),  
+                                               force_new_subset = T,
+                                               force_new_LD = T,
                                                force_new_finemap = T, 
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
@@ -111,7 +111,7 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  LD_block = F, 
                  min_MAF = 0.001,
                  # min_POS = 40582993,
-                 max_POS = 40582992,
+                 # max_POS = 40582992,
                  # remove_variants = c("rs34637584"),
                  # remove_correlates = c("rs34637584"),
                  conditioned_snps = "auto", # Use the lead SNP for each gene  

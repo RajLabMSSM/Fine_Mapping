@@ -3,7 +3,8 @@
 # ***************** #
 
 
-ABF <- function(subset_DT, PP_threshold=.95){
+ABF <- function(subset_DT, 
+                PP_threshold=.95){
   # printer("Fine-mapping with ABF... \n")
   #data.table::fread("Data/GWAS/Nalls23andMe_2019/LRRK2/LRRK2_Nalls23andMe_2019_subset.txt") 
   finemap_DT <- coloc::finemap.abf(dataset = list(beta = subset_DT$Effect,
