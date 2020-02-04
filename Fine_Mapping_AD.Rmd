@@ -87,9 +87,9 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                                                query_by ="tabix",
                                                subset_path = "auto", 
                                                finemap_method = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),
-                                               force_new_subset = T,
+                                               force_new_subset = F,
                                                force_new_LD = F,
-                                               force_new_finemap = F,  
+                                               force_new_finemap = T,  
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "Chromosome", 
                  position_col = "Position", 
@@ -120,7 +120,13 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
 ```
 
 
+# Summarise Results
 
+```{r Summarise Results}
+merged_DT <- merge_finemapping_results(xlsx_path = "Data/GWAS/Kunkle_2019/Kunkle_2019_results.xlsx",
+                                       biomart_annotation = T, dataset = "./Data/GWAS/Kunkle_2019")
+
+```
 
 
 
