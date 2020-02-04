@@ -75,9 +75,7 @@ top_SNPs <- import_topSNPs(
               gene_col="Lead SNV Gene",
               locus_col = "Lead SNV Gene",
               caption= "Kunkle et al. (2019) GWAS Summary Stats",
-              group_by_locus = T)  
-
-
+              group_by_locus = T)
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                                                loci =  c("ClU"),#,"BIN1","CLU","TREM2"),
@@ -103,8 +101,8 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  N_controls = 41944, 
                  proportion_cases = "calculate",
                  
-                 min_POS = min_POS,
-                 max_POS = max_POS,
+                 # min_POS = min_POS,
+                 # max_POS = max_POS,
                  
                  bp_distance = 500000,
                  download_reference = T, 
@@ -122,11 +120,43 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
 
 # Summarise Results
 
-```{r Summarise Results}
+## Biotypes
+
+(1) Gather biotypes for each Credible Set SNPs
+  - Identify any missense variants within CS SNPs.
+
+```{r Biotypes}
 merged_DT <- merge_finemapping_results(xlsx_path = "Data/GWAS/Kunkle_2019/Kunkle_2019_results.xlsx",
                                        biomart_annotation = T, dataset = "./Data/GWAS/Kunkle_2019")
-
+# Consensus SNPs
+createDT(subset(merged_DT, Consensus_SNP==T))
+# Missense variants
+createDT(subset(merged_DT, Support>0 & consequence_type_tv=="missense_variant"))
 ```
 
+## sQTLs
+
+(2) Splicing variant (look up splicing QTL datasets that _WE_ generated). sQTLs  
+
+  - [Paper](https://www.nature.com/articles/s41588-018-0238-1#Sec30)
+    + Table S10 contains the top sQTLs from ROSMAP.
+  - [sQTLviz](https://rajlab.shinyapps.io/sQTLviz_ROSMAP/)
+  - [Raw Data](https://www.radc.rush.edu)
+  
+```{r sQTLs}
+sqtls <- readxl::read_excel("./Data/QTL/sQTLviz/Raj2018_TableS10.xlsx")  
+merged_DT <- merged_DT %>% dplyr::mutate(snp_id=paste0(CHR,":",POS)) %>% data.table::data.table()
+sQTL_DT <- data.table:::merge.data.table(subset(merged_DT, Support>0),
+                              data.table::data.table(sqtls), 
+                              by="snp_id") 
+createDT(sQTL_DT)
+```
+
+
+(3) Regulatory - does it overlap chromatin accessibility in Glass data (or single cell) or histone modification and PLAC-seq? This class of variants will overlap TF binding sites, etc.  
+(4) Link to QTLs. any credible set QTLs in published dataset.   
+(5) Check to see DeepSEA and SpliceAI scores.  
+(6) identify Transcription Factor Binding motifs for known TFs. Not sure which database to use.  
+(7) Identify missense variants in fine-mapped Credible Set
 
 
