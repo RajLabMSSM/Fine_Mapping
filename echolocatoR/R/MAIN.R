@@ -391,7 +391,7 @@ quickstart <- function(){
 }
 
 
-quickstart_AD <- function(locus="PTK2B"){
+quickstart_AD <- function(locus="PTK2B", dataset_name="Kunkle_2019"){
   loci <<- "PTK2B"
   trim_gene_limits <<- F
   dataset_name <<- dataset_name
@@ -432,7 +432,7 @@ quickstart_AD <- function(locus="PTK2B"){
   remove_tmps <<- F
   # server <<- F
   gene <<- locus
-  results_path <<- file.path("Data/GWAS/Kunkle_2019",gene)
+  results_path <<- file.path("Data/GWAS",dataset_name,gene)
   subset_path <<- file.path(results_path, paste0(gene,"_Kunkle_2019_subset.tsv.gz"))
   # finemap_DT <<- data.table::fread(subset_path)
   finemap_DT <<- data.table::data.table(standardize_subset(subset_path = subset_path, gene=gene))

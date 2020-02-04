@@ -143,7 +143,9 @@ SNP_track <- function(gr.snp,
     theme(legend.title = element_text(size=8),
           legend.text = element_text(size=6),
           strip.text.y = element_text(angle = 0),
-          strip.text = element_text(size=9 ))
+          strip.text = element_text(size=9),
+          legend.key.width=unit(.5,"line"),
+          legend.key.height=unit(.5,"line"))
   # if(show.legend==F){a1 <- a1 + scale_fill_discrete(guide=F) + guides(fill=F) + theme(legend.position="none")}
   return(a1)
 }
@@ -266,6 +268,7 @@ GGBIO.plot <- function(finemap_DT,
                        annot_overlap_threshold=5,
                        PP_threshold=.95,
                        consensus_thresh=2,
+                       top_transcripts=3,
                        Nott_sn_epigenome=F,
                        save_plot=T,
                        show_plot=T,
@@ -274,7 +277,8 @@ GGBIO.plot <- function(finemap_DT,
   library(ggbio)
   require(GenomicRanges)
   require(biovizBase)
-  # consensus_thresh=2; finemap_DT <-  quick_finemap("LRRK2", consensus_thresh=consensus_thresh); XGR_libnames=NULL; mean.PP=T; ROADMAP=F; PP_threshold=.95;  Nott_sn_epigenome=T;  save_plot=T; show_plot=T; method_list=c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"); full_data=T
+  # consensus_thresh=2; XGR_libnames=NULL; mean.PP=T; ROADMAP=F; PP_threshold=.95;  Nott_sn_epigenome=T;  save_plot=T; show_plot=T; method_list=c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"); full_data=T; quick_finemap("LRRK2", consensus_thresh)
+  # quickstart_AD("ABCA7", "Kunkle_2019");  top_transcripts=3;
 
   # Set up data
   finemap_DT <- find_consensus_SNPs(finemap_DT = finemap_DT,
@@ -315,21 +319,46 @@ GGBIO.plot <- function(finemap_DT,
     names(TRACKS_list)[length(TRACKS_list)] <- m
   }
 
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   # Track 3: Gene Model Track
+  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  # DB tutorial: https://rdrr.io/bioc/ensembldb/f/vignettes/ensembldb.Rmd
   printer("++ GGBIO:: Gene Model Track")
   lead.index <- which(gr.snp_CHR$leadSNP==T)
   lw <- 10
+  db <- ensembldb::genes(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75)
+
+  db.gr <- data.table::as.data.table(db) %>%
+    dplyr::mutate(index=row.names(.)) %>%
+    subset(seqnames == unique(gr.snp_CHR$CHR) &
+           start >= min(gr.snp_CHR$POS) &
+           end <= max(gr.snp_CHR$POS)) %>%
+    # dplyr::group_by(gene_name) %>%
+    # dplyr::top_n(n = top_transcripts, wt=seqnames) %>%
+    GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns = T)
+  # limit to a subset of transcripts by
+  ranges(db.gr) <- round(start(db.gr),0)
   track.genes <- autoplot(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
                           # Have to limit (can only handle depth < 1000)
-                          which = gr.snp_CHR[(lead.index-lw):(lead.index+lw),],
+                          which=db.gr,
+                          # which = gr.snp_CHR[(lead.index-lw):(lead.index+lw),],
                           names.expr = "gene_name",
+                          labels.size=2,
+
+                          legend=F,
                           # facets=seqnames~.,
                           # color="turquoise",
-                          aes(fill=gene_name, color=gene_name))  +
+                          aes(fill=gene_name, color=gene_name)) +
     theme_bw() +
     theme(strip.text.y = element_text(angle = 0),
-          strip.text = element_text(size=9 ))
-  track.genes <- invisible_legend(track.genes)
+          strip.text = element_text(size=9),
+          legend.text = element_text(size=5),
+          legend.key.width=unit(.1,"line"),
+          legend.key.height=unit(.1,"line")) +
+    guides(fill=guide_legend(override.aes = list(size=1), ncol=4),
+           color=guide_legend(override.aes = list(size=1), ncol=4),
+           size=.5)
+  # track.genes <- invisible_legend(track.genes)
 
   TRACKS_list <- append(TRACKS_list, track.genes)
   names(TRACKS_list)[length(TRACKS_list)] <- "Gene Track"
@@ -487,8 +516,7 @@ GGBIO.plot <- function(finemap_DT,
   trks_plus_lines <- trks +
     geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=.3, size=.3, linetype='solid') +
     geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') +
-    theme(legend.key.width=unit(.5,"line"),                                                                      legend.key.height=unit(.5,"line"),
-          strip.text.y = element_text(angle = 0),
+    theme(strip.text.y = element_text(angle = 0),
           strip.text = element_text(size = 7),
           panel.background = element_rect(fill = "white", colour = "black", linetype = "solid"),
           plot.subtitle = element_text(color = "turquoise", size = 8)) +

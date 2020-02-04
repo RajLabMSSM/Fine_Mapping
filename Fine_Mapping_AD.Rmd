@@ -37,6 +37,25 @@ finemap_results <- list()
 ```
 
 
+# PTK2B/CLU
+
+The PTK2B/CLU is a tricky locus with multiple peaks (see Table S6 of Kunkle et al. (2019) for GCTA-COJO results).
+We therefore fine-mapped it a little differently:  
+  1. Identify the minimum and maximum span of SNPs that are in LD (r2) with the lead common SNP within the LRRK2 gene.
+  3. Fine-map each region separately
+
+```{r PTK2B/CLU, eval=F}
+quickstart_AD("CLU")
+lead.snp <- subset(finemap_DT, leadSNP)
+merged <-data.table:::merge.data.table(finemap_DT, 
+                              data.table::data.table(r2=LD_matrix[lead.snp$SNP,]^2,
+                                                     SNP=names(LD_matrix[lead.snp$SNP,])), 
+                              by="SNP") %>% 
+  subset(r2>0.1) 
+dim(merged)
+min_POS <- min(merged$POS)
+max_POS <- max(merged$POS)
+```
 
 # Kunkle et. al. (2019)
 
@@ -47,30 +66,30 @@ Parkinson's Disease GWAS.
 dataset_name <- "Kunkle_2019"
 top_SNPs <- import_topSNPs(
               topSS_path = Directory_info(dataset_name, "topSS"),
-              sheet = "Supplementary Table 6",
-              chrom_col = "Chr", 
-              position_col = "Basepair", 
-              snp_col="SNP",
-              pval_col="P", 
-              effect_col="Beta", 
-              gene_col="LOCUS",
-              locus_col = "LOCUS",
+              sheet = "Supplementary Table 8",
+              chrom_col = "CHR", 
+              position_col = "POS", 
+              snp_col="Top Associated SNV",
+              pval_col="P_placeholder", 
+              effect_col="Beta_placeholder", 
+              gene_col="Lead SNV Gene",
+              locus_col = "Lead SNV Gene",
               caption= "Kunkle et al. (2019) GWAS Summary Stats",
               group_by_locus = T)  
 
-# query <- data.table::fread("Data/GWAS/Kunkle_2019/PTK2B/PTK2B_Kunkle_2019_subset.tsv.gz")
+
+
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci =  c("ABCA7","BIN1","CLU","TREM2"),
+                                               loci =  c("PTK2B"),#,"BIN1","CLU","TREM2"),
                                                trim_gene_limits = F,
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
                                                query_by ="tabix",
                                                subset_path = "auto", 
                                                finemap_method = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),
-                                               force_new_subset = F,
+                                               force_new_subset = T,
                                                force_new_LD = F,
-                                               force_new_finemap = T, 
-                                               # file_sep = " ",  
+                                               force_new_finemap = F,  
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "Chromosome", 
                  position_col = "Position", 
@@ -84,6 +103,9 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  N_controls = 41944, 
                  proportion_cases = "calculate",
                  
+                 # min_POS = min_POS,
+                 max_POS = min_POS,
+                 
                  bp_distance = 500000,
                  download_reference = T, 
                  LD_reference = "UKB",
@@ -96,7 +118,6 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  remove_tmps = F,
                  server = F)  
 ```
-
 
 
 
