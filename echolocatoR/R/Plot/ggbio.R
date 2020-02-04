@@ -327,7 +327,6 @@ GGBIO.plot <- function(finemap_DT,
   lead.index <- which(gr.snp_CHR$leadSNP==T)
   lw <- 10
   db <- ensembldb::genes(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75)
-
   db.gr <- data.table::as.data.table(db) %>%
     dplyr::mutate(index=row.names(.)) %>%
     subset(seqnames == unique(gr.snp_CHR$CHR) &

@@ -80,7 +80,7 @@ top_SNPs <- import_topSNPs(
 
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci =  c("PTK2B"),#,"BIN1","CLU","TREM2"),
+                                               loci =  c("ClU"),#,"BIN1","CLU","TREM2"),
                                                trim_gene_limits = F,
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
@@ -103,8 +103,8 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  N_controls = 41944, 
                  proportion_cases = "calculate",
                  
-                 # min_POS = min_POS,
-                 max_POS = min_POS,
+                 min_POS = min_POS,
+                 max_POS = max_POS,
                  
                  bp_distance = 500000,
                  download_reference = T, 
