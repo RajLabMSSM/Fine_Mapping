@@ -15,11 +15,11 @@ check_if_empty <- function(file_path, file_sep="\t"){
 column_dictionary <- function(file_path){
   # Get the index of each column name
   # f <- data.table::fread(file_path, nrows = 0, header = T)
-  
+
   cmd <- paste(ifelse(endsWith(file_path,".gz"),"gunzip -c","cat"),
                file_path,"| head -1")
   # system(cmd)
-  cNames <- colnames(data.table::fread(cmd=cmd))  
+  cNames <- colnames(data.table::fread(cmd=cmd))
   colDict <- setNames(1:length(cNames), cNames  )
   return(colDict)
 }
@@ -38,14 +38,14 @@ auto_topSNPs_sub <- function(top_SNPs, query, gene){
 }
 
 
-calculate.tstat <- function(finemap_DT, tstat_col="t_stat"){ 
+calculate.tstat <- function(finemap_DT, tstat_col="t_stat"){
   if(tstat_col %in% colnames(finemap_DT)){
     finemap_DT <- finemap_DT %>% dplyr::rename(t_stat = tstat_col)
   } else if(("Effect" %in% colnames(finemap_DT)) & ("StdErr" %in% colnames(finemap_DT))){
     printer("+ Calculating t-statistic from Effect and StdErr...")
     finemap_DT <- finemap_DT %>% dplyr::mutate(t_stat =  Effect/StdErr)
   } else {
-    printer("+ Could not calculate t-stat due to missing Effect and/or StdErr columns. Returning input data.") 
+    printer("+ Could not calculate t-stat due to missing Effect and/or StdErr columns. Returning input data.")
   }
   return(data.table::data.table(finemap_DT))
 }
@@ -53,50 +53,51 @@ calculate.tstat <- function(finemap_DT, tstat_col="t_stat"){
 
 
 UKB.get_MAF <- function(subset_DT,
-                        output.path = "/Volumes/Scizor/UKB_MAF",
+                        output.path = "./Data/Reference/UKB_MAF",
                         force_new_maf = F){
   printer("UKB MAF:: Extracting MAF from UKB reference.")
   # Documentation: http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=22801
   # subset_DT = data.table::fread("Data/GWAS/Kunkle_2019/PTK2B/PTK2B_Kunkle_2019_subset.tsv.gz")
-  chrom <- unique(subset_DT$CHR) 
+  chrom <- unique(subset_DT$CHR)
   input.url <- paste0("biobank.ctsu.ox.ac.uk/showcase/showcase/auxdata/ukb_mfi_chr",chrom,"_v3.txt")
   out.file <- file.path(output.path, basename(input.url))
   if(file.exists(out.file) & force_new_maf==F){
-    printer("+ UKB MAF:: Importing pre-existing file") 
+    printer("+ UKB MAF:: Importing pre-existing file")
   } else{
     out.file <- axel(input.url = input.url,
-                     output.path = output.path)
+                     output.path = output.path,
+                     background = F)
   }
-  maf <- data.table::fread(out.file, nThread = 4, 
+  maf <- data.table::fread(out.file, nThread = 4,
                            select = c(3,6),
                            col.names = c("POS","MAF"))
   maf <- subset(maf, POS %in% subset_DT$POS)
-  merged_DT <- data.table:::merge.data.table(subset_DT, maf, 
-                                             by = "POS") 
+  merged_DT <- data.table:::merge.data.table(subset_DT, maf,
+                                             by = "POS")
   return(merged_DT)
 }
 
 
 
 
-standardize_subset <- function(gene, 
-                              top_SNPs=NULL, 
-                              subset_path="./Data", 
+standardize_subset <- function(gene,
+                              top_SNPs=NULL,
+                              subset_path="./Data",
                               file_sep="\t",
-                              chrom_col="CHR", 
-                              position_col="POS", 
+                              chrom_col="CHR",
+                              position_col="POS",
                               snp_col="SNP",
-                              pval_col="P", 
-                              effect_col="Effect", 
+                              pval_col="P",
+                              effect_col="Effect",
                               stderr_col="StdErr",
-                              tstat_col="t_stat", 
-                              MAF_col="MAF", 
+                              tstat_col="t_stat",
+                              MAF_col="MAF",
                               freq_col="Freq",
                               N_cases_col="N_cases",
-                              N_controls_col="N_controls", 
+                              N_controls_col="N_controls",
                               N_cases=NULL,
                               N_controls=NULL,
-                              proportion_cases="calculate", 
+                              proportion_cases="calculate",
                               A1_col="A1",
                               A2_col="A2",
                               return_dt=T,
@@ -104,7 +105,7 @@ standardize_subset <- function(gene,
   printer("",v=verbose)
   message("---------------- Step 1.5: Standardize ----------")
   query_check <- data.table::fread(subset_path, nrows = 2)
-  
+
   if(dim(query_check)[1]==0){
     file.remove(subset_path)
     stop("Could not find any rows in full data that matched query :(")
@@ -115,13 +116,20 @@ standardize_subset <- function(gene,
       printer("Calculating Standard Error...")
       query$StdErr <- subset(query, select=effect_col) / subset(query, select=tstat_col)
       stderr_col <- "StdErr"
-    }  
-    
+    }
+
     ## Rename subset DF
     query_mod <- query %>% subset(select=c(chrom_col, position_col, snp_col, pval_col, effect_col, stderr_col)) %>%
-      dplyr::rename(CHR=chrom_col,POS=position_col, SNP=snp_col, P=pval_col, 
+      dplyr::rename(CHR=chrom_col,POS=position_col, SNP=snp_col, P=pval_col,
                     Effect=effect_col, StdErr=stderr_col)
-    
+
+    # Add ref/alt alleles if available
+    if(A1_col %in% colnames(query) & A2_col %in% colnames(query)){
+      query2 <- query %>% dplyr::rename(A1=A1_col, A2=A2_col)
+      query_mod$A1 <- query2$A1
+      query_mod$A2 <- query2$A2
+    }
+
     # ------ Optional columns ------ #
     ## Infer MAF from freq (assuming MAF is alway less than 0.5)
     if(MAF_col %in% colnames(query)){
@@ -133,16 +141,16 @@ standardize_subset <- function(gene,
       if(MAF_col=="calculate"){
         printer("+Inferring MAF from frequency column...")
         query_mod$MAF <- ifelse(query$Freq<0.5, query$Freq, 1-query$Freq)
-      } 
+      }
     } else {
-      # As a last resort download UKB MAF 
+      # As a last resort download UKB MAF
       query_mod <- UKB.get_MAF(subset_DT = query_mod,
-                                output.path = "/Volumes/Scizor/UKB_MAF",
+                                output.path = "./Data/Reference/UKB_MAF",
                                 force_new_maf = F)
     }
-    
-    
-    
+
+
+
     ## Add proportion of cases if available
     if(N_cases_col %in% colnames(query) & N_controls_col %in% colnames(query)){
       query <- query %>% dplyr::rename(N_cases=N_cases_col, N_controls=N_controls_col)
@@ -156,46 +164,42 @@ standardize_subset <- function(gene,
       query$N_controls <- N_controls
       N_controls_col <- "N_controls"
     }
-    
+
     if(proportion_cases !="calculate"){
       query_mod$proportion_cases <- query[proportion_cases]
-    } else if(proportion_cases=="calculate" & 
-              N_cases_col %in% colnames(query) & 
+    } else if(proportion_cases=="calculate" &
+              N_cases_col %in% colnames(query) &
               N_controls_col %in% colnames(query)){
       ### Calculate proportion of cases if N_cases and N_controls available
-      query_mod$proportion_cases <- query$N_cases / (query$N_controls + query$N_cases)
-    } else { 
+      query_mod$proportion_cases <- query_mod$N_cases / (query_mod$N_controls + query_mod$N_cases)
+    } else {
       ### Otherwise don't include this col
       printer("'proportion of cases' not included in data subset.")
     }
-    
-    # Add ref/alt alleles if available 
-    if(A1_col %in% colnames(query) & A2_col %in% colnames(query)){
-      query <- query %>% dplyr::rename(A1=A1_col, A2=A2_col)
-      query_mod$A1 <- query$A1
-      query_mod$A2 <- query$A2
-    }
-    
-    query_mod$t_stat <- calculate.tstat(finemap_DT = query, tstat_col = tstat_col)$t_stat
-    
-    
+
+
+
+    query_mod$t_stat <- calculate.tstat(finemap_DT = query_mod,
+                                        tstat_col = tstat_col)$t_stat
+
+
     if(is.null(top_SNPs)){top_SNPs <- cbind(Gene=gene,(query_mod %>% arrange(P))[1,])}
     topSNP_sub <- auto_topSNPs_sub(top_SNPs, query_mod, gene)
-    
+
     ## Remove SNPs with NAs in stats
     query_mod[(query_mod$P<=0)|(query_mod$P>1),"P"] <- 1
-    
-    # Add leadSNP col 
+
+    # Add leadSNP col
     ## Get just one SNP per location (just pick the first one)
     query_mod <- query_mod %>% group_by(CHR, POS) %>% dplyr::slice(1)
     ## Mark lead SNP
     query_mod$leadSNP <- ifelse(query_mod$SNP==topSNP_sub$SNP, T, F)
-    
+
     # Only convert to numeric AFTER removing NAs (otherwise as.numeric will turn them into 0s)
     query_mod <- query_mod  %>%
       mutate(Effect=as.numeric(Effect), StdErr=as.numeric(StdErr), P=as.numeric(P))
-    
-    data.table::fwrite(query_mod, subset_path, sep = "\t")
+
+    data.table::fwrite(query_mod, subset_path, sep = "\t", nThread = 4)
     if(return_dt==T){return(query_mod)}
   }
 }
@@ -203,42 +207,42 @@ standardize_subset <- function(gene,
 
 
 
-extract_SNP_subset <- function(gene, 
-                               fullSS_path, 
-                               results_path, 
+extract_SNP_subset <- function(gene,
+                               fullSS_path,
+                               results_path,
                                force_new_subset=F,
-                               top_SNPs="auto", 
+                               top_SNPs="auto",
                                bp_distance=500000,
-                               chrom_col="CHR", 
-                               position_col="POS", 
-                               snp_col="SNP", 
+                               chrom_col="CHR",
+                               position_col="POS",
+                               snp_col="SNP",
                                gene_col="Gene",
-                               pval_col="P", 
-                               effect_col="Effect", 
+                               pval_col="P",
+                               effect_col="Effect",
                                stderr_col="StdErr",
-                               MAF_col="MAF", 
+                               MAF_col="MAF",
                                freq_col = "Freq",
-                               tstat_col="t-stat", 
+                               tstat_col="t-stat",
                                A1_col = "A1",
                                A2_col = "A2",
-                               
+
                                N_cases_col="N_cases",
-                               N_controls_col="N_controls", 
+                               N_controls_col="N_controls",
                                N_cases=NULL,
                                N_controls=NULL,
                                proportion_cases="calculate",
-                               
+
                                superpopulation="",
-                               min_POS=NA, 
-                               max_POS=NA, 
+                               min_POS=NA,
+                               max_POS=NA,
                                file_sep="\t",
-                               query_by="coordinates", 
+                               query_by="coordinates",
                                probe_path = "./Data/eQTL/gene.ILMN.map",
                                remove_tmps=T,
-                               verbose=T){ 
+                               verbose=T){
   printer("",v=verbose)
   message("------------------ Step 1: Query ---------------")
-  subset_path <- get_subset_path(results_path=results_path, gene=gene, subset_path="auto") 
+  subset_path <- get_subset_path(results_path=results_path, gene=gene, subset_path="auto")
   # topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),][1,]
   # if(is.na(min_POS)){min_POS <- topSNP_sub$POS - bp_distance}
   # if(is.na(max_POS)){max_POS <- topSNP_sub$POS + bp_distance}
@@ -258,40 +262,40 @@ extract_SNP_subset <- function(gene,
     printer("+ Extracting relevant variants from fullSS...")
     start_query <- Sys.time()
     # Function selects different methods of querying your SNPs
-    query_handler(gene=gene, 
-                  fullSS_path=fullSS_path, 
-                  subset_path=subset_path, 
+    query_handler(gene=gene,
+                  fullSS_path=fullSS_path,
+                  subset_path=subset_path,
                   top_SNPs=top_SNPs,
-                  gene_col=gene_col, 
-                  chrom_col=chrom_col, 
+                  gene_col=gene_col,
+                  chrom_col=chrom_col,
                   position_col=position_col,
-                  file_sep=file_sep, 
-                  min_POS=min_POS, 
-                  max_POS=max_POS, 
+                  file_sep=file_sep,
+                  min_POS=min_POS,
+                  max_POS=max_POS,
                   bp_distance=bp_distance,
-                  query_by=query_by, 
+                  query_by=query_by,
                   probe_path=probe_path)
     # Clean file
-    query <- standardize_subset(gene=gene, 
-                               top_SNPs=top_SNPs, 
-                               subset_path=subset_path, 
+    query <- standardize_subset(gene=gene,
+                               top_SNPs=top_SNPs,
+                               subset_path=subset_path,
                                file_sep=file_sep,
-                               chrom_col=chrom_col, 
-                               position_col=position_col, 
+                               chrom_col=chrom_col,
+                               position_col=position_col,
                                snp_col=snp_col,
-                               pval_col=pval_col, 
-                               effect_col=effect_col, 
-                               stderr_col=stderr_col,    
+                               pval_col=pval_col,
+                               effect_col=effect_col,
+                               stderr_col=stderr_col,
                                tstat_col=tstat_col,
                                MAF_col=MAF_col,
                                freq_col=freq_col,
                                A1_col = A1_col,
                                A2_col = A2_col,
-                               
+
                                N_cases_col=N_cases_col,
-                               N_controls_col=N_controls_col, 
+                               N_controls_col=N_controls_col,
                                N_cases=N_cases,
-                               N_controls=N_controls, 
+                               N_controls=N_controls,
                                proportion_cases = proportion_cases)
     end_query <- Sys.time()
     printer("+ Extraction completed in", round(end_query-start_query, 2),"seconds")

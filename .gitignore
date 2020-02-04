@@ -29,6 +29,7 @@ Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv.gz.tbi
 /Data/**/**/**/FINEMAP/data.ld
 /Data/**/**/**/plink/LD_matrix.RData
 /Data/**/**/**/plink/*.RDS
+/Data/Reference/UKB_MAF/* 
 
 # Annotations
 /echolocatoR/tools/Annotations/*.rds
