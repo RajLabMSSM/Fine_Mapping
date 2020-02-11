@@ -37,6 +37,7 @@ editor_options:
 # devtools::install_local("echolocatoR/", force = T)
 # library("echolocatoR")
 source("echolocatoR/R/MAIN.R")
+# setwd("~/Desktop/Fine_Mapping")
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS:
 # Data_dirs <- read.csv("./Data/directories_table.csv")
 finemap_results <- list()
@@ -263,25 +264,26 @@ overlap <- GenomicRanges:::findOverlaps_GenomicRanges(gr.peaks,
                                                       gr.finemap,
                                                       minoverlap = 1,ignore.strand = T)
 
-nott_overlap <- cbind(data.frame(gr.finemap[overlap@to]),
-                      data.frame(gr.peaks[overlap@from]))[,c("SNP",colnames(gr.peaks@elementMetadata))]
+nott_overlap <- cbind(data.frame(gr.finemap[overlap@to,"SNP"]),
+                      data.frame(gr.peaks[overlap@from,]@elementMetadata))
 
 merged_annot <- data.table:::merge.data.table(data.table::data.table(merged_DT), 
                                                data.table::data.table(nott_overlap),
                                                all.x = T,
                                                by = "SNP") 
+remove(gr.peaks, gr.finemap, overlap, nott_overlap)
 
 ```
 
 ### Melt Consensus Annotation Data        
  
-```{r Melt Consensus Annotation Data        }
+```{r Melt Consensus Annotation Data}
 # Identify whether consensus SNPs are GWAS lead
 # You have to subset within summarise (not beforehand) to avoid  dropping any loci without consensus SNPs  
 merged_annot <- merged_annot %>% 
   dplyr::group_by(Locus) %>% 
   dplyr::mutate(topConsensus = ifelse(Consensus_SNP & mean.PP==max(mean.PP),T,F))
-consensus_melt <-  setDT(merged_annot)[, .(Count = uniqueN(SNP[topConsensus == T])), 
+consensus_melt <-  setDT(merged_annot)[, .(Count = uniqueN(SNP[topConsensus == T], na.rm = T)), 
                                        by=c("Locus","Cell_type","Assay")] %>% 
   subset(!is.na(Cell_type) & !is.na(Assay)) %>%
   dplyr::mutate(Annotation = paste0(Cell_type,"_",Assay))
@@ -341,7 +343,7 @@ consensus_melt[consensus_melt$Count==0,"Count"] <- NA
 gg_consensus_annot <- ggplot(data=consensus_melt, aes(x=Annotation, y=Locus, fill=Count)) +
    geom_raster() +  
    # scale_fill_manual(values = consensus_colors) +  
-   scale_fill_gradient(na.value = "white", low = scales::alpha("blue",.7), high = scales::alpha("red",.7)) +
+   scale_fill_gradient(na.value = "transparent", low = scales::alpha("blue",.7), high = scales::alpha("red",.7)) +
    geom_point(aes(size=ifelse(Count>0, "dot", "no_dot")), show.legend = F, alpha=.8, color="white") +
    scale_size_manual(values=c(dot=.5, no_dot=NA), guide="none") +
    labs(fill = "Consensus SNP Count") +
@@ -374,7 +376,99 @@ gg_locus_summary /
   patchwork::plot_layout(heights = c(.15,1))
 ```
 
-## sQTLs
+
+
+## Regulatory Variants
+
+(3) Regulatory - does it overlap chromatin accessibility in Glass data (or single cell) or histone modification and PLAC-seq? This class of variants will overlap TF binding sites, etc.  
+
+```{r Regulatory Variants}
+
+```
+
+
+## QTLs
+
+### eQTL_Catalogue
+
+(4) Link to QTLs. any credible set SNPs in published QTL dataset.
+  - Use eQTL Catalogue API
+```{r QTLs} 
+qtl.dat <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/_genome_wide/Nalls23andMe_2019.eQTL_Catalogue.tsv.gz", 
+                              nThread = 4)
+gwas.qtl <- data.table:::merge.data.table(x = merged_DT %>% dplyr::select(Locus, CHR, POS, SNP, P, leadSNP, Consensus_SNP, Support),
+                                          y = qtl.dat,# subset(qtl.dat, pvalue.QTL<5e-8), 
+                                          all.x = T,
+                                          by.x = c("Locus","CHR","POS"),
+                                          by.y = c("Locus.GWAS","chromosome.GWAS","base_pair_location.GWAS") 
+                                          ) %>% 
+  dplyr::mutate(UCS = Support>0)
+
+qtl.thresh = .05
+plot.subset <- subset(gwas.qtl, pvalue.QTL<qtl.thresh &
+                      Locus %in% c("LRRK2","BST1","MED12L","CHRNB1","BIN3")) %>% 
+  dplyr::mutate(MB=POS/1000000)
+gg.gwas <- ggplot(plot.subset, aes(x=MB, y=-log10(P), color=-log10(P))) + 
+  geom_hline(yintercept = -log10(5e-8), alpha=.5, linetype = "dashed", size=.5) + 
+  geom_point(size=.5) + 
+  labs(x=NULL) + 
+  theme(axis.text.x = element_blank(), 
+        strip.text.y = element_text(angle = 0)) + 
+  facet_grid(facets = trait.GWAS~Locus, 
+             scales = "free_x")
+gg.qtls <-  ggplot(plot.subset, aes(x=MB, y=-log10(pvalue.QTL))) +  
+    geom_point(aes(color=gene.QTL), size=.5, show.legend = F) + 
+    geom_hline(yintercept = -log10(qtl.thresh), alpha=.5, linetype = "dashed", size=.5) + 
+    facet_grid(facets = qtl.id~Locus, 
+               scales = "free_x") +
+    # theme_classic() + 
+  theme(strip.text.y = element_text(angle = 0),
+        strip.text.x = element_blank() )
+gg.gwas + gg.qtls + 
+  patchwork::plot_layout(ncol = 1, heights = c(.1,1))
+
+
+
+# Group and melt
+gwas.qtl.melt <-  setDT(gwas.qtl)[, .(Count = uniqueN(SNP[UCS==T],na.rm = T)),
+                                  by=c("Locus","qtl.id","SNP","gene.QTL")] #"leadSNP","Consensus_SNP","UCS"
+gwas.qtl.melt <- gwas.qtl.melt %>% 
+  dplyr::group_by(Locus, qtl.id, SNP) %>% 
+  dplyr::summarise(Count = sum(Count, na.rm=T),
+                   Genes = paste(gene.QTL,collapse=", "))
+ 
+gwas.qtl.melt[gwas.qtl.melt$Count==0,"Count"] <- NA
+gg_gwas.qtl <- ggplot(data=gwas.qtl.melt, aes(x=qtl.id, y=Locus, fill=Count)) +
+   geom_raster() +  
+   # scale_fill_manual(values = consensus_colors) +  
+   scale_fill_gradient(na.value = "transparent", low = scales::alpha("blue",.7), high = scales::alpha("red",.7)) +
+   geom_point(aes(size=ifelse(Count>0, "dot", "no_dot")), show.legend = F, alpha=.8, color="white") +
+   scale_size_manual(values=c(dot=.5, no_dot=NA), guide="none") +
+   labs(fill = "UCS SNP Count") +
+   theme_classic() +
+   theme(legend.position = "top",  
+         legend.title.align = .5,
+         axis.text.x = element_text(angle = 40, hjust = 1),
+         # legend.background =  element_rect(fill = "lightgray"),
+         legend.key = element_rect(colour = "gray60"), 
+         legend.text = element_text(size = 8),
+         legend.text.align = .5,
+         # legend.key.size = unit(.5, units = "cm" ),
+         legend.box="horizontal",
+         # panel.background = element_rect(fill = 'transparent'),
+         # panel.grid = element_line(color="gray", size=5),
+         panel.grid.major = element_line(color="grey", size=5) ) +  
+  guides(color = guide_legend(nrow = 1, reverse = F,
+                               title.position = "top",
+                               # label.position = "top",
+                               title.hjust = .5,
+                               label.hjust = -1)) +
+  # Keep unused levels/Loci
+  scale_y_discrete(drop=FALSE)
+gg_gwas.qtl
+```
+
+## Raj sQTLs
 
 (2) Splicing variant (look up splicing QTL datasets that _WE_ generated). sQTLs  
 
@@ -394,28 +488,6 @@ merged_DT <- data.table:::merge.data.table(subset(merged_DT, Support>0),
                               by.x="snp_id", by.y="sQTL.snp_id")
 merged_DT$Raj_2019.sQTL <- ifelse(is.na(merged_DT$sQTL.pval), 0, 1)
 createDT(subset(merged_DT, !is.na(sQTL.pval)))
-```
-
-## Regulatory Variants
-
-(3) Regulatory - does it overlap chromatin accessibility in Glass data (or single cell) or histone modification and PLAC-seq? This class of variants will overlap TF binding sites, etc.  
-
-```{r Regulatory Variants}
-
-```
-
-
-## QTLs
-
-(4) Link to QTLs. any credible set SNPs in published QTL dataset.
-  - Use eQTL Catalogue API
-```{r QTLs}
-qtl_DT <- top_finemapped_loci(dataset="./Data/GWAS/Nalls23andMe_2019",
-                                save_results=T,
-                                biomart=F,
-                                check_if_known_locus=F,
-                                force_new_subset=F)
-createDT(qtl_DT)
 ```
 
 

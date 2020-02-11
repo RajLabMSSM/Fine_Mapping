@@ -216,6 +216,29 @@ quick_finemap_soft <- function(locus="LRRK2"){
 }
 
 
+
+
+
+hgnc_to_ensembl <- function(gene_symbols){
+  # columns(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75)
+  conversion <- AnnotationDbi::mapIds(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+                                      keys = gene_symbols,
+                                      keytype = "SYMBOL",
+                                      column = "GENEID")
+  return(conversion)
+}
+ensembl_to_hgnc <- function(ensembl_ids){
+  conversion <- AnnotationDbi::mapIds(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+                                      keys = ensembl_ids,
+                                      keytype = "GENEID",
+                                      column = "SYMBOL")
+  return(conversion)
+}
+
+
+
+
+
 tryFunc <- function(input, func) {
   out <- tryCatch(
     {
