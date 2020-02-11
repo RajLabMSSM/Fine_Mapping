@@ -3,6 +3,8 @@
 # ^^^^^^^^^^^^^^ single-nucleus human brain epigenomic dataset # ^^^^^^^^^^^^^^
 # Nott, Alexi, Inge R. Holtman, Nicole G. Coufal, Johannes C.M. Schlachetzki, Miao Yu, Rong Hu, Claudia Z. Han, et al. “Cell Type-Specific Enhancer-Promoter Connectivity Maps in the Human Brain and Disease Risk Association.” Science 0793, no. November (2019): 778183. https://doi.org/10.1101/778183.
 #  ^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^
+# UCSC Genome Browser: Command Line Utilities:
+# http://hgdownload.soe.ucsc.edu/admin/exe/macOSX.x86_64/
 
 
 NOTT_2019.epigenomic_histograms <- function(finemap_DT,
@@ -37,7 +39,7 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
   }
 
   # Import BigWig annotation files
-  bigWigFiles <- readxl::read_excel("./echolocatoR/annotations/Glass_lab/Glass.snEpigenomics.xlsx")
+  bigWigFiles <- readxl::read_excel("./echolocatoR/annotations/Nott_2019/Nott_2019.snEpigenomics.xlsx")
   # bigWigFiles <- subset(bigWigFiles, marker!="-" &  cell_type!="peripheral microglia")
   bigWigFiles <- dplyr::mutate(bigWigFiles, cell_type = gsub(" ",".",cell_type))
 
@@ -136,7 +138,7 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
 }
 
 
-NOTT_2019.superenhancers <- function(s6_path="./echolocatoR/annotations/Glass_lab/aay0793-Nott-Table-S6.xlsx"){
+NOTT_2019.superenhancers <- function(s6_path="./echolocatoR/annotations/Nott_2019/aay0793-Nott-Table-S6.xlsx"){
   s6 <- readxl::read_excel( , skip = 2)
   annot_sub <- subset(s6, chr== paste0("chr",unique(finemap_DT$CHR)) & start>=min(finemap_DT$POS) & end<=max(finemap_DT$POS) )
   if(nrow(annot_sub)>0){
@@ -149,8 +151,8 @@ NOTT_2019.superenhancers <- function(s6_path="./echolocatoR/annotations/Glass_la
   }
 }
 
-NOTT_2019.enhancer_promoter_interactions <- function(finemap_DT,
-                                                     s5_path="./echolocatoR/annotations/Glass_lab/aay0793-Nott-Table-S5.xlsx"){
+NOTT_2019.get_promoter_interactome_data <- function(finemap_DT,
+                                                     s5_path="./echolocatoR/annotations/Nott_2019/aay0793-Nott-Table-S5.xlsx"){
   sheets_s5 <- readxl::excel_sheets(s5_path)
   s5 <- readxl::read_excel(s5_path, sheet = sheets_s5[1], skip = 2)
   s5 <- s5 %>% dplyr::rename(chr=Chr, start=Start, end=End)
@@ -161,7 +163,7 @@ NOTT_2019.enhancer_promoter_interactions <- function(finemap_DT,
   return(annot_sub)
 }
 
-NOTT_2019.get_promoters <- function(annot_sub, marker_key){
+NOTT_2019.get_promoter_celltypes <- function(annot_sub, marker_key){
   promoter.cols <- grep("*_active_promoter",  colnames(annot_sub), value = T)
   logical.list <- colSums(annot_sub[,promoter.cols])>0
   promoter_celltypes <- gsub("\\_.*","", promoter.cols[as.logical(logical.list)] )
@@ -170,7 +172,7 @@ NOTT_2019.get_promoters <- function(annot_sub, marker_key){
   return(promoter_celltypes)
 }
 
-NOTT_2019.get_interactions <- function(annot_sub, top.consensus.pos, marker_key){
+NOTT_2019.get_interactome <- function(annot_sub, top.consensus.pos, marker_key){
   interact.cols <- grep("*_interactions", colnames(annot_sub), value = T)
   interact.DT <- lapply(interact.cols, function(column){
     coords <- strsplit(annot_sub[,column][[1]], ",")
@@ -200,40 +202,129 @@ NOTT_2019.get_interactions <- function(annot_sub, top.consensus.pos, marker_key)
 }
 
 
+NOTT_2019.get_interactions <- function(finemap_DT,
+                                       s5_path="./echolocatoR/annotations/Nott_2019/aay0793-Nott-Table-S5.xlsx"){
+  sheets_s5 <- readxl::excel_sheets(s5_path)
+  selected_sheets <- grep("interactome$",sheets_s5, value = T)
+  interactomes <- lapply(selected_sheets, function(s){
+    printer("Importing",s,"...")
+    # Read the sheet you want
+    dat <- readxl::read_excel(s5_path, sheet = s, skip = 2)
+    dat$Name <- s
+    return(dat)
+  }) %>% data.table::rbindlist()
+  interactomes_sub <- subset(interactomes,
+                         chr1== paste0("chr",unique(finemap_DT$CHR)) &
+                         chr2== paste0("chr",unique(finemap_DT$CHR)) &
+                         start1>=min(finemap_DT$POS) &
+                         start2>=min(finemap_DT$POS) &
+                         end1<=max(finemap_DT$POS) &
+                         end2<=max(finemap_DT$POS)
+                         ) %>% tidyr::separate(Name, into=c("Cell_type","Element"), remove=F)
+  return(interactomes_sub)
+}
+
+NOTT_2019.get_epigenomic_peaks <- function(peak.dir="/Volumes/Scizor/Nott_2019/peaks",
+                                           narrow_peaks=T,
+                                           broad_peaks=T){
+  bigWigFiles <- readxl::read_excel("./echolocatoR/annotations/Nott_2019/Nott_2019.snEpigenomics.xlsx")
+  peak_types <- c(ifelse(narrow_peaks,".narrowPeak$", NA),
+                  ifelse(broad_peaks,"_broad.bed12$", NA))
+  peak_types <- peak_types[!is.na(peak_types)]
+
+  peaks.paths <- list.files(peak.dir,
+                            pattern =  paste(peak_types, collapse = "|"),
+                            full.names = T,recursive = T)
+  PEAKS <- MACS2.import_peaks(peaks.paths, as_granges=T)
+  PEAKS <- lapply(PEAKS, function(peak){
+    pk.name <- gsub(".ucsc_narrowPeak1|.ucsc_broadRegion1","",peak$name[1])
+    meta <- subset(bigWigFiles, long_name==pk.name)
+    peak$Cell_type <- meta$cell_type
+    peak$Assay <- meta$assay
+    peak$Fresh_frozen <- meta$fresh_frozen
+    peak$marker  <- meta$marker
+    return(peak)
+  }) %>% GenomicRanges::GenomicRangesList()
+ PEAKS.merged <- unlist(PEAKS)
+ PEAKS.merged$peak_type <- PEAKS.merged
+ return(PEAKS.merged)
+}
+
+
+NOTT_2019.get_regulatory_regions <- function(finemap_DT,
+                                           s5_path="./echolocatoR/annotations/Nott_2019/aay0793-Nott-Table-S5.xlsx"){
+  # Get sheet names
+  sheets_s5 <- readxl::excel_sheets(s5_path)
+  selected_sheets <- grep("promoters$|enhancers$",sheets_s5, value = T)
+  regions <- lapply(selected_sheets, function(s){
+    printer("Importing",s,"...")
+    # Read the sheet you want
+    dat <- readxl::read_excel(s5_path, sheet = s, skip = 1, col_names = c("chr","start","end"))
+    dat$Name <- s
+    return(dat)
+  }) %>% data.table::rbindlist()
+  regions_sub <- subset(regions, chr== paste0("chr",unique(finemap_DT$CHR)) &
+                        start>=min(finemap_DT$POS) &
+                        end<=max(finemap_DT$POS) ) %>%
+    tidyr::separate(Name, into=c("Cell_type","Element"), remove=F)
+  return(regions_sub)
+}
+
+
 
 # ***************************** #
 NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
                                      title=NULL,
                                      print_plot=T,
                                      save_plot=T,
-                                     return_interaction_track=F){
+                                     return_interaction_track=F,
+                                     xlims=NULL,
+                                     zoom_window=NULL,
+                                     index_SNP=NULL){
   #  quick_finemap()
   library(ggbio)
   marker_key <- list(PU1="Microglia",
-                     Olig2="Oligodendrocytes",
-                     NeuN="Neurons",
-                     LHX2="Astrocytes")
-  lead.pos <- top_n(finemap_DT, n = 1, wt = -P)$POS
+                     Olig2="Oligo",
+                     NeuN="Neuronal",
+                     LHX2="Astrocyte")
+  if(is.null(index_SNP)){
+    lead.pos <- subset(finemap_DT, leadSNP)$POS #top_n(finemap_DT, n = 1, wt = -P)$POS
+  } else {
+    lead.pos <- subset(finemap_DT, SNP==index_SNP)$POS
+  }
+
   #subset(finemap_DT,SNP=="rs76904798")$POS
   consensus.pos <- subset(finemap_DT, Consensus_SNP==T)$POS
   if(length(consensus.pos)>0){
     top.consensus.pos <- (top_n(subset(finemap_DT, Consensus_SNP==T),
-                               n=1, wt = mean.PP) %>% top_n(1,wt=Effect))$POS[1]
+                                n=1, wt = mean.PP) %>% top_n(1,wt=Effect))$POS[1]
   } else {
     top.consensus.pos <- (top_n(subset(finemap_DT, Support>0),
-                               n=1, wt = mean.PP )%>% top_n(1,wt=Effect))$POS[1]
+                                n=1, wt = mean.PP )%>% top_n(1,wt=Effect))$POS[1]
   }
-  # Subset to relevant region
-  annot_sub <- NOTT_2019.enhancer_promoter_interactions(finemap_DT = finemap_DT)
-  ## Extract active promoters
-  promoter_celltypes <- NOTT_2019.get_promoters(annot_sub = annot_sub,
-                                                marker_key = marker_key)
+  # Define window size
+  if(is.null(xlims)){
+    xlims = c(min(finemap_DT$POS), max(finemap_DT$POS))
+  }
+  if(!is.null(zoom_window)){
+    xlims = c(lead.pos-as.integer(zoom_window/2),  lead.pos+as.integer(zoom_window/2))
+  }
+
+
+  # Subset interactome to relevant region
+  annot_sub <- NOTT_2019.get_promoter_interactome_data(finemap_DT = finemap_DT)
+  ## Extract active promoter celltypes
+  promoter_celltypes <- NOTT_2019.get_promoter_celltypes(annot_sub = annot_sub,
+                                                         marker_key = marker_key)
   ## Extract promoter interactions
-  interact.DT <- NOTT_2019.get_interactions(annot_sub = annot_sub,
+  interact.DT <- NOTT_2019.get_interactome(annot_sub = annot_sub,
                                             top.consensus.pos =  top.consensus.pos,
                                             marker_key = marker_key)
+  # interactions <- NOTT_2019.get_interactions(finemap_DT = finemap_DT)
+  regions <- NOTT_2019.get_regulatory_regions(finemap_DT = finemap_DT)
+  regions <- regions %>% dplyr::mutate(middle=as.integer( end-abs(end-start)/2) )
 
-
+  ####### Assemble Tracks #######
   # GWAS track
   GWAS_trk <- ggplot(data=finemap_DT, aes(x=POS, y=-log10(P), color=-log10(P))) +
     geom_point()
@@ -253,27 +344,37 @@ NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
   # Nott:  interactions
   # Nott_interactions
   NOTT.interact_trk <- ggbio::ggbio() +
-    ggbio::geom_arch(data = interact.DT, alpha=.6,
-                     aes(x=Start, xend=End, color=Element)) +
+    ggbio::geom_arch(data = interact.DT, alpha=.6, color="gray60", max.height = 10,
+                     aes(x=Start, xend=End)) +
     facet_grid(facets = Cell_type~.) +
     scale_y_reverse() +
-    scale_colour_brewer(palette = "Set2") +
-    labs(subtitle = paste0(annot_sub$Annotation[[1]]," - ",promoter_celltypes) ) +
+    # scale_colour_brewer(palette = "Set2") +
+    theme_classic() +
+    # labs(subtitle = paste0(annot_sub$Annotation[[1]]," - ",promoter_celltypes) ) +
     theme(legend.key.width=unit(1.5,"line"),
           legend.key.height=unit(1.5,"line"),
-          axis.text.y = element_blank() )
+          axis.text.y = element_blank() ) +
+    ggbio::geom_rect(data = regions,
+                     aes(xmin=start, xmax=end, ymin=-1, ymax=1, fill=Element), alpha=.8, inherit.aes=F) +
+    scale_fill_manual(values = c("turquoise2", "purple2")) +
+    geom_point(data = regions, aes(x=middle, y=0, color=Element), size=.5,
+               inherit.aes = F,  alpha=.8) +
+    scale_color_manual(values = c("turquoise","purple")) +
+    geom_hline(yintercept = Inf, alpha=.2, show.legend = F)
+    # xlim(c(40500000, 40700000))
+
   if(return_interaction_track){
     printer("++ Nott sn-epigenomics:: Returning PLAC-seq track.")
-    return(NOTT.interact_trk +
-             ggbio::geom_rect(data = annot_sub,
-                              aes(xmin=start, xmax=end, ymin=-0, ymax=Inf),
-                              fill="turquoise", alpha=.5, inherit.aes=F) +
-             theme_bw())
+    return(NOTT.interact_trk
+             # ggbio::geom_rect(data = annot_sub,
+             #                  aes(xmin=start, xmax=end, ymin=-0, ymax=Inf),
+             #                  fill="turquoise", alpha=.5, inherit.aes=F) +
+            )
   } else{
     # Makes tracks list
     TRACKS_list <- list(
-      "GWAS"=GWAS_trk,
-      "Fine-mapping"=FM_trk,
+      "GWAS"=GWAS_trk + theme_classic(),
+      "Fine-mapping"=FM_trk + theme_classic(),
       "Nott (2019)\nInteractome"=NOTT.interact_trk
       # "Nott et al. (2019)\nPromoter\ninteractome"=Nott_s5
     )
@@ -286,7 +387,8 @@ NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
                         label.text.color = "white",
                         label.text.angle = 0,
                         label.width = unit(5.5, "lines"),
-                        xlim = c(min(finemap_DT$POS), max(finemap_DT$POS))
+                        xlim = xlims
+                        # xlim = c(min(finemap_DT$POS), max(finemap_DT$POS))
                         # heights = c(rep(1,length(INIT_list)), rep(1,length(BW_tracks)) )
     )
     TRACKS_list <- append(TRACKS_list, params_list)
@@ -294,14 +396,18 @@ NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
 
     trks_plus_lines <- trks +
       # Nott: promoter
-      ggbio::geom_rect(data = annot_sub, aes(xmin=start, xmax=end, ymin=-0, ymax=Inf),
-                       fill="turquoise", alpha=.5, inherit.aes=F) +
+      # ggbio::geom_rect(data = annot_sub, aes(xmin=start, xmax=end, ymin=-0, ymax=Inf),
+      #                  fill="turquoise", alpha=.5, inherit.aes=F) +
       # Lead GWAS line
       geom_vline(xintercept = lead.pos, color="red", alpha=1, size=.3, linetype='solid') +
       # Consensus line
-      geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=1, size=.3, linetype='solid') +
-      theme_classic() +
-      theme(plot.subtitle = element_text(color = "turquoise", size = 8))
+      geom_vline(xintercept = consensus.pos, color="goldenrod2", alpha=1, size=.3, linetype='solid')
+
+      # theme_bw() +
+      # theme(plot.subtitle = element_text(color = "turquoise", size = 8)) +
+      # ggbio::geom_rect(data = regions,
+      #                  aes(xmin=start, xmax=end, ymin=-1, ymax=1, fill=Element), alpha=.8, inherit.aes=F) +
+      # scale_fill_manual(values = c("turquoise2", "purple2"))
 
     if(print_plot){print(trks_plus_lines)}
     # SAVE PLOT
@@ -311,11 +417,12 @@ NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
       dir.create(dirname(plot.path), showWarnings = F, recursive = T)
       ggsave(filename = plot.path,
              plot = trks_plus_lines,
-             height = 7, width = 7, dpi = 1000, bg = "transparent")
+             height = 7, width = 7, dpi = 200, bg = "transparent")
     }
     return(trks_plus_lines)
   }
 }
+
 
 
 

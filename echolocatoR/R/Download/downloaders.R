@@ -2,16 +2,16 @@
 # R wrapper for faster downloading software
 
 
-wget <- function(input.url, 
-                 output.path, 
+wget <- function(input.url,
+                 output.path,
                  background=T,
-                 force_overwrite=F, 
-                 quiet=F, 
+                 force_overwrite=F,
+                 quiet=F,
                  show_progress=T,
                  continue=T){
   # https://stackoverflow.com/questions/21365251/how-to-run-wget-in-background-for-an-unattended-download-of-files
   ## -bqc makes wget run in the background quietly
-  dir.create(output.path, showWarnings = F, recursive = T) 
+  dir.create(output.path, showWarnings = F, recursive = T)
   out.file <- file.path(output.path,basename(input.url))
   cmd <- paste("wget",input.url,
                "-np",
@@ -28,7 +28,7 @@ wget <- function(input.url,
 
 axel <- function(input.url,
                  output.path,
-                 background=T, 
+                 background=F,
                  nThreads=4,
                  force_overwrite=F,
                  quiet=F,
@@ -40,11 +40,11 @@ axel <- function(input.url,
     print("+ Overwriting pre-existing file.")
     suppressWarnings(file.remove(out.file))
   }
-  
+
   cmd <- paste("axel",input.url,
                "-n",nThreads,
                ifelse(force_overwrite,"","--no-clobber"),
-               "-o",out.file, 
+               "-o",out.file,
                ifelse(quiet,"-q",""),
                # ifelse(alternate,"-a",""),
                ifelse(background,"& bg","")

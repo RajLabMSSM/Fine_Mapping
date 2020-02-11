@@ -6,6 +6,7 @@ core.*
 .DS_Store
 /**/*.DS_Store
 /**/**/*.DS_Store
+/*.gz.tbi
 /Data/GWAS/**/**/*.tsv
 /Data/GWAS/**/*.txt.gz
 #/Data/QTL/**/**/*.txt

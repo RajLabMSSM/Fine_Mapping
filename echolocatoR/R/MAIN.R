@@ -59,6 +59,7 @@ library(patchwork) #devtools::install_github("thomasp85/patchwork")
 # library(biomaRt) # BiocManager::install("biomaRt")
 # library(refGenome)
 # library(crayon)
+# library(ChIPQC); BiocManager::install('ChIPQC')
 
 # library(coloc)
 # install.packages("haploR", dependencies = TRUE)
@@ -127,6 +128,11 @@ source("./echolocatoR/R/Annotate/XGR.R")
 source("./echolocatoR/R/Annotate/psychENCODE.R")
 source("./echolocatoR/R/Annotate/mergeQTL.R")
 source("./echolocatoR/R/Annotate/Nott_2019.R")
+source("./echolocatoR/R/Annotate/summarise.R")
+source("./echolocatoR/R/Annotate/macs2.R")
+# eQTL Catalogue
+source("./echolocatoR/R/QTL_databases/eQTL_Catalogue.R")
+
 
 # When there's a ton of files, turn off indexing to speed up Rstudio:
 # https://stackoverflow.com/questions/14599359/rsession-cpu-usage-when-idle
@@ -205,6 +211,7 @@ quick_finemap_soft <- function(locus="LRRK2"){
   results_path <<- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
   finemap_DT <- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
   finemap_DT <- find_consensus_SNPs(finemap_DT)
+  finemap_DT <- data.table::data.table(Gene=locus, finemap_DT)
   return(finemap_DT)
 }
 

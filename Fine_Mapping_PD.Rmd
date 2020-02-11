@@ -47,6 +47,24 @@ coloc_results <- list()
 
 # Nalls et. al. (2019) w/ 23andMe
 
+## LRRK2
+
+LRRK2 is a tricky locus with multiple peaks. We therefore fine-mapped it a little differently:
+1. Remove G2019S (known rare variant) and its correlates.
+2. Identify the minimum and maximum span of SNPs that are in LD (r2) with the lead common SNP within the LRRK2 gene.
+
+```{r}
+lead.snp <- subset(finemap_DT, leadSNP)
+merged <-data.table:::merge.data.table(finemap_DT, 
+                              data.table::data.table(r2=LD_matrix[lead.snp$SNP,]^2,
+                                                     SNP=names(LD_matrix[lead.snp$SNP,])), 
+                              by="SNP")
+subset(merged, r2>0.4)$POS %>% summary()
+finemap_DT %>% arrange(P)
+```
+
+ 
+
 ## Statistical Fine-mapping {.tabset .tabset-fade .tabset-pills} 
 
 Parkinson's Disease GWAS.  
@@ -64,8 +82,7 @@ top_SNPs <- Nalls_top_SNPs <- import_topSNPs(
   group_by_locus = T, 
   locus_col = "Locus Number",
   remove_variants = "rs34637584")
-# Manually add new SNP of interest 
- 
+# Manually add new SNP of interest  
 top_SNPs <- data.table::rbindlist(list(top_SNPs, 
                                       data.frame(CHR=14,POS=55360203, SNP="rs3783642", 
                                                    P=2e-308, Effect=1, Gene="ATG14", Locus=NA ),
@@ -122,38 +139,305 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  server=F)  
 ```
 
-# LRRK2
 
-LRRK2 is a tricky locus with multiple peaks. We therefore fine-mapped it a little differently:
-1. Remove G2019S (known rare variant) and its correlates.
-2. Identify the minimum and maximum span of SNPs that are in LD (r2) with the lead common SNP within the LRRK2 gene.
+
+# Summarise Results
+
+## Gather Results
+
+```{r Gather Results}
+merged_DT <- merge_finemapping_results(minimum_support=1,
+                                      include_leadSNPs=T,
+                                      dataset = "./Data/GWAS/Nalls23andMe_2019",
+                                      xlsx_path="./Data/Nalls23andMe_2019_results.xlsx",
+                                      from_storage=T,
+                                      consensus_thresh = 2,
+                                      haploreg_annotation=F,
+                                      biomart_annotation=F, 
+                                      verbose = F)
+merged_DT <- merged_DT %>% dplyr::rename(Locus=Gene) 
+no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
+merged_DT <- subset(merged_DT, !(Locus %in% no_no_loci))
+
+# Sort from loci with the smallest to largest UCS size.
+locus_order <- subset(merged_DT, Support>0) %>% 
+  dplyr::group_by(Locus, .drop=F) %>% 
+  dplyr::summarise_at(vars(ends_with("Credible_Set")),
+                      funs(size=sum(.>0, na.rm = T), length(unique(SNP)))
+                   ) %>%  
+  dplyr::mutate(UCS_size = mean.Credible_Set_length) %>% 
+  arrange(-UCS_size) 
+locus_order <- locus_order[!endsWith(colnames(locus_order), ".Credible_Set_length")]
+locus_order$Locus <- factor(locus_order$Locus,  levels = locus_order$Locus, ordered = T)   
+
+createDT(subset(merged_DT, Consensus_SNP == T))  
+```
+
+## Credible Set Bins (Fig 2a)
+
+```{r Credible Set Bins}    
+# n_bins <- 5
+# seq(0,max_CS_size,n_bins) 
+max_CS_size <- sapply(locus_order[,-1], max, na.rm=T) %>% max()
+labels = c("0","1","2-4","5-7","8-10","11-15")
+bin_counts <-
+  locus_order %>% 
+  reshape2:::melt.data.frame(measure.vars = grep("*_size$", colnames(locus_order), value = T), 
+                             value.name = "CS_size") %>%
+  dplyr::mutate(Method=gsub(".Credible_Set_size$|_size$","",variable))  %>%
+  dplyr::group_by(Method, .drop=F) %>%
+  # subset(Method=="UCS") %>%
+  dplyr::mutate(bin = case_when(
+      CS_size == 0 ~ labels[1],
+      CS_size == 1 ~ labels[2],
+      CS_size > 1 & CS_size <= 4 ~ labels[3],
+      CS_size > 4 & CS_size <= 7 ~ labels[4],
+      CS_size > 7 & CS_size <= 10 ~ labels[5],
+      CS_size > 10 & CS_size <= 15 ~ labels[6], 
+      ))
+  # dplyr::mutate(count_bins = gsub("\\(|\\]|\\[","", cut(CS_size, breaks = breaks, include.lowest = F))) 
+  # tidyr::separate(count_bins, into=c("start","end"),sep=",") %>% 
+  # dplyr::mutate(bin= paste0(start,"-",end), type="CS") %>% 
+bin_counts$bin <- factor(bin_counts$bin, levels = rev(labels), ordered = T)
+```
 
 ```{r}
-lead.snp <- subset(finemap_DT, leadSNP)
+# Plot
+custom_colors <- c("lightgrey",RColorBrewer::brewer.pal(n=5,"GnBu"))
+gg_locus_summary <- ggplot(subset(bin_counts, Method!="mean"), aes(x=Method, fill=bin)) + 
+  geom_bar(stat="count",show.legend = T, position = position_stack(reverse = F), color="lightblue") + 
+  # scale_fill_brewer(palette = "Spectral", direction = -1) +
+  scale_fill_manual(values = rev(custom_colors)) +
+  # geom_text(aes(label = paste(bin,"SNPs")), position =  position_stack(vjust = .5), vjust=-1, stat = "count") +
+  geom_text(aes(label = ..count..),  position =  position_stack(vjust = .5), vjust=.5, stat = "count") +
+  theme_bw() + 
+  labs(x=NULL, y="Loci", fill="Credible Set size") +
+  coord_flip() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        rect = element_blank(), 
+        axis.text.x =element_blank(),
+        axis.ticks = element_blank(),
+        legend.position = "top") +
+  guides(fill = guide_legend(nrow = 1, reverse = T))
+gg_locus_summary
+```
+ 
+## Variant Annotation
 
-merged <-data.table:::merge.data.table(finemap_DT, 
-                              data.table::data.table(r2=LD_matrix[lead.snp$SNP,]^2,
-                                                     SNP=names(LD_matrix[lead.snp$SNP,])), 
-                              by="SNP")
-subset(merged, r2>0.4)$POS %>% summary()
+```{r Variant Annotation}
+snp_info <- biomart_snp_info(unique(subset(merged_DT, Support>0)$SNP))
+# unique(snp_info$consequence_type_tv)
+missense <- snp_info %>% 
+  dplyr::group_by(refsnp_id) %>% 
+  dplyr::summarise(Missense = ifelse(any(consequence_type_tv=="missense_variant",na.rm = T),T,F)) %>%
+  data.table::data.table()
+merged_DT <- data.table:::merge.data.table(merged_DT, missense,
+                                           all.x=T,
+                                           by.x="SNP",
+                                           by.y = "refsnp_id")
+printer(sum(subset(merged_DT, Support>0)$Missense, na.rm = T),"missense mutations detected in UCS.")
+```
 
-finemap_DT %>% arrange(P)
+## Consensus SNP Annotations
+
+### Nott data
+
+```{r Nott data}
+# regions <- NOTT_2019.get_regulatory_regions(merged_DT)
+# gr.regions <- GenomicRanges::makeGRangesFromDataFrame(df = regions, 
+#                                                       seqnames.field = "chr", 
+#                                                       start.field = "start", 
+#                                                       end.field = "end", 
+#                                                       keep.extra.columns = T)
+gr.peaks <- NOTT_2019.get_epigenomic_peaks(peak.dir="/Volumes/Scizor/Nott_2019/peaks",
+                                             narrow_peaks = T, 
+                                             broad_peaks = T)
+gr.finemap <- GenomicRanges::makeGRangesFromDataFrame(df = subset(merged_DT, Support>0) %>%
+                                                        dplyr::mutate(CHR=paste0("chr",CHR)), 
+                                                      seqnames.field = "chr", 
+                                                      start.field = "POS", 
+                                                      end.field = "POS", 
+                                                      keep.extra.columns = T)
+overlap <- GenomicRanges:::findOverlaps_GenomicRanges(gr.peaks,
+                                                      gr.finemap,
+                                                      minoverlap = 1,ignore.strand = T)
+
+nott_overlap <- cbind(data.frame(gr.finemap[overlap@to]),
+                      data.frame(gr.peaks[overlap@from]))[,c("SNP",colnames(gr.peaks@elementMetadata))]
+
+merged_annot <- data.table:::merge.data.table(data.table::data.table(merged_DT), 
+                                               data.table::data.table(nott_overlap),
+                                               all.x = T,
+                                               by = "SNP") 
+
+```
+
+### Melt Consensus Annotation Data        
+ 
+```{r Melt Consensus Annotation Data        }
+# Identify whether consensus SNPs are GWAS lead
+# You have to subset within summarise (not beforehand) to avoid  dropping any loci without consensus SNPs  
+merged_annot <- merged_annot %>% 
+  dplyr::group_by(Locus) %>% 
+  dplyr::mutate(topConsensus = ifelse(Consensus_SNP & mean.PP==max(mean.PP),T,F))
+consensus_melt <-  setDT(merged_annot)[, .(Count = uniqueN(SNP[topConsensus == T])), 
+                                       by=c("Locus","Cell_type","Assay")] %>% 
+  subset(!is.na(Cell_type) & !is.na(Assay)) %>%
+  dplyr::mutate(Annotation = paste0(Cell_type,"_",Assay))
+consensus_melt$Locus <- factor(consensus_melt$Locus,  levels = locus_order$Locus, ordered = T)
+length(unique(consensus_melt$Locus)) 
 ```
 
 
+```{r merge data and plot} 
+# Group and melt CS sizes
+CS_cols <- grep(".Credible_Set$", colnames(merged_DT), value = T)
+CS_cols <- CS_cols[!startsWith(CS_cols, "mean")]
+melt.dat <- merged_DT %>%
+  dplyr::select(c("Locus","SNP",CS_cols)) %>% 
+  unique() %>%
+  dplyr::group_by(Locus, .drop=F) %>%
+    summarise_at(vars(ends_with(".Credible_Set")),
+                 funs(sum(unique(.), na.rm = T))) %>% 
+  reshape2:::melt.data.frame(measure.vars = CS_cols, 
+                             variable.name = "CS", 
+                             value.name = "Credible Set size") %>% 
+  dplyr::mutate(Method=gsub(".Credible_Set$","", CS))
+melt.dat$Locus <- factor(melt.dat$Locus,  levels = locus_order$Locus, ordered = T)
+ 
 
-## Gather Annotations
+# Plot
+library(patchwork)
 
-```{r Merge Results}
-merged_results <- merge_finemapping_results(minimum_support=1,
-                                            include_leadSNPs=T,
-                                            xlsx_path="./Data/annotated_finemapping_results.xlsx",
-                                            from_storage=T,
-                                            haploreg_annotation=T,
-                                            biomart_annotation=T, 
-                                            verbose = F)
-createDT(subset(merged_results, Consensus_SNP == T))
+## UCS
+gg_CS_count <- ggplot(data=locus_order,aes(x=Locus, y=UCS_size, fill=-UCS_size)) +
+  geom_col(color="white", show.legend = F) +
+  geom_text(aes(label = UCS_size, color=-UCS_size), nudge_y = .5, size=3, show.legend = F) +
+  labs(y="Union Credible Set size") +
+  coord_flip() + 
+ theme_classic()
+
+## Method-specific CS
+gg_method_CS_count <- ggplot(data = melt.dat) + 
+  geom_col(aes(x=Locus, y=`Credible Set size`, fill=Method), color="black", size=.05) +  
+  labs(x=NULL) + 
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "top", 
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        legend.text = element_text(size = 8), 
+        legend.key.size = unit(.5, units = "cm" )) +
+  guides(fill = guide_legend(nrow = 2, 
+                             title.position = "top",
+                             title.hjust = .5)) 
+
+
+## Variant annotations
+# Extend palette beyond limit
+# consensus_colors <-  c("white",colorRampPalette(RColorBrewer::brewer.pal(8, "PuRd"))(max(consensus_melt$Count)))
+consensus_melt[consensus_melt$Count==0,"Count"] <- NA
+gg_consensus_annot <- ggplot(data=consensus_melt, aes(x=Annotation, y=Locus, fill=Count)) +
+   geom_raster() +  
+   # scale_fill_manual(values = consensus_colors) +  
+   scale_fill_gradient(na.value = "white", low = scales::alpha("blue",.7), high = scales::alpha("red",.7)) +
+   geom_point(aes(size=ifelse(Count>0, "dot", "no_dot")), show.legend = F, alpha=.8, color="white") +
+   scale_size_manual(values=c(dot=.5, no_dot=NA), guide="none") +
+   labs(fill = "Consensus SNP Count") +
+   theme_classic() +
+   theme(legend.position = "top",  
+         legend.title.align = .5,
+         axis.text.x = element_text(angle = 40, hjust = 1),
+         # legend.background =  element_rect(fill = "lightgray"),
+         legend.key = element_rect(colour = "gray60"),
+         axis.text.y = element_blank(), 
+         axis.title.y = element_blank(), 
+         legend.text = element_text(size = 8),
+         legend.text.align = .5,
+         # legend.key.size = unit(.5, units = "cm" ),
+         legend.box="horizontal",
+         panel.background = element_rect(fill = 'transparent'),
+         # panel.grid = element_line(color="gray", size=5),
+         panel.grid.major = element_line(color="white", size=5),
+         panel.grid.minor = element_line(color="white", size=5)) +  
+  guides(color = guide_legend(nrow = 1, reverse = F,
+                               title.position = "top",
+                               # label.position = "top",
+                               title.hjust = .5,
+                               label.hjust = -1)) +
+  # Keep unused levels/Loci
+  scale_y_discrete(drop=FALSE)
+# Merge tgoether
+gg_locus_summary / 
+  (gg_CS_count + gg_method_CS_count + gg_consensus_annot) +
+  patchwork::plot_layout(heights = c(.15,1))
 ```
+
+## sQTLs
+
+(2) Splicing variant (look up splicing QTL datasets that _WE_ generated). sQTLs  
+
+  - [Paper](https://www.nature.com/articles/s41588-018-0238-1#Sec30)
+    + Table S10 contains the top sQTLs from ROSMAP.
+  - [sQTLviz](https://rajlab.shinyapps.io/sQTLviz_ROSMAP/)
+  - [Raw Data](https://www.radc.rush.edu)  
+  
+```{r sQTLs}
+sqtls <- readxl::read_excel("./Data/QTL/sQTLviz/Raj2018_TableS10.xlsx")  
+colnames(sqtls) <- paste0("sQTL.",colnames(sqtls)) 
+
+merged_DT <- merged_DT %>% dplyr::mutate(snp_id=paste0(CHR,":",POS)) %>% data.table::data.table()
+merged_DT <- data.table:::merge.data.table(subset(merged_DT, Support>0),
+                              data.table::data.table(sqtls), 
+                              all.x = T,
+                              by.x="snp_id", by.y="sQTL.snp_id")
+merged_DT$Raj_2019.sQTL <- ifelse(is.na(merged_DT$sQTL.pval), 0, 1)
+createDT(subset(merged_DT, !is.na(sQTL.pval)))
+```
+
+## Regulatory Variants
+
+(3) Regulatory - does it overlap chromatin accessibility in Glass data (or single cell) or histone modification and PLAC-seq? This class of variants will overlap TF binding sites, etc.  
+
+```{r Regulatory Variants}
+
+```
+
+
+## QTLs
+
+(4) Link to QTLs. any credible set SNPs in published QTL dataset.
+  - Use eQTL Catalogue API
+```{r QTLs}
+qtl_DT <- top_finemapped_loci(dataset="./Data/GWAS/Nalls23andMe_2019",
+                                save_results=T,
+                                biomart=F,
+                                check_if_known_locus=F,
+                                force_new_subset=F)
+createDT(qtl_DT)
+```
+
+
+## Deep Learning Predictions
+(5) Check to see DeepSEA and SpliceAI scores.  
+
+### DeepSEA  
+- Either use their server, or get pre-computed values from in silico mutagenesis?
+```{r}
+```
+
+### SpliceAI
+```{r}
+```
+
+
+(6) identify Transcription Factor Binding motifs for known TFs. Not sure which database to use.  
+  - Does he mean TFBS? SNPs aren't good for identifying motifs bc they're not the full sequence.
+```{r}
+```
+
+
 
 
 # Session Information

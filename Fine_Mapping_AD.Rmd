@@ -141,22 +141,53 @@ createDT(subset(merged_DT, Support>0 & consequence_type_tv=="missense_variant"))
   - [Paper](https://www.nature.com/articles/s41588-018-0238-1#Sec30)
     + Table S10 contains the top sQTLs from ROSMAP.
   - [sQTLviz](https://rajlab.shinyapps.io/sQTLviz_ROSMAP/)
-  - [Raw Data](https://www.radc.rush.edu)
+  - [Raw Data](https://www.radc.rush.edu)  
   
 ```{r sQTLs}
 sqtls <- readxl::read_excel("./Data/QTL/sQTLviz/Raj2018_TableS10.xlsx")  
 merged_DT <- merged_DT %>% dplyr::mutate(snp_id=paste0(CHR,":",POS)) %>% data.table::data.table()
 sQTL_DT <- data.table:::merge.data.table(subset(merged_DT, Support>0),
                               data.table::data.table(sqtls), 
+                              all.x = T,
                               by="snp_id") 
 createDT(sQTL_DT)
 ```
 
+## Regulatory Variants
 
 (3) Regulatory - does it overlap chromatin accessibility in Glass data (or single cell) or histone modification and PLAC-seq? This class of variants will overlap TF binding sites, etc.  
-(4) Link to QTLs. any credible set QTLs in published dataset.   
+
+```{r Regulatory Variants}
+
+```
+
+
+## QTLs
+
+(4) Link to QTLs. any credible set SNPs in published QTL dataset.
+  - Use eQTL Catalogue API
+```{r QTLs}
+# qtl_DT <- top_finemapped_loci(dataset="./Data/GWAS/Kunkle_2019/",
+#                                 save_results=T, 
+#                                 biomart=F)
+```
+
+## Deep Learning Predictions
 (5) Check to see DeepSEA and SpliceAI scores.  
+
+### DeepSEA  
+- Either use their server, or get pre-computed values from in silico mutagenesis?
+```{r}
+```
+
+### SpliceAI
+```{r}
+```
+
+
 (6) identify Transcription Factor Binding motifs for known TFs. Not sure which database to use.  
-(7) Identify missense variants in fine-mapped Credible Set
+  - Does he mean TFBS? SNPs aren't good for identifying motifs bc they're not the full sequence.
+```{r}
+```
 
 
