@@ -45,4 +45,4 @@ Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv.gz.tbi
 /Data/**/**/_genome_wide/PolyFun/*.parquet
 /Data/**/**/*.parquet
 #/Data/**/**/_genome_wide/PolyFun/output/
-
+/Data/**/**/_genome_wide/QTL_catalogue/*.query.tsv.gz 

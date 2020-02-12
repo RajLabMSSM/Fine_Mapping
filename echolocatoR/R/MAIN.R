@@ -131,12 +131,31 @@ source("./echolocatoR/R/Annotate/Nott_2019.R")
 source("./echolocatoR/R/Annotate/summarise.R")
 source("./echolocatoR/R/Annotate/macs2.R")
 # eQTL Catalogue
-source("./echolocatoR/R/QTL_databases/eQTL_Catalogue.R")
+source("~/Desktop/catalogueR/functions/catalogueR.R")
 
 
 # When there's a ton of files, turn off indexing to speed up Rstudio:
 # https://stackoverflow.com/questions/14599359/rsession-cpu-usage-when-idle
 
+
+printer <- function(..., v=T){if(v){print(paste(...))}}
+
+hgnc_to_ensembl <- function(gene_symbols){
+  gene_symbols[is.na(gene_symbols)] <- "NA"
+  conversion <- AnnotationDbi::mapIds(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+                                      keys = gene_symbols,
+                                      keytype = "SYMBOL",
+                                      column = "GENEID")
+  return(conversion)
+}
+ensembl_to_hgnc <- function(ensembl_ids){
+  ensembl_ids[is.na(ensembl_ids)] <- "NA"
+  conversion <- AnnotationDbi::mapIds(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+                                      keys = ensembl_ids,
+                                      keytype = "GENEID",
+                                      column = "SYMBOL")
+  return(conversion)
+}
 
 startup_image <- function(){
   try({
@@ -214,27 +233,6 @@ quick_finemap_soft <- function(locus="LRRK2"){
   finemap_DT <- data.table::data.table(Gene=locus, finemap_DT)
   return(finemap_DT)
 }
-
-
-
-
-
-hgnc_to_ensembl <- function(gene_symbols){
-  # columns(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75)
-  conversion <- AnnotationDbi::mapIds(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
-                                      keys = gene_symbols,
-                                      keytype = "SYMBOL",
-                                      column = "GENEID")
-  return(conversion)
-}
-ensembl_to_hgnc <- function(ensembl_ids){
-  conversion <- AnnotationDbi::mapIds(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
-                                      keys = ensembl_ids,
-                                      keytype = "GENEID",
-                                      column = "SYMBOL")
-  return(conversion)
-}
-
 
 
 
@@ -586,8 +584,6 @@ limit_SNPs <- function(max_snps=500, subset_DT){
     return(subset_DT)
   }
 }
-
-printer <- function(..., v=T){if(v){print(paste(...))}}
 
 
 ## ---------------- Fine-mapping Functions ----------------  ##

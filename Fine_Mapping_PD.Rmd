@@ -178,7 +178,7 @@ createDT(subset(merged_DT, Consensus_SNP == T))
 
 ```{r Credible Set Bins}    
 # n_bins <- 5
-# seq(0,max_CS_size,n_bins) 
+# seq(0,max_CS_size,n_bins)  
 max_CS_size <- sapply(locus_order[,-1], max, na.rm=T) %>% max()
 labels = c("0","1","2-4","5-7","8-10","11-15")
 bin_counts <-
@@ -389,13 +389,35 @@ gg_locus_summary /
 
 ## QTLs
 
-### eQTL_Catalogue
+### eQTL_Catalogue  
+
+#### Gather QTL data
+
+```{r}
+sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019","*_subset.tsv.gz", 
+                             recursive = T, full.names = T)
+meta <- catalogueR.list_eQTL_datasets(save_path = F)
+gwas.qtl <- catalogueR.run(sumstats_paths = sumstats_paths1[1], 
+                           loci_names = basename(dirname(sumstats_paths)),
+                           qtl_search = c("Fairfax_2014"),
+                           # qtl_search =c("ROSMAP","Alasoo_2018", # "Fairfax_2014"
+                           #               "Nedelec_2016","BLUEPRINT","HipSci.iPSC",
+                           #               "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018"),
+                           nThread = 4,
+                           multithread_qtl = F,
+                           multithread_loci = T, 
+                           split_files = T,
+                           output_path = file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+                                                   "Nalls23andMe_2019.eQTL_Catalogue.tsv.gz"))
+qtl.dat <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+                                                   "Nalls23andMe_2019.eQTL_Catalogue.tsv.gz"), 
+                              nThread = 4)
+```
+
 
 (4) Link to QTLs. any credible set SNPs in published QTL dataset.
   - Use eQTL Catalogue API
-```{r QTLs} 
-qtl.dat <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/_genome_wide/Nalls23andMe_2019.eQTL_Catalogue.tsv.gz", 
-                              nThread = 4)
+```{r QTLs}  
 gwas.qtl <- data.table:::merge.data.table(x = merged_DT %>% dplyr::select(Locus, CHR, POS, SNP, P, leadSNP, Consensus_SNP, Support),
                                           y = qtl.dat,# subset(qtl.dat, pvalue.QTL<5e-8), 
                                           all.x = T,
