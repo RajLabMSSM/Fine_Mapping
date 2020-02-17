@@ -38,7 +38,7 @@ LD.load_or_create <- function(results_path,
                               results_path = results_path,
                                force_new_LD = force_new_LD,
                                chimera = server,
-                               download_method = "axel",
+                               download_method = "direct",
                                nThreads = 4,
                                return_matrix = T,
                                remove_tmps = remove_tmps)

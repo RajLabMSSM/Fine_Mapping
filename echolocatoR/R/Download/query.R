@@ -4,75 +4,71 @@
 
 ## Import Sig GWAS/QTL Summary Statistics
 # For each gene, get the position of top SNP (the one with the greatest effect size/Beta)
-import_topSNPs <- function(topSS_path, 
-                           caption="", 
+import_topSNPs <- function(topSS_path,
+                           caption="",
                            sheet = 1,
-                           chrom_col="CHR", 
-                           position_col="POS", 
+                           chrom_col="CHR",
+                           position_col="POS",
                            snp_col="SNP",
-                           pval_col="P", 
-                           effect_col="Effect", 
+                           pval_col="P",
+                           effect_col="Effect",
                            gene_col="Gene",
                            group_by_locus=F,
                            locus_col="Locus",
                            remove_variants=F
                            ){
   # Import top SNPs
-  topSNPs_reader <-function(topSS_path, sheet = 1){
+  topSNPs_reader <- function(topSS_path, sheet = 1){
     if(endsWith(topSS_path, ".xlsx") | endsWith(topSS_path, ".xlsm")){
       top_SNPs <- readxl::read_excel(path = topSS_path, sheet = sheet) %>% data.table::data.table()
-    } else if (endsWith(topSS_path, ".csv")){
-      top_SNPs <- data.table::fread(file=topSS_path, sep = ",", header = T, stringsAsFactors = F )
+    } else {
+      top_SNPs <- data.table::fread(file=topSS_path, header = T, stringsAsFactors = F )
     }
-    else if (endsWith(topSS_path, ".txt")){
-      top_SNPs <-  data.table::fread(file=topSS_path, sep = "\t", header = T, stringsAsFactors = F )
-    } else {printer("File type must be .xlsx, .cs, or tab-delimited .txt")}
     return(top_SNPs)
   }
   top_SNPs <- topSNPs_reader(topSS_path, sheet)
   orig_top_SNPs <- top_SNPs
 
-  # Standardize col names 
+  # Standardize col names
   top_SNPs <- top_SNPs %>%
-    dplyr::select(Gene=gene_col,
-                  CHR=chrom_col, 
-                  POS=position_col, 
+    dplyr::select(Locus=locus_col,
+                  CHR=chrom_col,
+                  POS=position_col,
                   SNP=snp_col,
-                  P=pval_col, 
-                  Effect=effect_col) 
+                  P=pval_col,
+                  Effect=effect_col)
     # Add Locus column
-    if(locus_col %in% colnames(orig_top_SNPs)){
-      LOCUS_vector <- dplyr::select(orig_top_SNPs, Locus=locus_col)
-      top_SNPs <- cbind(LOCUS_vector, top_SNPs)
+    if(gene_col %in% colnames(orig_top_SNPs) &  all(!is.na(orig_top_SNPs[[gene_col]])) ){
+      top_SNPs <- cbind(Gene=orig_top_SNPs[[gene_col]], top_SNPs)
     } else {
-      top_SNPs <- cbind(Locus=top_SNPs$Gene, top_SNPs)
+      print("+ Assigning locus name to gene col")
+      top_SNPs <- cbind(Gene=top_SNPs$Locus, top_SNPs)
     }
-  
+
     # Remove specific variants
     if(remove_variants != F){
       top_SNPs <- subset(top_SNPs, !(SNP %in% remove_variants))
     }
-    
-    # Get only the top SNP (sorted by lowest p-val, then highest Effect size) for each gene
-    top_SNPs <- top_SNPs %>% 
-      arrange(P, desc(Effect)) %>% 
-      group_by(Gene) %>% 
-      dplyr::slice(1)
-    top_SNPs$CHR <- gsub("chr", "",top_SNPs$CHR) 
-    top_SNPs$CHR <- as.numeric(top_SNPs$CHR) 
-    # Get the top representative SNP and Gene per locus (by lowest p-value)
+
+
+    # Get the top representative SNP and Gene per locus (by lowest p-value and effect size)
     if(group_by_locus){
       top_SNPs <- top_SNPs %>%
-        arrange(P) %>% 
-        dplyr::group_by(Locus) %>% dplyr::slice(1) %>% 
-        replace(., .=="NA", NA) %>% 
-        subset(!is.na(Locus)) 
+        arrange(P, desc(Effect)) %>%
+        dplyr::group_by(Locus) %>%
+        dplyr::slice(1) %>%
+        replace(., .=="NA", NA) %>%
+        subset(!is.na(Locus)) %>%
+        dplyr::mutate(CHR=as.numeric(gsub("chr", "",CHR)))
     }
-    
-    createDT(top_SNPs, caption)
-    return(data.table::data.table(top_SNPs))  
+
+  # Make sure cols are numeric
+  top_SNPs <- top_SNPs %>% dplyr::mutate_at(vars(POS,P,Effect),
+                                            funs(as.numeric))
+  createDT(top_SNPs, caption)
+  return(data.table::data.table(top_SNPs))
 }
-  
+
 column_dictionary <- function(file_path){
   # Get the index of each column name
   f <- data.table::fread(file_path, nrows = 0, header = T)
@@ -81,7 +77,7 @@ column_dictionary <- function(file_path){
   return(colDict)
 }
 
- 
+
 
 auto_topSNPs_sub <- function(top_SNPs, query, gene){
   # If no top_SNPs dataframe is supplied,
@@ -96,16 +92,16 @@ auto_topSNPs_sub <- function(top_SNPs, query, gene){
 }
 
 
- 
-query_by_coordinates <- function(top_SNPs, 
-                                 gene, 
-                                 subset_path, 
+
+query_by_coordinates <- function(top_SNPs,
+                                 gene,
+                                 subset_path,
                                  fullSS_path,
-                                 file_sep, 
-                                 chrom_col, 
+                                 file_sep,
+                                 chrom_col,
                                  position_col,
-                                 min_POS, 
-                                 max_POS, 
+                                 min_POS,
+                                 max_POS,
                                  bp_distance){
   gz.reader <- ifelse(endsWith(fullSS_path,".gz"), " gzcat ","")
   topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),]
@@ -144,7 +140,7 @@ query_by_coordinates_merged <- function(top_SNPs, fullSS_path, subset_path, gene
 
 query_by_gene <- function(fullSS_path, subset_path, gene, gene_col, file_sep){
   colDict <- column_dictionary(fullSS_path)
-  # if(endsWith(fullSS_path,".gz")){fullSS_path <- paste("<(gzcat",fullSS_path,")")} 
+  # if(endsWith(fullSS_path,".gz")){fullSS_path <- paste("<(gzcat",fullSS_path,")")}
   awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1{print $0} NR>1{if($",colDict[[gene_col]]," == \"",gene,"\"){print $0}}' ",fullSS_path,
                    "| tr -s '",file_sep,"' '\t'  > ",subset_path, sep="")
   printer(awk_cmd)
@@ -162,15 +158,15 @@ query_by_probe <- function(fullSS_path, subset_path, gene, gene_col, chrom_col,
   colDict <- column_dictionary(fullSS_path)
   probes <- find_probes(probe_path, gene)
   probe_string <- paste(paste(paste("$",colDict[[gene_col]], sep="")," == \"" ,probes,"\"", sep=""), collapse=" || ")
-  
+
   awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1 {print $0} NR>1 if(" ,probe_string,") {print}' ",fullSS_path,
                    " > ",subset_path, sep="")
   printer(awk_cmd)
   system(awk_cmd)
-  
+
   if(coordinates_merged){
-    ##  EXAMPLE COMMAND LINE 
-    
+    ##  EXAMPLE COMMAND LINE
+
     # awk -F ' ' 'NR==1{print "Coord","CHR","POS",$2,$3,$4,$5,$6 } NR>1{split($1,a,":"); print $1, a[1], a[2], $2, $3, $4, $5, $6}' LRRK2_Fairfax_CD14.txt | tr -s " " "\t" > tmp.txt && mv tmp.txt LRRK2_Fairfax_CD14.txt
     awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1{print \"Coord\",\"CHR\",\"POS\",$2,$3,$4,$5,$6 }",
                      "NR>1{split($",colDict[[chrom_col]],",a,\":\"); print $1, a[1], a[2], $2, $3, $4, $5, $6}' ",
@@ -178,26 +174,26 @@ query_by_probe <- function(fullSS_path, subset_path, gene, gene_col, chrom_col,
     printer(awk_cmd)
     system(awk_cmd)
   }
-  
+
 }
 
 query_fullSS <- function(fullSS_path, subset_path){
   file.copy(fullSS_path, subset_path)
 }
-   
+
 
 coordinates_to_SNPs <- function(){
   # head /sc/orga/projects/ad-omics/satesh/HRC.RSID
   # SNP	RSID
   # 1:13380	rs571093408
-  # 1:16071 rs541172944 
+  # 1:16071 rs541172944
   array = paste('"',paste(data.table::fread("Data/eQTL/Fairfax/eQTL_effect_sizes.csv")$Coord, collapse='","'),'"',sep="")
   printer("awk -F '\t' 'NR==FNR{arr=[",array,"];next} NR==1{print $0} NR>1{if($1 in arr){print $0}}' /sc/orga/projects/ad-omics/satesh/HRC.RSID", sep="")
   # awk -F '\t' 'NR==1{print $0} NR>1{if($1 in ["12:40614434","12:40614434","12:40922572","12:40922572","12:40614434","12:40614434","12:40922572","12:40922572","12:40614434","12:40614434","12:40922572","12:40922572","12:40614434","12:40614434","12:40922572","12:40922572"]){print $0}}' /sc/orga/projects/ad-omics/satesh/HRC.RSID
-  
+
 }
 
-# 
+#
 # manual_query <- function(fullSS_path, subset_path){
 #   # Query via the Minerva R interface
 #   gene_col="gene"
@@ -210,15 +206,15 @@ coordinates_to_SNPs <- function(){
 #     colDict <- setNames(1:length(cNames), cNames  )
 #     return(colDict)
 #   }
-# 
+#
 #   query_by_probe <- function(fullSS_path, subset_path, gene, gene_col, file_sep){
 #     colDict <- column_dictionary(fullSS_path)
-#     # probe_path="Data/eQTL/Fairfax/gene.ILMN.map" 
+#     # probe_path="Data/eQTL/Fairfax/gene.ILMN.map"
 #     file_sep="\t"
 #     gene="LRRK2"
 #     probes <- c("ILMN_2226015","ILMN_1776649")#find_probes(probe_path, gene)
 #     probe_string <- paste(paste(paste("($",colDict[[gene_col]], sep="")," == \"" ,probes,"\")", sep=""), collapse=" || ")
-#     
+#
 #     awk_cmd <- paste("awk -F '",file_sep,"' 'NR==1 {print $0} NR>1{if(" ,probe_string,") {print $0}}' ",fullSS_path,
 #                      " > ",subset_path, sep="")
 #     # awk_cmd <- paste("awk '/ILMN_2226015/'",fullSS_path,">",subset_path)
@@ -231,19 +227,19 @@ coordinates_to_SNPs <- function(){
 # #              "/hpc/users/rajt01/ad-omics/data/fairfax/sumstats/LRRK2_Fairfax_CD14.txt")
 
 
-query_handler <- function(gene, 
-                          fullSS_path, 
-                          top_SNPs=NULL, 
-                          subset_path, #top_SNPs="auto", 
-                          min_POS=NA, 
-                          max_POS=NA, 
+query_handler <- function(gene,
+                          fullSS_path,
+                          top_SNPs=NULL,
+                          subset_path, #top_SNPs="auto",
+                          min_POS=NA,
+                          max_POS=NA,
                           bp_distance=500000,
                           gene_col="Gene",
-                          chrom_col="CHR", 
+                          chrom_col="CHR",
                           position_col="POS",
                           file_sep="\t",
-                          query_by="coordinates", 
-                          probe_path = "./Data/eQTL/gene.ILMN.map"){ 
+                          query_by="coordinates",
+                          probe_path = "./Data/eQTL/gene.ILMN.map"){
   printer("++ Query Method: '",query_by, sep="")
   if(query_by=="tabix"){
     topSNP_sub <- top_SNPs[top_SNPs$Gene==gene & !is.na(top_SNPs$Gene),]
@@ -251,10 +247,10 @@ query_handler <- function(gene,
     if(is.na(max_POS)){max_POS <- topSNP_sub$POS + bp_distance}
     printer("---Min snp position:",min_POS, "---")
     printer("---Max snp position:",max_POS, "---")
-    TABIX(fullSS_path=fullSS_path, 
+    TABIX(fullSS_path=fullSS_path,
           subset_path=subset_path,
-          # is_tabix=F, 
-          chrom_col=chrom_col, 
+          # is_tabix=F,
+          chrom_col=chrom_col,
           position_col=position_col,
           min_POS=min_POS,
           max_POS=max_POS,
@@ -279,12 +275,12 @@ query_handler <- function(gene,
                   gene=gene, gene_col=gene_col, file_sep=file_sep)
   }
   if(query_by=="probes"){
-    query_by_probe(fullSS_path=fullSS_path, subset_path=subset_path, 
+    query_by_probe(fullSS_path=fullSS_path, subset_path=subset_path,
                    gene=gene, gene_col=gene_col, chrom_col=chrom_col,
                    file_sep=file_sep, probe_path=probe_path)
   }
   if(query_by=="fullSS"){
-    query_fullSS(fullSS_path=fullSS_path, 
+    query_fullSS(fullSS_path=fullSS_path,
                  subset_path = subset_path)
   }
 
@@ -302,7 +298,7 @@ query_handler <- function(gene,
 
 find_probes <- function(map_file, genes){
   df  = data.table::fread(map_file)
-  return(subset(df, GENE %in% genes)$PROBE_ID) 
+  return(subset(df, GENE %in% genes)$PROBE_ID)
 }
 
 
@@ -325,7 +321,7 @@ find_probes <- function(map_file, genes){
 # #                      fullSS_path = "Data/Parkinsons/23andMe/PD_all_post30APRIL2015_5.2.dat")
 
 
- 
+
 # add_snp_info <-function(snpInfo_path, fullSS_path, newSS_path){
 #   # sqldf::read.csv.sql(file=snpInfo_path, header = T, sep = "\t",
 #   #                     sql = paste("select * from file where location IN (", paste("'",snp_locs,"'", collapse=",",sep=""),")",sep="")
@@ -359,8 +355,8 @@ find_probes <- function(map_file, genes){
 #   system(awk_cmd)
 # }
 
-# 
-# 
+#
+#
 # ############ QTL ############
 # # Subset eQTL data to just the parts you need
 # subset_eQTL_SS <- function(fullSS_path, subset_path, gene,
@@ -369,7 +365,7 @@ find_probes <- function(map_file, genes){
 #                            bp_distance=500000, file_sep="\t",
 #                            force_new_subset=T){
 #   start_eQTL_sub <- Sys.time()
-# 
+#
 #   if(file.exists(subset_path) & force_new_subset==F){
 #     printer("Subset file already exists. Importing",subset_path,"...\n")
 #     check_if_empty(subset_path)
@@ -406,7 +402,7 @@ find_probes <- function(map_file, genes){
 #   printer("\nExtraction completed in", round(end_eQTL_sub-start_eQTL_sub, 2),"seconds \n")
 #   return(top_SNPs)
 # }
- 
+
 
 
 

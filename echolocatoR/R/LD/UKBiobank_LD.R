@@ -9,10 +9,10 @@ LD.UKBiobank <- function(subset_DT=NULL,
                          chimera=F,
                          server=T,
                          download_full_ld=F,
-                         download_method="axel",
+                         download_method="direct",
                          nThreads=4,
                          return_matrix=F,
-                         remove_tmps=F){
+                         remove_tmps=T){
 
   LD.UKB_find_ld_prefix <- function(chrom, min_pos){
     bp_starts <- seq(1,252000001, by = 1000000)
@@ -28,7 +28,7 @@ LD.UKBiobank <- function(subset_DT=NULL,
                                  alkes_url="https://data.broadinstitute.org/alkesgroup/UKBB_LD",
                                  background=T,
                                  force_overwrite=F,
-                                 download_method="axel",
+                                 download_method="direct",
                                  nThreads=4){
     for(f in LD.prefixes){
       gz.url <- file.path(alkes_url,paste0(f,".gz"))
@@ -105,25 +105,34 @@ LD.UKBiobank <- function(subset_DT=NULL,
     printer("+ LD:: Pre-existing UKB_LD.RDS file detected. Importing...")
     LD_matrix <- readRDS(UKBB.LD.RDS)
   } else {
-    if(download_full_ld | force_new_LD){
-      printer("+ LD:: Downloading full .gz/.npz UKB files and saving to disk.")
-      URL <- LD.download_UKB_LD(LD.prefixes = LD.prefixes,
-                                output.path = output.path,
-                                background = F,
-                                force_overwrite = force_new_LD,
-                                download_method = download_method)
-      server <- F
-    } else {
-      if(chimera){
-        if(file.exists(file.path(chimera.path, paste0(LD.prefixes,".gz")))  &
-           file.exists(file.path(chimera.path, paste0(LD.prefixes,".npz"))) ){
-          printer("+ LD:: Pre-existing UKB LD gz/npz files detected. Importing...")
-          URL <- chimera.path
-        }
+    if(download_method!="direct"){
+      if(download_full_ld | force_new_LD){
+        printer("+ LD:: Downloading full .gz/.npz UKB files and saving to disk.")
+        URL <- LD.download_UKB_LD(LD.prefixes = LD.prefixes,
+                                  output.path = output.path,
+                                  background = F,
+                                  force_overwrite = force_new_LD,
+                                  download_method = download_method)
+        server <- F
       } else {
-        printer("+ LD:: Importing UKB LD file from alkesgroup database directly to R.")
+        if(chimera){
+          if(file.exists(file.path(chimera.path, paste0(LD.prefixes,".gz")))  &
+             file.exists(file.path(chimera.path, paste0(LD.prefixes,".npz"))) ){
+            printer("+ LD:: Pre-existing UKB LD gz/npz files detected. Importing...")
+            URL <- chimera.path
+          }
+        } else {
+          URL <- file.path(URL, LD.prefixes)
+          printer("+ LD:: Importing UKB LD file directly to R from:")
+          print(URL)
+        }
       }
+    } else {
+      URL <- file.path(URL, LD.prefixes)
+      printer("+ LD:: Importing UKB LD file directly to R from:")
+      print(URL)
     }
+
 
 
     # RSIDs file

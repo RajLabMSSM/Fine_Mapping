@@ -140,17 +140,23 @@ multi_finemap <- function(results_path,
 
 
 ####### Fine-mapping Handler #######
-create_method_dir <- function(results_path, finemap_method){
+create_method_dir <- function(results_path,
+                              finemap_method,
+                              compress=T){
   method_dir <- file.path(results_path, finemap_method)
   # Make finemapping results folder
   dir.create(method_dir, recursive = T, showWarnings = F)
   # Return results file name
-  file_dir <- file.path(method_dir,paste0(finemap_method,"_results.txt"))
+  dataset <- basename(dirname(results_path))
+  locus <- basename(results_path)
+  file_dir <- file.path(method_dir,
+                        paste0(locus,"_",dataset,"_",finemap_method,".tsv",
+                               ifelse(compress,".gz","")))
   return(file_dir)
 }
 
 save_finemap_results <- function(finemap_DT, file_dir){
-  data.table::fwrite(finemap_DT, file_dir, sep = "\t", na = NA, quote = F)
+  data.table::fwrite(finemap_DT, file_dir, sep = "\t", na = NA, quote = F, nThread = 4)
 }
 
 
@@ -288,7 +294,9 @@ finemap_handler <- function(results_path,
   # First, check if there's more than one fin-mapping method given. If so, switch to multi-finemap function
   # if(length(finemap_methods)>1){
     ## Next, see if fine-mapping has previously been done (with multi-finemap)
-    file_dir <- create_method_dir(results_path, "Multi-finemap")
+    file_dir <- create_method_dir(results_path = results_path,
+                                  finemap_method = "Multi-finemap",
+                                  compress = T)
     ### If so, import the previous results
     if(file.exists(file_dir) & force_new_finemap==F){
       printer("++ Previously multi-fine-mapped results identified. Importing...")

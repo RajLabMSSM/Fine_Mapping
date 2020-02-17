@@ -704,7 +704,8 @@ finemap_pipeline <- function(gene,
                              plot_types=c("simple"),
                              PAINTOR_QTL_datasets=NULL,
                              server=F,
-                             PP_threshold=.95){
+                             PP_threshold=.95,
+                             plot_window=NULL){
    # Create paths
    results_path <- make_results_path(dataset_name, dataset_type, gene)
    # Extract subset
@@ -823,6 +824,8 @@ finemap_pipeline <- function(gene,
                             method_list=finemap_methods,
                             Nott_sn_epigenome = T,
                             XGR_libnames = NULL,
+                            max_transcripts = 1,
+                            plot_window = plot_window,
                             save_plot = T,
                             show_plot = T)
     })
@@ -938,19 +941,20 @@ finemap_loci <- function(loci,
                          plot_types = c("simple"),
                          PAINTOR_QTL_datasets=NULL,
                          server=F,
-                         PP_threshold=.95){
+                         PP_threshold=.95,
+                         plot_window=NULL){
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
   lead_SNPs <- snps_to_condition(conditioned_snps, top_SNPs, loci)
 
   for (i in 1:length(loci)){
+    start_gene <- Sys.time()
     try({
       gene <- loci[i]
       message("🦇 🦇 🦇 ",gene," 🦇 🦇 🦇 ")
       lead_SNP <- arg_list_handler(lead_SNPs, i)
       gene_limits <- arg_list_handler(trim_gene_limits, i)
       conditioned_snp <- arg_list_handler(conditioned_snps, i)
-      start_gene <- Sys.time()
       message("^^^^^^^^^ Running echolocatoR on: ",gene," ^^^^^^^^^")
       cat('  \n###', gene, '  \n')
       # Delete the old subset if force_new_subset == T
@@ -1007,21 +1011,19 @@ finemap_loci <- function(loci,
                                      plot_types=plot_types,
                                      PAINTOR_QTL_datasets=PAINTOR_QTL_datasets,
                                      server=server,
-                                     PP_threshold=PP_threshold)
+                                     PP_threshold=PP_threshold,
+                                     plot_window=plot_window)
 
       # Create summary table for all genes
       printer("Generating summary table...", v=verbose)
       newEntry <- cbind(data.table(Gene=gene), finemap_DT) %>% as.data.table()
       fineMapped_allResults <- rbind(fineMapped_allResults, newEntry, fill=T)
-      end_gene <- Sys.time()
-      printer(gene,"fine-mapped in", round(end_gene-start_gene, 2),"seconds", v=verbose)
       cat('  \n')
     })
+    end_gene <- Sys.time()
+    message(gene,"fine-mapped in", round(end_gene-start_gene, 2),"seconds", v=verbose)
 
   }
   return(fineMapped_allResults)
 }
-
-
-
 

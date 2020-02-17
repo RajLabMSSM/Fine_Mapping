@@ -77,16 +77,20 @@ top_SNPs <- import_topSNPs(
               caption= "Kunkle et al. (2019) GWAS Summary Stats",
               group_by_locus = T)
 
+completed <- list.files("./Data/GWAS/Kunkle_2019/", 
+                        pattern = "_Multi-finemap.tsv.gz", recursive = T)
+loci <- top_SNPs$Locus[!top_SNPs$Locus %in% dirname(dirname(completed))]
+
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci =  c("ClU"),#,"BIN1","CLU","TREM2"),
+                                               loci = loci,
                                                trim_gene_limits = F,
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
                                                query_by ="tabix",
                                                subset_path = "auto", 
                                                finemap_method = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),
-                                               force_new_subset = F,
-                                               force_new_LD = F,
+                                               force_new_subset = T,
+                                               force_new_LD = T,
                                                force_new_finemap = T,  
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "Chromosome", 
@@ -104,7 +108,7 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  # min_POS = min_POS,
                  # max_POS = max_POS,
                  
-                 bp_distance = 500000,
+                 bp_distance = 500000*2,
                  download_reference = T, 
                  LD_reference = "UKB",
                  superpopulation = "EUR", 
@@ -113,7 +117,7 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  min_MAF = 0.001,
                  PP_threshold = .95,
                  n_causal = 5, 
-                 remove_tmps = F,
+                 remove_tmps = T,
                  server = F)  
 ```
 

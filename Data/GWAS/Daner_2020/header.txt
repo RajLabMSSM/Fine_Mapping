@@ -1,0 +1,1 @@
+CHR	SNP	BP	A1	A2	FRQ_A_41917	FRQ_U_371549	INFO	OR	SE	P	ngt	Direction	HetISqt	HetDf	HetPVa	Nca	Nco	Neff_half

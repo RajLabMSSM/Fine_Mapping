@@ -66,7 +66,7 @@ finemap_DT %>% arrange(P)
 
  
 
-## Statistical Fine-mapping {.tabset .tabset-fade .tabset-pills} 
+## Fine-mapping {.tabset .tabset-fade .tabset-pills} 
 
 Parkinson's Disease GWAS.  
 
@@ -397,16 +397,19 @@ gg_locus_summary /
 sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019","*_subset.tsv.gz", 
                              recursive = T, full.names = T)
 meta <- catalogueR.list_eQTL_datasets(save_path = F)
-gwas.qtl <- catalogueR.run(sumstats_paths = sumstats_paths1[1], 
-                           loci_names = basename(dirname(sumstats_paths)),
-                           qtl_search = c("Fairfax_2014"),
-                           # qtl_search =c("ROSMAP","Alasoo_2018", # "Fairfax_2014"
+  
+gwas.qtl <- catalogueR.run(sumstats_paths = sumstats_paths, 
+                           loci_names = basename(dirname(sumstats_paths)), 
+                           qtl_search = "Schmiedel_2018",
+                           # qtl_search =c("ROSMAP","Alasoo_2018","Fairfax_2014",
                            #               "Nedelec_2016","BLUEPRINT","HipSci.iPSC",
-                           #               "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018"),
+                           #               "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018",
+                           #               "blood","brain"),
                            nThread = 4,
                            multithread_qtl = F,
                            multithread_loci = T, 
                            split_files = T,
+                           merge_with_gwas = F,
                            output_path = file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
                                                    "Nalls23andMe_2019.eQTL_Catalogue.tsv.gz"))
 qtl.dat <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",

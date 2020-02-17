@@ -168,8 +168,9 @@ standardize_subset <- function(gene,
     if(proportion_cases !="calculate"){
       query_mod$proportion_cases <- query[proportion_cases]
     } else if(proportion_cases=="calculate" &
-              N_cases_col %in% colnames(query) &
-              N_controls_col %in% colnames(query)){
+              "N_cases" %in% colnames(query_mod) &
+              "N_controls" %in% colnames(query_mod)){
+      printer("+ Standardize:: Calculating proportion of cases.")
       ### Calculate proportion of cases if N_cases and N_controls available
       query_mod$proportion_cases <- query_mod$N_cases / (query_mod$N_controls + query_mod$N_cases)
     } else {
