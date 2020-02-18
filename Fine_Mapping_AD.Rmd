@@ -84,7 +84,7 @@ top_SNPs <- subset(top_SNPs, !(Locus %in% no_no_loci))
 # loci <- top_SNPs$Locus[!top_SNPs$Locus %in% dirname(dirname(completed))]
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
-                                               loci = loci,
+                                               loci = "PTK2B",
                                                trim_gene_limits = F,
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
@@ -93,7 +93,7 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
                                                finemap_methods = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),
                                                force_new_subset = F,
                                                force_new_LD = F,
-                                               force_new_finemap = F,  
+                                               force_new_finemap = T,  
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "Chromosome", 
                  position_col = "Position", 
@@ -108,7 +108,7 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
                  proportion_cases = "calculate",
                  
                  # min_POS = min_POS,
-                 # max_POS = max_POS,
+                 max_POS = min_POS,
                  
                  bp_distance = 500000*2,
                  download_reference = T, 
