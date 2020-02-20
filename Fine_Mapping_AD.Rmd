@@ -77,6 +77,20 @@ for(locus in unique(top_SNPs$Locus)){
                                paste0(gene,"_ggbio.png")))
 }
 ```
+### PTK2B/CLU
+
+```{r PTK2B/CLU, eval=F}
+quickstart_AD("CLU", dataset_name = "Marioni_2018")
+lead.snp <- subset(finemap_DT, leadSNP)
+merged <-data.table:::merge.data.table(finemap_DT, 
+                              data.table::data.table(r2=LD_matrix[lead.snp$SNP,]^2,
+                                                     SNP=names(LD_matrix[lead.snp$SNP,])), 
+                              by="SNP") %>% 
+  subset(r2>0.1) 
+dim(merged)
+min_POS <- min(merged$POS) # 27373865
+max_POS <- max(merged$POS)
+```
 
 ## Fine-mapping {.tabset .tabset-fade .tabset-pills} 
 
@@ -89,7 +103,7 @@ top_SNPs <- import_topSNPs(
               position_col = "pos", 
               snp_col="rsID",
               pval_col="p UKB + IGAP meta",    
-              locus_col = "GenomicLocus",
+              locus_col = "Kunkle_Gene",
               gene_col = "Kunkle_Gene",
               caption= "Marioni et al. (2018) GWAS Summary Stats",
               group_by_locus = T) 
@@ -99,7 +113,7 @@ completed <- list.files("./Data/GWAS/Marioni_2018/",
 top_SNPs <- subset(top_SNPs, !Locus %in% dirname(dirname(completed)))
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
-                                               loci = top_SNPs$Locus,
+                                               loci = "PTK2B", #top_SNPs$Locus,
                                                trim_gene_limits = F,
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
@@ -124,7 +138,7 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
                  proportion_cases = "calculate",
                  
                  # min_POS = min_POS,
-                 # max_POS = min_POS,
+                 max_POS = min_POS,
                  
                  bp_distance = 500000*2, 
                  # plot_window = 500000,
@@ -151,7 +165,7 @@ We therefore fine-mapped it a little differently:
   3. Fine-map each region separately
 
 ```{r PTK2B/CLU, eval=F}
-quickstart_AD("CLU")
+quickstart_AD("CLU", dataset_name = "Kunkle_2019")
 lead.snp <- subset(finemap_DT, leadSNP)
 merged <-data.table:::merge.data.table(finemap_DT, 
                               data.table::data.table(r2=LD_matrix[lead.snp$SNP,]^2,
@@ -159,7 +173,7 @@ merged <-data.table:::merge.data.table(finemap_DT,
                               by="SNP") %>% 
   subset(r2>0.1) 
 dim(merged)
-min_POS <- min(merged$POS)
+min_POS <- min(merged$POS) # 27373865
 max_POS <- max(merged$POS)
 ```
 

@@ -461,7 +461,7 @@ quickstart_AD <- function(locus="PTK2B", dataset_name="Kunkle_2019"){
   # server <<- F
   gene <<- locus
   results_path <<- file.path("Data/GWAS",dataset_name,gene)
-  subset_path <<- file.path(results_path,"Multi-finemap" ,paste0(gene,"_Kunkle_2019_Multi-finemap.tsv.gz"))
+  subset_path <<- file.path(results_path,"Multi-finemap" ,paste0(gene,"_",dataset_name,"_Multi-finemap.tsv.gz"))
   # finemap_DT <<- data.table::fread(subset_path)
   finemap_DT <<- data.table::data.table(standardize_subset(subset_path = subset_path, gene=gene))
   subset_DT <<- finemap_DT
