@@ -42,9 +42,26 @@ finemap_results <- list()
 
 # Marioni _2018
 
+## Preprocess
+
+Supp materials don't assign gene names, which makes it hard to compare loci across studies. 
+Assigning each locus a name using the assigned genes from Kunkle_2019.
+```{r Preprocess Marioni_2018, eval=F}
+# kunkle <- readxl::read_excel(Directory_info("Kunkle_2019", "topSS"),  sheet = 9)
+# kunkle <- kunkle %>% tidyr::separate("LD Block (GRCh37)",by=":|-", into=c("chr","start","end"))
+# 
+# marioni <- readxl::read_excel(Directory_info("Marioni_2018", "topSS"), sheet="Table S3")
+# 
+# merged <- merge(kunkle, marioni, by='chr')
+# 
+# merged <- merged %>% dplyr::mutate(within_block = ifelse(pos>=start & pos<=end,T,F))
+# merged <- subset(merged, within_block, 
+#                  select=c("chr","Top Associated SNV","Lead SNV Gene","GenomicLocus","uniqID","rsID"))
+```
+
 ## Fine-mapping {.tabset .tabset-fade .tabset-pills} 
 
-```{r v, results = 'asis', fig.height=10, fig.width=7, fig.show='hold'} 
+```{r Marioni_2018, results = 'asis', fig.height=10, fig.width=7, fig.show='hold'} 
 dataset_name <- "Marioni_2018"
 top_SNPs <- import_topSNPs(
               topSS_path = Directory_info(dataset_name, "topSS"),
@@ -56,7 +73,9 @@ top_SNPs <- import_topSNPs(
               locus_col = "GenomicLocus",
               caption= "Marioni et al. (2018) GWAS Summary Stats",
               group_by_locus = T) 
-completed <- list.files("./Data/GWAS/Marioni_2018/",pattern = "ggbio", recursive = T)
+
+completed <- list.files("./Data/GWAS/Marioni_2018/",
+                        pattern = "_ggbio.png", recursive = T)
 top_SNPs <- subset(top_SNPs, !Locus %in% dirname(dirname(completed)))
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
@@ -66,11 +85,11 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
                                                dataset_type = "GWAS",
                                                query_by ="tabix",
                                                subset_path = "auto", 
-                                               finemap_methods = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),
+                                               finemap_methods = c("ABF","SUSIE","POLYFUN_SUSIE"),
                                                # finemap_methods = "FINEMAP",
-                                               force_new_subset = T,
+                                               force_new_subset = F,
                                                force_new_LD = F,
-                                               force_new_finemap = T,  
+                                               force_new_finemap = F,  
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "CHROM", 
                  position_col = "POS", 
@@ -139,7 +158,7 @@ top_SNPs <- import_topSNPs(
               gene_col="Lead SNV Gene",
               locus_col = "Lead SNV Gene",
               caption= "Kunkle et al. (2019) GWAS Summary Stats",
-              group_by_locus = T)
+              group_by_locus = T) 
 # Remove loci with notoriously difficult LD structure.
 no_no_loci <- c("HLA-DRB1","WWOX")
 top_SNPs <- subset(top_SNPs, !(Locus %in% no_no_loci))
