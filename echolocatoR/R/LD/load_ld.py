@@ -26,7 +26,7 @@ def load_ld(ld_prefix, server=True, npz_suffix=""):
     if os.path.exists(snps_filename_parquet):
         print(snps_filename_parquet)
         df_ld_snps = pd.read_parquet(snps_filename_parquet)
-    elif os.path.exists(snps_filename_gz):
+    elif os.path.exists(snps_filename_gz) | server==True:
         print(snps_filename_gz)
         df_ld_snps = pd.read_csv(snps_filename_gz, delim_whitespace=True)
     else:

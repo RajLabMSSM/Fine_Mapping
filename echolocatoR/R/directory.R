@@ -70,6 +70,7 @@ list_Data_dirs <- function(writeCSV = "./Data/directories_table.csv"){
     "Marioni_2018" = list(type="Alzheimer's GWAS",
                           topSS="Data/GWAS/Marioni_2018/Marioni2018_supplementary_tables.xlsm",
                           fullSS=file.path(root,"ad-omics/data/AD_GWAS/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv"),
+                          fullSS.local="./Data/GWAS/Marioni_2018/Marioni2018.4_UK_Biobank_IGAP_17May2018.1000G.phase3.20130502.tsv.gz",
                           reference="https://www.nature.com/articles/s41398-018-0150-6"),
 
     ## Jansen et al. (2018)

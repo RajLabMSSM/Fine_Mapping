@@ -1,2 +1,4 @@
-index cred_set_rs11175256 prob_set_rs11175256 cred_set_rs2253736 prob_set_rs2253736 cred_set_rs2708478 prob_set_rs2708478 cred_set_rs11564135 prob_set_rs11564135 cred_set_rs2263418 prob_set_rs2263418 cred_set_rs1491934 prob_set_rs1491934 cred_set_rs6581593 prob_set_rs6581593 cred_set_rs76904798 prob_set_rs76904798 cred_set_rs7294619 prob_set_rs7294619 cred_set_rs79400217 prob_set_rs79400217 
-1 rs11175256 1 rs2253736 1 rs2708478 1 rs11564135 0.999999 rs2263418 1 rs1491934 1 rs6581593 1 rs76904798 1 rs7294619 1 rs79400217 1 
+index cred_set_rs76904798 prob_set_rs76904798 cred_set_rs7294619 prob_set_rs7294619 cred_set_rs1388597 prob_set_rs1388597 cred_set_rs11564187 prob_set_rs11564187 cred_set_rs1907632 prob_set_rs1907632 
+1 rs76904798 1 rs7294619 1 rs1388597 1 rs11564187 1 rs1907632 0.61653 
+2 NA NA NA NA NA NA NA NA rs10878244 0.20193 
+3 NA NA NA NA NA NA NA NA rs1907633 0.181535 

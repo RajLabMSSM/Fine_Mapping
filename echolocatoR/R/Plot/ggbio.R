@@ -355,8 +355,9 @@ GGBIO.plot <- function(finemap_DT,
                     start >= min(gr.snp_CHR$POS) &
                     end <= max(gr.snp_CHR$POS)) %>%
     GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns = T)
-  db.gr$symbol <- factor(db.gr$symbol, levels = unique(db.gr$symbol), ordered = T)
-  edb <- addFilter( EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,  AnnotationFilter::TxIdFilter(db.gr$tx_id))
+  db.gr$symbol <- factor(db.gr$symbol, levels = unique(db.gr$symbol), ordered = T) 
+  edb <-  ensembldb::addFilter( EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75, 
+                                AnnotationFilter::TxIdFilter(db.gr$tx_id))
   track.genes <- autoplot(edb,
                           # Have to limit (can only handle depth < 1000)
                           which = db.gr,

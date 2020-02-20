@@ -30,6 +30,10 @@ import_topSNPs <- function(topSS_path,
   orig_top_SNPs <- top_SNPs
 
   # Standardize col names
+  if(!effect_col %in% colnames(top_SNPs)){
+    printer("+ Filling in `Effect` column with placeholder (1).")
+    top_SNPs$Effect <- 1
+  }
   top_SNPs <- top_SNPs %>%
     dplyr::select(Locus=locus_col,
                   CHR=chrom_col,

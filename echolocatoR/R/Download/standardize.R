@@ -195,6 +195,11 @@ standardize_subset <- function(gene,
     query_mod <- query_mod %>% group_by(CHR, POS) %>% dplyr::slice(1)
     ## Mark lead SNP
     query_mod$leadSNP <- ifelse(query_mod$SNP==topSNP_sub$SNP, T, F)
+    if(sum(query_mod$leadSNP)==0){
+      printer("+ leadSNP missing. Assigning new one by min p-value.")
+      top.snp <- head(arrange(query_mod, P, desc(Effect)))[1,]$SNP
+      query_mod$leadSNP <- ifelse(query_mod$SNP==top.snp,T,F)
+    }
 
     # Only convert to numeric AFTER removing NAs (otherwise as.numeric will turn them into 0s)
     query_mod <- query_mod  %>%
