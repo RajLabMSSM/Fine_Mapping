@@ -7,22 +7,19 @@ core.*
 /**/*.DS_Store
 /**/**/*.DS_Store
 /*.gz.tbi
-/Data/GWAS/**/**/*.tsv
+
+# Data files
 /Data/GWAS/**/*.txt.gz
 /Data/GWAS/**/*.tsv.gz
-#/Data/QTL/**/**/*.txt
 /Data/QTL/**/**/*.txt.gz 
-/Data/GWASsv.g#/Data/**/**/**/*.txt
 /Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt
 /Data/**/**/_genome_wide/COJO/cojo-file.ma  
-/Data/GWAS/**/*.tsv.gz
 /Data/GWAS/**/*.tbi
-#/Data/GWAS/**/*.tsv
-Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv 
-Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv.gz 
-Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv.gz.tbi 
+/Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv 
+/Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv.gz 
+/Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv.gz.tbi 
 
-# Reference VCF files
+# Reference files
 /Data/**/**/plink
 /Data/Reference/**/**/*.vcf
 /Data/Reference/**/**/*.vcf.gz
@@ -45,5 +42,4 @@ Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv.gz.tbi
 ## PolyFun specifically 
 /Data/**/**/_genome_wide/PolyFun/*.parquet
 /Data/**/**/*.parquet
-#/Data/**/**/_genome_wide/PolyFun/output/
 /Data/**/**/_genome_wide/eQTL_catalogue/*.query.tsv.gz 
