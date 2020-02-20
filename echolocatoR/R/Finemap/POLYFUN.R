@@ -30,7 +30,7 @@ read_parquet <- function(parquet.file){
 }
 
 POLYFUN.help <- function(){
-  cmd <- paste("python3",file.path(polyfun,"polyfun.py"),
+  cmd <- paste("python",file.path(polyfun,"polyfun.py"),
                "--help")
   system(cmd)
 }
@@ -118,6 +118,11 @@ POLYFUN.prepare_snp_input <- function(PF.output.path,
   printer("+ PolyFun:: Writing SNP file ==>",snp.path)
   data.table::fwrite(PF.dat, file = snp.path,
                      nThread = 4, sep = " ")
+  # Check if it's actually gzipped 
+  ## (in older versions of data.table, files with the .gz extension are automatically gzipped)
+  if(!R.utils::isGzipped(snp.path)){
+    R.utils::gzip(filename=snp.path, destname=snp.path, overwrite=T)
+  } 
   return(snp.path)
 }
 
@@ -132,20 +137,21 @@ POLYFUN.initialize <- function(results_path,
   # Import SNPs
   if(is.null(finemap_DT)){
     if(is.null(locus)){
-      printer("POLYFUN:: Importing summary stats: genome-wide")
+      printer("POLYFUN:: Importing summary stats from disk: genome-wide")
       finemap_DT <- data.table::fread(Directory_info(dataset, "fullSS.local"), nThread = 4)
     }
-    printer("POLYFUN:: Importing summary stats:",locus)
-    finemap_DT <- data.table::fread(file.path(dirname(Directory_info(dataset, "fullSS.local")),locus,
-                                            "Multi-finemap/Multi-finemap_results.txt"), nThread = 4)
+    printer("POLYFUN:: Importing summary stats from disk:",locus)
+    finemap_DT <- data.table::fread(file.path(dirname(Directory_info(dataset, "fullSS.local")),locus, 
+                                            paste(locus,dataset,"subset.tsv.gz",sep="_")), nThread = 4)
   }
   return(finemap_DT)
 }
 
 POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun",
-                                           results_path="./Data/GWAS/Nalls23andMe_2019/LRRK2",
+                                           results_path,
                                            finemap_DT=NULL,
-                                           force_new_priors=F){
+                                           force_new_priors=F, 
+                                           remove_tmps=F){
   dataset <- basename(dirname(results_path))
   locus <- basename(results_path)
   PF.output.path <- file.path(results_path, "PolyFun")
@@ -172,22 +178,21 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
     # missing.snps <- subset(finemap_DT, !(SNP %in% parq$SNP))
 
     # [2.] Retrieve priors
+    test <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/LRRK2/PolyFun/snps_to_finemap.txt.gz")
     try({
-      cmd <- paste("python3",file.path(polyfun,"extract_snpvar.py"),
+      cmd <- paste("python",file.path(polyfun,"extract_snpvar.py"),
                    "--snps",snp.path,
                    "--out",snp_w_priors.file)
       print(cmd)
       system(cmd)
-      printer("++ Remove tmp file.")
-      file.remove(snp.path)
+      printer("++ Remove tmp file.") 
     })
 
     miss.file <- paste0(snp_w_priors.file,".miss.gz")
     if(file.exists(miss.file)){
       printer("+ PolyFun:: Rerunning after removing missing SNPs.")
-      miss.snps <- data.table::fread(miss.file, nThread = 4)
-      filt_DT <- subset(finemap_DT, !(SNP %in% miss.snps$SNP) )
-      file.remove(miss.file)
+      filt_DT <- subset(finemap_DT, !(SNP %in% miss.snps$SNP) ) 
+      if(remove_tmps){file.remove(miss.file)}
       priors <- POLYFUN.get_precomputed_priors(results_path=results_path,
                                                finemap_DT=filt_DT,
                                                force_new_priors=F)
@@ -197,6 +202,7 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
       dplyr::rename(SNP=SNP_x) %>% dplyr::select(-SNP_y)
     return(priors)
   }
+  if(remove_tmps){ file.remove(snp.path) }
 }
 
 
@@ -356,7 +362,7 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
   # Quickstart:
   # polyfun="./echolocatoR/tools/polyfun"; parametric=T;  weights.path=file.path(polyfun,"example_data/weights."); annotations.path=file.path(polyfun,"example_data/annotations."); munged.path= "./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/sumstats_munged.parquet"; parametric=T; dataset="Nalls23andMe_2019"; prefix="PD_GWAS"; compute_ldscores=F; allow_missing_SNPs=T; chrom="all"; finemap_DT=NULL; locus="LRRK2"; server=F; ref.prefix="/sc/orga/projects/pd-omics/data/1000_Genomes/Phase1/1000G.mac5eur.";
 
-  POLYFUN.load_conda(server = server)
+  # POLYFUN.load_conda(server = server)
   if(server){
     annotations.path <-  "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB/baselineLF2.2.UKB."
     weights.path <-  "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB/weights.UKB."
@@ -472,7 +478,7 @@ POLYFUN.run_ldsc <- function(polyfun="./echolocatoR/tools/polyfun",
                              freq.prefix="/sc/orga/projects/pd-omics/tools/polyfun/1000G_frq/1000G.mac5eur.",
                              server=F){
 
-  POLYFUN.load_conda(server = server)
+  # POLYFUN.load_conda(server = server)
   if(server){
     annotations.path <-  "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB/baselineLF2.2.UKB."
     weights.path <-  "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB/weights.UKB."

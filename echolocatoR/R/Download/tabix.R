@@ -4,7 +4,7 @@
 TABIX.convert_file <- function(fullSS_path="./Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt",
                                chrom_col="CHR",
                                position_col="POS",
-                               remove_header=F){
+                               remove_header=T){
   # Instantaneous header collection without reading in large file!
   # headers <- colnames(data.table::fread(cmd=paste("head -1",fullSS_path)))
   header.path <- file.path(dirname(fullSS_path),"header.txt")

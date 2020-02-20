@@ -69,10 +69,36 @@ construct_FINEMAP_master <- function(results_path,
 }
 
 
-process_FINEMAP_results <- function(results_path, subset_DT, credset_thresh=.95){
-  # Import credible sets
-  top_config <- data.table::fread(file.path(results_path,"FINEMAP/data.config")) 
-  top_config <- subset(top_config, prob>=credset_thresh)[1,]
+process_FINEMAP_results <- function(results_path, 
+                                    subset_DT, 
+                                    credset_thresh=.95,
+                                    pvalue_thresh=.05,
+                                    finemap_version="1.3"){
+  # Import credible sets   
+  if(finemap_version=="1.4"){
+    # Annoying formatting differences between versions....
+    # data.cred <- data.table::fread(file.path(results_path,"FINEMAP/data.cred"), 
+    #                                 skip=4, na.strings = c("<NA>","NA"))
+    # cred.cols <- grep("cred*", colnames(data.cred), value = T)
+    # prob.cols <- grep("prob*", colnames(data.cred), value = T)
+    # CS <- lapply(i:nrow(data.cred), function(i){
+    #     rsids <- subset(data.cred, select=cred.cols)[i,]
+    #   PP_vals <- subset(data.cred, select=prob.cols)[i,]  
+    #   cred_sets <- data.table::data.table(SNP=unname( t(rsids)[,1] ), 
+    #              PP=unname(t(PP_vals)[,1]), 
+    #              Credible_Set=i) 
+    #   return(cred_sets)
+    # }) %>% data.table::rbindlist()
+    # subset(CS, !is.na(SNP))
+    printer("FINEMAP:: !!UNDER CONSTRUCTION!!")
+    top_config <- data.table::fread(file.path(results_path,"FINEMAP/data.config")) 
+    top_config <- subset(top_config, pvalue<pvalue_thresh)[1,]
+    
+  } else {
+     top_config <- data.table::fread(file.path(results_path,"FINEMAP/data.config")) 
+     top_config <- subset(top_config, prob>=credset_thresh)[1,]
+  }
+ 
   Credible_Set <- strsplit(top_config$config, ",")[[1]]
   # Import snp-level results
   snp_level <- data.table::fread(file.path(results_path,"FINEMAP/data.snp"), sep=" ")
@@ -96,7 +122,8 @@ FINEMAP <- function(subset_DT,
                     model="cond", # cond (stepwise conditional search) vs. sss (stochastic shotgun search)
                     remove_tmps=T, 
                     server=F,
-                    credset_thresh=.95){ 
+                    credset_thresh=.95, 
+                    finemap_version="1.3.1"){ 
   # http://www.christianbenner.com
   
   # The stepwise conditional search starts with a causal configuration containing the 
@@ -115,11 +142,12 @@ FINEMAP <- function(subset_DT,
   # Command line
   ## Example: 
   ## cmd <- paste(FINEMAP_path," --sss --in-files",file.path(dirname(FINEMAP_path),"example","master"), "--dataset 1 --n-causal-snps 5") 
-  if(startsWith(getwd(),"/sc/")){server<-T}
-  if(server){ 
-    FINEMAP_path <- "ml finemap && finemap"
+  if(startsWith(getwd(),"/sc/")){server <- T}
+  if(server){  
+      FINEMAP_path <- paste0("ml finemap/",finemap_version," && finemap")
   } else {
     file.copy(from=FINEMAP_path, to=file.path(results_path))
+    finemap_version <- "1.3"
     FINEMAP_path <- "./finemap_v1.3_MacOSX"
   }
  
@@ -133,11 +161,12 @@ FINEMAP <- function(subset_DT,
                "--n-causal-snps",n_causal) 
   printer(cmd)
   system(cmd) 
-  file.remove(file.path(results_path,"finemap_v1.3_MacOSX"))
+  if(!server){ file.remove(file.path(results_path,"finemap_v1.3_MacOSX")) }
   # Process results
   finemap_DT <- process_FINEMAP_results(results_path, 
                                         subset_DT, 
-                                        credset_thresh = credset_thresh)
+                                        credset_thresh = credset_thresh, 
+                                        finemap_version = finemap_version)
   
   # Remove tmp files
   if(remove_tmps){

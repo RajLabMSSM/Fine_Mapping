@@ -131,7 +131,7 @@ source("./echolocatoR/R/Annotate/Nott_2019.R")
 source("./echolocatoR/R/Annotate/summarise.R")
 source("./echolocatoR/R/Annotate/macs2.R")
 # eQTL Catalogue
-source("~/Desktop/catalogueR/functions/catalogueR.R")
+# source("~/Desktop/catalogueR/functions/catalogueR.R")
 
 
 # When there's a ton of files, turn off indexing to speed up Rstudio:

@@ -15,8 +15,8 @@ core.*
 /Data/GWASsv.g#/Data/**/**/**/*.txt
 /Data/GWAS/Nalls23andMe_2019/nallsEtAl2019_allSamples_allVariants.mod.txt
 /Data/**/**/_genome_wide/COJO/cojo-file.ma  
-#/Data/GWAS/**/*.tsv.gz
-#/Data/GWAS/**/*.tbi
+/Data/GWAS/**/*.tsv.gz
+/Data/GWAS/**/*.tbi
 #/Data/GWAS/**/*.tsv
 Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv 
 Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv.gz 
@@ -31,7 +31,7 @@ Data/GWAS/Kunkle_2019/Kunkle_etal_Stage1_results.tsv.gz.tbi
 /Data/**/**/**/FINEMAP/data.ld
 /Data/**/**/**/plink/LD_matrix.RData
 /Data/**/**/**/plink/*.RDS
-/Data/Reference/UKB_MAF/* 
+/Data/Reference/UKB_MAF
 
 # Annotations
 /echolocatoR/tools/Annotations/*.rds
