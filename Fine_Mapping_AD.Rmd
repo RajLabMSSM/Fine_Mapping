@@ -111,7 +111,7 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
                  # max_POS = min_POS,
                  
                  bp_distance = 500000*2, 
-                 plot_window = 500000,
+                 # plot_window = 500000,
                  download_reference = T, 
                  LD_reference = "UKB",
                  superpopulation = "EUR", 
