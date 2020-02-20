@@ -56,7 +56,26 @@ Assigning each locus a name using the assigned genes from Kunkle_2019.
 # 
 # merged <- merged %>% dplyr::mutate(within_block = ifelse(pos>=start & pos<=end,T,F))
 # merged <- subset(merged, within_block, 
-#                  select=c("chr","Top Associated SNV","Lead SNV Gene","GenomicLocus","uniqID","rsID"))
+#                  select=c("chr","Top Associated SNV","Lead SNV Gene","GenomicLocus","uniqID","rsID"))top_SNPs$Gene
+ 
+for(locus in unique(top_SNPs$Locus)){
+  print(locus)
+  top.sub <- subset(top_SNPs, Locus==locus)
+  gene <- top.sub$Gene
+  # rename folder
+  file.rename(from = file.path("Data/GWAS/Marioni_2018",locus),
+              to = file.path("Data/GWAS/Marioni_2018",gene))
+  # rename multifinemap
+  file.rename(from = file.path("Data/GWAS/Marioni_2018",gene,"Multi-finemap",
+                               paste0(locus,"_Marioni_2018_Multi-finemap.tsv.gz")),
+              to = file.path("Data/GWAS/Marioni_2018",gene,"Multi-finemap",
+                               paste0(gene,"_Marioni_2018_Multi-finemap.tsv.gz")))
+  # rename ggbio
+  file.rename(from = file.path("Data/GWAS/Marioni_2018",gene,"Multi-finemap",
+                               paste0(locus,"_ggbio.png")),
+              to = file.path("Data/GWAS/Marioni_2018",gene,"Multi-finemap",
+                               paste0(gene,"_ggbio.png")))
+}
 ```
 
 ## Fine-mapping {.tabset .tabset-fade .tabset-pills} 
@@ -71,6 +90,7 @@ top_SNPs <- import_topSNPs(
               snp_col="rsID",
               pval_col="p UKB + IGAP meta",    
               locus_col = "GenomicLocus",
+              gene_col = "Kunkle_Gene",
               caption= "Marioni et al. (2018) GWAS Summary Stats",
               group_by_locus = T) 
 
