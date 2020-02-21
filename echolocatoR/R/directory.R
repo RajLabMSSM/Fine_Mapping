@@ -75,8 +75,9 @@ list_Data_dirs <- function(writeCSV = "./Data/directories_table.csv"){
 
     ## Jansen et al. (2018)
     "Posthuma_2018" = list(type="Alzheimer's GWAS",
-                           topSS="Data/GWAS/Posthuma_2018/Posthuma2018_suppTables.xlsx",
-                           fullSS=file.path(root,"ad-omics/data/AD_GWAS/Posthuma_2018/phase3.beta.se.hrc.txt"),
+                           topSS="Data/GWAS/Posthuma_2018/Posthuma_2018_Table1.xlsx",
+                           fullSS=file.path(root,"ad-omics/data/AD_GWAS/Posthuma_2018/AD_sumstats_Jansenetal_2019sept.txt.gz"),
+                           fullSS.local="./Data/GWAS/Posthuma_2018/AD_sumstats_Jansenetal_2019sept.txt.gz",
                            reference="https://www.nature.com/articles/s41588-018-0311-9"),
 
     ## Kunkle et al. (2018) Alzheimer's GWAS

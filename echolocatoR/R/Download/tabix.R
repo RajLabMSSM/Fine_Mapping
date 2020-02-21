@@ -51,8 +51,8 @@ TABIX.convert_file <- function(fullSS_path="./Data/GWAS/Nalls23andMe_2019/nallsE
                           skip_lines=1){
     printer("TABIX:: Indexing ")
     cmd2 <- paste("tabix",
-                  "-f",
-                  "--skip-lines",skip_lines,
+                  "-f", # Force overwrite of .tbi index file
+                  "-S",skip_lines,#--skip-lines
                   "-s",chrom_i,
                   "-b",pos_i,
                   "-e",pos_i,

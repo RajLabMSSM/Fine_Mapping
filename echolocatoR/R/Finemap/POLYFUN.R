@@ -191,6 +191,7 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
     miss.file <- paste0(snp_w_priors.file,".miss.gz")
     if(file.exists(miss.file)){
       printer("+ PolyFun:: Rerunning after removing missing SNPs.")
+      miss.snps <- data.table::fread(miss.file)
       filt_DT <- subset(finemap_DT, !(SNP %in% miss.snps$SNP) ) 
       if(remove_tmps){file.remove(miss.file)}
       priors <- POLYFUN.get_precomputed_priors(results_path=results_path,
