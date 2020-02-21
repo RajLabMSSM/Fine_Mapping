@@ -245,26 +245,26 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
  
 # Posthuma et al. (2018)
 
-
 ## Fine-mapping {.tabset .tabset-fade .tabset-pills} 
 
-```{r Marioni_2018, results = 'asis', fig.height=10, fig.width=7, fig.show='hold'} 
+```{r Marioni_2018, results = 'asis', fig.height=10, fig.width=7, fig.show='hold'}  
 dataset_name <- "Posthuma_2018"
 top_SNPs <- import_topSNPs(
               topSS_path = Directory_info(dataset_name, "topSS"),
-              sheet = "Table S8",
+              sheet = "Table1_melted_phase3",
               chrom_col = "Chr", 
               position_col = "bp", 
               snp_col="SNP",
               pval_col="P", 
-              effect_col = "Zscore",   
-              locus_col = "Locus", 
-              gene_col = "nearestGene",
-              caption= "Posthuma et al. (2018) GWAS Summary Stats",
+              effect_col = "Z",   
+              locus_col = "Gene", 
+              gene_col = "Gene",
+              caption= "Posthuma et al. (2018) - Phase 3 - GWAS Summary Stats",
               group_by_locus = T) 
-# completed <- list.files("./Data/GWAS/Marioni_2018/",
+# completed <- list.files("./Data/GWAS/Posthuma_2018/",
 #                         pattern = "_ggbio.png", recursive = T)
 # top_SNPs <- subset(top_SNPs, !Locus %in% dirname(dirname(completed)))
+top_SNPs <- subset(top_SNPs, !Locus %in% c("CLU","PTK2B"))
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
                                                loci = top_SNPs$Locus,
@@ -279,16 +279,17 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
                                                force_new_LD = F,
                                                force_new_finemap = T,  
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
-                 chrom_col = "CHROM", 
-                 position_col = "POS", 
+                 chrom_col = "CHR", 
+                 position_col = "BP", 
                  snp_col = "SNP",
-                 pval_col = "PVAL", 
+                 pval_col = "P", 
                  effect_col = "BETA", 
                  stderr_col = "SE",
-                 A1_col = "EFF",
-                 A2_col = "NONEFF",
-                 N_cases = 27696+14338+25580, # MATERNAL + PATERNAL PROXY CASES + AD CASES
-                 N_controls = 260980, 
+                 A1_col = "A1",
+                 A2_col = "A2", 
+                 freq_col = "EAF",
+                 N_cases = 71880 , # PROXY CASES + CASES
+                 N_controls = 383378, 
                  proportion_cases = "calculate",
                  
                  # min_POS = 27238052+1,

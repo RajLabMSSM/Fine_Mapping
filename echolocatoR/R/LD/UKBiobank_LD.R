@@ -166,8 +166,8 @@ LD.UKBiobank <- function(subset_DT=NULL,
 
     if(remove_tmps){
       printer("+ Removing .gz/.npz files.")
-      file.remove(paste0(URL,".gz"))
-      file.remove(paste0(URL,".npz"))
+      if(file.exists(paste0(URL,".gz"))){ file.remove(paste0(URL,".gz")) }
+      if(file.exists(paste0(URL,".npz"))){ file.remove(paste0(URL,".npz")) } 
     }
   }
   if(return_matrix){

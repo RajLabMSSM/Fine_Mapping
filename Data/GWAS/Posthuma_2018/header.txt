@@ -1,0 +1,1 @@
+uniqID.a1a2	CHR	BP	A1	A2	SNP	Z	P	Nsum	Neff	dir	EAF	BETA	SE

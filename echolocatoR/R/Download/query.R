@@ -26,7 +26,7 @@ import_topSNPs <- function(topSS_path,
     }
     return(top_SNPs)
   }
-  top_SNPs <- topSNPs_reader(topSS_path, sheet)
+  top_SNPs <- topSNPs_reader(topSS_path, sheet)  
   orig_top_SNPs <- top_SNPs
 
   # Standardize col names
@@ -34,13 +34,14 @@ import_topSNPs <- function(topSS_path,
     printer("+ Filling in `Effect` column with placeholder (1).")
     top_SNPs$Effect <- 1
   }
+  
   top_SNPs <- top_SNPs %>%
     dplyr::select(Locus=locus_col,
                   CHR=chrom_col,
                   POS=position_col,
                   SNP=snp_col,
                   P=pval_col,
-                  Effect=effect_col)
+                  Effect=effect_col) 
     # Add Locus column
     if(gene_col %in% colnames(orig_top_SNPs) &  all(!is.na(orig_top_SNPs[[gene_col]])) ){
       top_SNPs <- cbind(Gene=orig_top_SNPs[[gene_col]], top_SNPs)
@@ -48,6 +49,9 @@ import_topSNPs <- function(topSS_path,
       print("+ Assigning locus name to gene col")
       top_SNPs <- cbind(Gene=top_SNPs$Locus, top_SNPs)
     }
+    top_SNPs$Gene <- gsub("/","_",top_SNPs$Gene)
+    top_SNPs$Locus <- gsub("/","_",top_SNPs$Locus)
+    
 
     # Remove specific variants
     if(remove_variants != F){
