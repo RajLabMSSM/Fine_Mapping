@@ -199,7 +199,7 @@ rbind.file.list <- function(file.list, verbose=T){
 
 # data.table::fwrite( subset(subset_DT, SNP != "rs34637584"), "Data/GWAS/Nalls23andMe_2019/LRRK2/LocusZoomData_-rs34637584.txt", sep="\t")
 
-quick_finemap <- function(locus="LRRK2", consensus_thresh = 3){
+quick_finemap <- function(locus="LRRK2", consensus_thresh = 2){
   gene <<- locus
   # locus <<- locus
   results_path <<- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
@@ -705,7 +705,8 @@ finemap_pipeline <- function(gene,
                              PAINTOR_QTL_datasets=NULL,
                              server=F,
                              PP_threshold=.95,
-                             plot_window=NULL){
+                             plot_window=NULL,
+                             plot_Nott_binwidth=2500){
    # Create paths
    results_path <- make_results_path(dataset_name, dataset_type, gene)
    # Extract subset
@@ -827,7 +828,8 @@ finemap_pipeline <- function(gene,
                             max_transcripts = 1,
                             plot_window = plot_window,
                             save_plot = T,
-                            show_plot = T)
+                            show_plot = T, 
+                            plot_Nott_binwidth = plot_Nott_binwidth)
     })
   }
   if("fancy" %in% plot_types){
@@ -942,7 +944,8 @@ finemap_loci <- function(loci,
                          PAINTOR_QTL_datasets=NULL,
                          server=F,
                          PP_threshold=.95,
-                         plot_window=NULL){
+                         plot_window=NULL,
+                         plot_Nott_binwidth=2500){
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
   lead_SNPs <- snps_to_condition(conditioned_snps, top_SNPs, loci)
@@ -1012,7 +1015,8 @@ finemap_loci <- function(loci,
                                      PAINTOR_QTL_datasets=PAINTOR_QTL_datasets,
                                      server=server,
                                      PP_threshold=PP_threshold,
-                                     plot_window=plot_window)
+                                     plot_window=plot_window,
+                                     plot_Nott_binwidth=plot_Nott_binwidth)
 
       # Create summary table for all genes
       printer("Generating summary table...", v=verbose)

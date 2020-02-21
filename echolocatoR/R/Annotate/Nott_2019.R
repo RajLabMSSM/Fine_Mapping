@@ -13,7 +13,9 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
                                             save_plot=T,
                                             full_data=T,
                                             return_assay_track=F,
-                                            binwidth=2500){
+                                            binwidth=2500, 
+                                            geom="histogram",
+                                            plot_formula="Assay + Cell_type ~."){
   library(BiocGenerics)
   library(GenomicRanges)
   library(ggbio)
@@ -53,7 +55,8 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
                                                     start.field = "start.end",
                                                     end.field = "start.end",
                                                     keep.extra.columns = T)
-  bw.grlist <- lapply(1:nrow(bigWigFiles), function(i){
+  
+  bw.grlist <- parallel::mclapply(1:nrow(bigWigFiles), function(i){
     bw.file <- bigWigFiles$data_link[i]
     bw.name <- gsub("_pooled|pooled_","",bigWigFiles$name[i])
     printer("GVIZ:: Importing...",bw.name)
@@ -68,7 +71,7 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
     # bw.filt$cell_type <-strsplit(bw.name, "_")[[1]][[1]]
     # bw.filt$assay <- strsplit(bw.name, "_")[[1]][[2]]
     return(bw.filt)
-  })
+  }, mc.cores = 4)
   bw.cols <- bigWigFiles$name
   # names(bw.grlist) <- bw.cols
   bw.gr <- unlist(GenomicRanges::GRangesList(bw.grlist))
@@ -76,18 +79,22 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
   # merge into a single granges object
   # gr.snp <- Reduce(function(x, y) GenomicRanges::merge(x, y, all.x=T),
   #                  append(bw.grlist, gr.dat))
+  
+  # GenomicRanges::findOverlaps(query = subset(gr.dat, Support>1), 
+  #                             subject = bw.gr)
 
-  nott_tracks <-  ggbio::autoplot(object = bw.gr,
-                                  geom="histogram",
-                                  facets= Cell_type ~ .,
+  nott_tracks <-  ggbio::autoplot(object=bw.gr,
+                                  geom=geom,
+                                  # facets= Experiment~.,
+                                  # facets=Cell_type ~ .,
                                   # scales="free_y",
                                   # bins=300,
-                                  binwidth=binwidth,
+                                  binwidth=binwidth, 
                                   alpha=.7,
                                   position="identity",
-                                  aes(fill=Assay), show.legend=T) +
-
-    theme(legend.position="right")
+                                  aes(fill=Cell_type), show.legend=T) +
+    facet_grid(facets = formula(plot_formula)) +  
+    theme(legend.position="right", strip.text.y = element_text(angle = 0))
   if(return_assay_track){ return(nott_tracks)}
 
 
@@ -252,17 +259,17 @@ NOTT_2019.get_epigenomic_peaks <- function(peak.dir="/Volumes/Scizor/Nott_2019/p
 
 
 NOTT_2019.get_regulatory_regions <- function(finemap_DT,
-                                           s5_path="./echolocatoR/annotations/Nott_2019/aay0793-Nott-Table-S5.xlsx"){
+                                            s5_path="./echolocatoR/annotations/Nott_2019/aay0793-Nott-Table-S5.xlsx"){
   # Get sheet names
   sheets_s5 <- readxl::excel_sheets(s5_path)
   selected_sheets <- grep("promoters$|enhancers$",sheets_s5, value = T)
-  regions <- lapply(selected_sheets, function(s){
+  regions <- parallel::mclapply(selected_sheets, function(s){
     printer("Importing",s,"...")
     # Read the sheet you want
     dat <- readxl::read_excel(s5_path, sheet = s, skip = 1, col_names = c("chr","start","end"))
     dat$Name <- s
     return(dat)
-  }) %>% data.table::rbindlist()
+  }, mc.cores = 4) %>% data.table::rbindlist()
   regions_sub <- subset(regions, chr== paste0("chr",unique(finemap_DT$CHR)) &
                         start>=min(finemap_DT$POS) &
                         end<=max(finemap_DT$POS) ) %>%
@@ -270,7 +277,25 @@ NOTT_2019.get_regulatory_regions <- function(finemap_DT,
   return(regions_sub)
 }
 
-
+NOTT_2019.report_regulatory_overap <- function(finemap_DT, regions){
+  # consensus.snps <- subset(finemap_DT, Consensus_SNP==T)
+  gr.consensus <- GenomicRanges::makeGRangesFromDataFrame(finemap_DT, 
+                                                          seqnames.field = "CHR", 
+                                                          start.field = "POS", end.field = "POS",
+                                                          keep.extra.columns = T)
+  gr.regions <- GenomicRanges::makeGRangesFromDataFrame(regions %>% dplyr::mutate(chr=gsub("chr","",chr)), 
+                                                        seqnames.field = "CHR", 
+                                                        start.field = "start", end.field = "end",
+                                                        keep.extra.columns = T) 
+  hits <- GenomicRanges::findOverlaps(query = gr.consensus,
+                                      subject = gr.regions)
+  gr.hits <- gr.regions[subjectHits(hits)]
+  mcols(gr.hits) <- cbind(mcols(gr.hits),
+                          mcols(gr.consensus[queryHits(hits),]) )
+  message("+ NOTT_2019:: ",nrow(mcols(gr.hits))," Consensus SNP(s) detected with functional overlap." )
+  print(data.frame(mcols(gr.hits[,c("Name","SNP")])) )
+  return(gr.hits)
+}
 
 # ***************************** #
 NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
@@ -280,7 +305,8 @@ NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
                                      return_interaction_track=F,
                                      xlims=NULL,
                                      zoom_window=NULL,
-                                     index_SNP=NULL){
+                                     index_SNP=NULL,
+                                     return_consensus_overlap =T){
   #  quick_finemap()
   library(ggbio)
   marker_key <- list(PU1="Microglia",
@@ -323,6 +349,13 @@ NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
   # interactions <- NOTT_2019.get_interactions(finemap_DT = finemap_DT)
   regions <- NOTT_2019.get_regulatory_regions(finemap_DT = finemap_DT)
   regions <- regions %>% dplyr::mutate(middle=as.integer( end-abs(end-start)/2) )
+  
+  # Report overlap 
+  printer("+ NOTT_2019:: Evaluating Consensus SNP overlap with regulatory elements...") 
+  gr.hits <- NOTT_2019.report_regulatory_overap(finemap_DT=subset(finemap_DT, Consensus_SNP==T),
+                                                regions=regions)
+  
+ 
 
   ####### Assemble Tracks #######
   # GWAS track

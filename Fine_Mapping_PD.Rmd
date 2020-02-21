@@ -36,7 +36,14 @@ editor_options:
 # knitr::opts_chunk$set(error = T) # Knit even with errors
 # devtools::install_local("echolocatoR/", force = T)
 # library("echolocatoR")
-source("echolocatoR/R/MAIN.R")
+source("echolocatoR/R/MAIN.R")  
+# reticulate::conda_install(envname = "echoR",
+#                           packages = c("tqdm","scipy","scikit-learn",
+#                                        "requests","pandas","pyarrow","fastparquet",
+#                                        "bitarray","networkx","rpy2","tabix"), 
+#                           python_version = 3.7,
+#                           conda="/opt/anaconda3/condabin/conda")
+reticulate::use_condaenv("echoR", conda="/opt/anaconda3/condabin/conda")
 # setwd("~/Desktop/Fine_Mapping")
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS:
 # Data_dirs <- read.csv("./Data/directories_table.csv")
@@ -55,12 +62,15 @@ LRRK2 is a tricky locus with multiple peaks. We therefore fine-mapped it a littl
 2. Identify the minimum and maximum span of SNPs that are in LD (r2) with the lead common SNP within the LRRK2 gene.
 
 ```{r}
+quick_finemap(locus = "LRRK2")
 lead.snp <- subset(finemap_DT, leadSNP)
 merged <-data.table:::merge.data.table(finemap_DT, 
                               data.table::data.table(r2=LD_matrix[lead.snp$SNP,]^2,
                                                      SNP=names(LD_matrix[lead.snp$SNP,])), 
                               by="SNP")
 subset(merged, r2>0.4)$POS %>% summary()
+min_POS=min(subset(merged, r2>0.4)$POS)
+max_POS=max(subset(merged, r2>0.4)$POS)
 finemap_DT %>% arrange(P)
 ```
 
@@ -98,23 +108,23 @@ top_SNPs <- data.table::rbindlist(list(top_SNPs,
                                       ), use.names = T)
 loci <- unique(top_SNPs$Gene)
 # # Filter loci
-finished_loci <- list.files("./Data/GWAS/Nalls23andMe_2019",pattern = "_ggbio.png$",
-           recursive = T, full.names = T) 
-info <- file.info(finished_loci)$ctime %>% as.character()
-loci <- finished_loci[which(!startsWith(info,"2020-01-24"))]%>% dirname() %>% dirname() %>% basename()
- 
+# finished_loci <- list.files("./Data/GWAS/Nalls23andMe_2019",pattern = "_ggbio.png$",
+#            recursive = T, full.names = T) 
+# info <- file.info(finished_loci)$ctime %>% as.character()
+# loci <- finished_loci[which(!startsWith(info,"2020-01-24"))]%>% dirname() %>% dirname() %>% basename()
+#  
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci = loci,#unique(c("LRRK2", loci)),
+                                               loci = "MED12L", #unique(c("LRRK2", loci)),
                                                trim_gene_limits = F,#c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
                                                query_by ="tabix", # coordinates
                                                subset_path = "auto", 
                                                finemap_methods = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),  
-                                               force_new_subset = T,
-                                               force_new_LD = T,
-                                               force_new_finemap = T, 
+                                               force_new_subset = F,
+                                               force_new_LD = F,
+                                               force_new_finemap = F, 
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
                  chrom_col = "CHR", position_col = "POS", snp_col = "RSID",
                  pval_col = "p", effect_col = "beta", stderr_col = "se", 
@@ -122,21 +132,23 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  A1_col = "A1",
                  A2_col = "A2",
                  bp_distance = 500000*2,
+                 # plot_window = 50000,
+                 # plot_Nott_binwidth = 100,
                  # max_snps=1000,
                  download_reference = T, 
                  LD_reference = "UKB",#"1KG_Phase1",
                  superpopulation = "EUR", 
                  LD_block = F, 
                  min_MAF = 0.001,
-                 # min_POS = 40582993,
-                 # max_POS = 40582992,
+                 # min_POS = min_POS,
+                 # max_POS = max_POS,
                  # remove_variants = c("rs34637584"),
                  # remove_correlates = c("rs34637584"),
                  conditioned_snps = "auto", # Use the lead SNP for each gene  
                  n_causal = 5, 
                  plot_types = c("simple"), #"fancy" 
                  PP_threshold = .95,
-                 remove_tmps = F,  
+                 remove_tmps = T,  
                  server=F)  
 ```
 
@@ -147,7 +159,7 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
 ## Gather Results
 
 ```{r Gather Results}
-merged_DT <- merge_finemapping_results(minimum_support=1,
+merged_DT <- merge_finemapping_results(minimum_support=0,
                                       include_leadSNPs=T,
                                       dataset = "./Data/GWAS/Nalls23andMe_2019",
                                       xlsx_path="./Data/Nalls23andMe_2019_results.xlsx",
@@ -164,7 +176,8 @@ merged_DT <- subset(merged_DT, !(Locus %in% no_no_loci))
 locus_order <- subset(merged_DT, Support>0) %>% 
   dplyr::group_by(Locus, .drop=F) %>% 
   dplyr::summarise_at(vars(ends_with("Credible_Set")),
-                      funs(size=sum(.>0, na.rm = T), length(unique(SNP)))
+                      funs(size=n_distinct(SNP[.>0], na.rm = T),
+                           length=n_distinct(SNP) )
                    ) %>%  
   dplyr::mutate(UCS_size = mean.Credible_Set_length) %>% 
   arrange(-UCS_size) 
@@ -172,6 +185,24 @@ locus_order <- locus_order[!endsWith(colnames(locus_order), ".Credible_Set_lengt
 locus_order$Locus <- factor(locus_order$Locus,  levels = locus_order$Locus, ordered = T)   
 
 createDT(subset(merged_DT, Consensus_SNP == T))  
+
+```
+
+## Get filtering estimates
+
+```{r}
+snp_groups <- merged_DT %>% 
+  dplyr::group_by(Locus) %>% 
+  dplyr::summarise(Total.SNPs=n_distinct(SNP, na.rm = T),
+                   nom.sig.GWAS=n_distinct(SNP[P<.05], na.rm = T),
+                   sig.GWAS=n_distinct(SNP[P<5e-8], na.rm = T),
+                   CS=n_distinct(SNP[Support>0], na.rm = T),
+                   Consensus=n_distinct(SNP[Support>1], na.rm = T),
+                   topConsensus=n_distinct(SNP[Consensus_SNP & mean.PP==max(mean.PP)], na.rm = T ),
+                   topConsensus.leadGWAS=n_distinct(SNP[Consensus_SNP & leadSNP], na.rm = T ))
+ 
+# snp_groups[,-1] %>% dplyr::summarise_all(.funs =  funs( mean(subset(., .>0)) ))
+snp_groups[,-1] %>% colSums() / n_distinct(snp_groups$Locus) 
 ```
 
 ## Credible Set Bins (Fig 2a)
@@ -237,7 +268,7 @@ merged_DT <- data.table:::merge.data.table(merged_DT, missense,
                                            all.x=T,
                                            by.x="SNP",
                                            by.y = "refsnp_id")
-printer(sum(subset(merged_DT, Support>0)$Missense, na.rm = T),"missense mutations detected in UCS.")
+printer(sum(subset(merged_DT, Consensus_SNP>0)$Missense, na.rm = T),"missense mutations detected in UCS.")
 ```
 
 ## Consensus SNP Annotations

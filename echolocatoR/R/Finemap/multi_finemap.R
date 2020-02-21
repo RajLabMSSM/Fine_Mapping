@@ -297,6 +297,9 @@ finemap_handler <- function(results_path,
     file_dir <- create_method_dir(results_path = results_path,
                                   finemap_method = "Multi-finemap",
                                   compress = T)
+    old_file_dir <- file.path(dirname(file_dir),"Multi-finemap_results.txt")
+    if(!file.exists(file_dir) & file.exists(old_file_dir)){file_dir <- old_file_dir }
+    
     ### If so, import the previous results
     if(file.exists(file_dir) & force_new_finemap==F){
       printer("++ Previously multi-fine-mapped results identified. Importing...")

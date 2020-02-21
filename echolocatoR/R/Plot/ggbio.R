@@ -277,7 +277,8 @@ GGBIO.plot <- function(finemap_DT,
                        show_plot=T,
                        max_transcripts=1,
                        plot_window=NULL,
-                       dpi=200){
+                       dpi=200,
+                       plot_Nott_binwidth=2500){
   # http://bioconductor.org/packages/release/bioc/vignettes/ggbio/inst/doc/ggbio.pdf
   library(ggbio)
   require(GenomicRanges)
@@ -494,7 +495,8 @@ GGBIO.plot <- function(finemap_DT,
                                                         show_plot=F,
                                                         save_plot=F,
                                                         full_data=T,
-                                                        return_assay_track=T)
+                                                        return_assay_track=T,
+                                                        binwidth = plot_Nott_binwidth)
     TRACKS_list <- append(TRACKS_list, track.Nott_histo)
     names(TRACKS_list)[length(TRACKS_list)] <- "Nott (2019)\nRead Densities"
 
@@ -510,7 +512,7 @@ GGBIO.plot <- function(finemap_DT,
   # Fuse all tracks
   n_roadmap <- ifelse(ROADMAP,1,0)
   n_Nott <- ifelse(Nott_sn_epigenome,2,0)
-  heights <- c(rep(.15,length(method_list)+2), # Fine-mapping tracks + GWAS and meanPP
+  heights <- c(rep(.10,length(method_list)+2), # Fine-mapping tracks + GWAS and meanPP
                c(.33,.33),# Nott data
                rep(1,length(XGR_libnames)+n_roadmap))
   params_list <- list(title = paste0(gene," locus [",length(seqnames(gr.snp))," SNPs]"),

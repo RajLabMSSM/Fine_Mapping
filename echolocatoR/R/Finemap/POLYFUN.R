@@ -107,7 +107,7 @@ POLYFUN.conda_from_list <- function(libraries = c("numpy",
 # %%%%%%%%%%%%%%%% PolyFun approach 1 %%%%%%%%%%%%%%%%
 ## Using precomputed prior causal probabilities based on a meta-analysis of 15 UK Biobank traits
 POLYFUN.prepare_snp_input <- function(PF.output.path,
-                                       results_path="./Data/GWAS/Nalls23andMe_2019/LRRK2",
+                                       results_path,
                                        finemap_DT=NULL){
   # PolyFun requires a space-delimited (gzipped or not) file with these columns:
   ## CHR BP A1 A2
@@ -178,7 +178,7 @@ POLYFUN.get_precomputed_priors <- function(polyfun="./echolocatoR/tools/polyfun"
     # missing.snps <- subset(finemap_DT, !(SNP %in% parq$SNP))
 
     # [2.] Retrieve priors
-    test <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/LRRK2/PolyFun/snps_to_finemap.txt.gz")
+    # test <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/LRRK2/PolyFun/snps_to_finemap.txt.gz")
     try({
       cmd <- paste("python",file.path(polyfun,"extract_snpvar.py"),
                    "--snps",snp.path,
@@ -596,17 +596,17 @@ POLYFUN.finemapper <- function(polyfun= "./echolocatoR/tools/polyfun",
                                npz_gz_LD=NULL,
                                locus=NULL,
                                sample_size=NULL,
-                               results_path="Data/GWAS/Nalls23andMe_2019/LRRK2",
+                               results_path,#="Data/GWAS/Nalls23andMe_2019/LRRK2",
                                n_causal=5,
-                               method="susie"){
+                               method="susie",
+                               h2_path){# = "Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output/PD_GWAS.12.snpvar_constrained.gz"){
   # finemap_DT <- quick_finemap();
   # base_url  <- "./echolocatoR/tools/polyfun/LD_temp"
   sample_size <- ifelse(is.null(sample_size),
                         effective_sample_size(finemap_DT = finemap_DT),  sample_size)
   chrom <- unique(finemap_DT$CHR)
   file.name <- paste0("chr",chrom,"_","40000001_43000001")
-  ld_path <- file.path(results_path,"plink",file.name)
-  h2_path <- "Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output/PD_GWAS.12.snpvar_constrained.gz"
+  ld_path <- file.path(results_path,"plink",file.name) 
   # munged.path <- "~/Desktop/Nalls23andMe_2019.sumstats_munged.parquet"
   # locus="LRRK2"
   if(is.null(npz_gz_LD)){
