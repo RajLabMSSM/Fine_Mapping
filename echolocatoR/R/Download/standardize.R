@@ -134,13 +134,13 @@ standardize_subset <- function(gene,
     ## Infer MAF from freq (assuming MAF is alway less than 0.5)
     if(MAF_col %in% colnames(query)){
       query <- query %>% dplyr::rename(MAF=MAF_col)
-      query_mod$MAF <- query$MAF
+      query_mod$MAF <- as.numeric(query$MAF)
     } else if(freq_col %in% colnames(query)){
       query <- query %>% dplyr::rename(Freq=freq_col)
-      query_mod$Freq <- query$Freq
-      if(MAF_col=="calculate"){
+      query_mod$Freq <- as.numeric(query$Freq)
+      if(MAF_col=="calculate" | !(MAF_col %in% colnames(query)) ){
         printer("+Inferring MAF from frequency column...")
-        query_mod$MAF <- ifelse(query$Freq<0.5, query$Freq, 1-query$Freq)
+        query_mod$MAF <- ifelse(query$Freq<0.5, query$Freq, abs(1-query$Freq))
       }
     } else {
       # As a last resort download UKB MAF
@@ -148,6 +148,7 @@ standardize_subset <- function(gene,
                                 output.path = "./Data/Reference/UKB_MAF",
                                 force_new_maf = F)
     }
+    query_mod$MAF <- abs(query_mod$MAF)
 
 
 
@@ -205,6 +206,13 @@ standardize_subset <- function(gene,
     query_mod <- query_mod  %>%
       mutate(Effect=as.numeric(Effect), StdErr=as.numeric(StdErr), P=as.numeric(P))
 
+    
+    # Trim whitespaces
+    ## Extra whitespace causes problems when you try to make space-delimited files
+    cols_to_be_rectified <- names(query_mod)[vapply(query_mod, is.character, logical(1))]
+    query_mod <- query_mod %>% mutate_at(vars(cols_to_be_rectified),
+                                   funs(trimws) )
+    
     data.table::fwrite(query_mod, subset_path, sep = "\t", nThread = 4)
     if(return_dt==T){return(query_mod)}
   }

@@ -20,6 +20,15 @@ construct_FINEMAP_data <- function(results_path,
   )
   data.z$flip <- 0 # [optional] - flip==1, don't flip==0
   
+  # !!! IMPORTANT !!!
+  # Trim whitespaces
+  ## Extra whitespace causes problems when you try to make space-delimited files
+  # https://stackoverflow.com/questions/20760547/removing-whitespace-from-a-whole-data-frame-in-r
+  cols_to_be_rectified <- names(data.z)[vapply(data.z, is.character, logical(1))]
+  data.z <- data.z %>% mutate_at(vars(cols_to_be_rectified),
+                                 funs(trimws) )
+  
+  
   ####### data.ld #######
   printer("++ Formatting LD Matrix for FINEMAP")
   ## The order of the SNPs in the dataset.ld must correspond to the order of variants in dataset.z.
@@ -36,12 +45,13 @@ construct_FINEMAP_data <- function(results_path,
   if( dim(data.z)[1]==dim(LD_filt)[1] ){
     # data.z
     data.z_path <- file.path(results_path,"FINEMAP","data.z")
-    data.table::fwrite(data.z, data.z_path, sep = " ") 
+    data.table::fwrite(data.z, data.z_path, sep = " ", nThread = 4) 
     # Sys.chmod(data.z_path, "777", use_umask = FALSE)
     # data.ld
     data.ld_path <- file.path(results_path,"FINEMAP","data.ld")
     data.table::fwrite(data.table:::as.data.table.matrix(LD_filt),
-                       data.ld_path, sep=" ", quote = F, col.names = F)
+                       data.ld_path, sep=" ", quote = F, col.names = F, 
+                       nThread = 4)
     # Sys.chmod(data.ld_path, "777", use_umask = FALSE)
   } else {warning("+ FINEMAP:: Summary statistics file (data.z) and LD matrix (data.ld) must contain the same number of SNPs.")}
 }

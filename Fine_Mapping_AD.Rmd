@@ -40,6 +40,95 @@ finemap_results <- list()
 
 
 
+# Kunkle et. al. (2019)
+
+## PTK2B/CLU
+
+The PTK2B/CLU is a tricky locus with multiple peaks (see Table S6 of Kunkle et al. (2019) for GCTA-COJO results).
+We therefore fine-mapped it a little differently:  
+  1. Identify the minimum and maximum span of SNPs that are in LD (r2) with the lead common SNP within the LRRK2 gene.
+  3. Fine-map each region separately
+
+```{r PTK2B/CLU, eval=F}
+quickstart_AD("CLU", dataset_name = "Kunkle_2019")
+lead.snp <- subset(finemap_DT, leadSNP)
+merged <-data.table:::merge.data.table(finemap_DT, 
+                              data.table::data.table(r2=LD_matrix[lead.snp$SNP,]^2,
+                                                     SNP=names(LD_matrix[lead.snp$SNP,])), 
+                              by="SNP") %>% 
+  subset(r2>0.1) 
+dim(merged)
+min_POS <- min(merged$POS) # 27373865
+max_POS <- max(merged$POS)
+```
+
+## Fine-mapping {.tabset .tabset-fade .tabset-pills} 
+
+```{r Kunkle_2019, results = 'asis', fig.height=10, fig.width=7, fig.show='hold'} 
+dataset_name <- "Kunkle_2019"
+top_SNPs <- import_topSNPs(
+              topSS_path = Directory_info(dataset_name, "topSS"),
+              sheet = "Supplementary Table 8",
+              chrom_col = "CHR", 
+              position_col = "POS", 
+              snp_col="Top Associated SNV",
+              pval_col="P_placeholder", 
+              effect_col="Beta_placeholder", 
+              gene_col="Lead SNV Gene",
+              locus_col = "Lead SNV Gene",
+              caption= "Kunkle et al. (2019) GWAS Summary Stats",
+              group_by_locus = T) 
+# Remove loci with notoriously difficult LD structure.
+no_no_loci <- c("HLA-DRB1","WWOX")
+top_SNPs <- subset(top_SNPs, !(Locus %in% no_no_loci))
+# completed <- list.files("./Data/GWAS/Kunkle_2019/", 
+#                         pattern = "ggbio.png", recursive = T)
+# loci <- top_SNPs$Locus[!top_SNPs$Locus %in% dirname(dirname(completed))]
+
+finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
+                                               loci = top_SNPs$Locus,
+                                               trim_gene_limits = F,
+                                               dataset_name = dataset_name,
+                                               dataset_type = "GWAS",
+                                               query_by ="tabix",
+                                               subset_path = "auto", 
+                                               finemap_methods = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),
+                                               force_new_subset = F,
+                                               force_new_LD = F,
+                                               force_new_finemap = F,  
+                 fullSS_path = Directory_info(dataset_name, "fullSS.local"),
+                 chrom_col = "Chromosome", 
+                 position_col = "Position", 
+                 snp_col = "MarkerName",
+                 pval_col = "Pvalue", 
+                 effect_col = "Beta", 
+                 stderr_col = "SE",
+                 A1_col = "Effect_allele",
+                 A2_col = "Non_Effect_allele",
+                 N_cases = 21982,
+                 N_controls = 41944, 
+                 proportion_cases = "calculate",
+                 
+                 # min_POS = min_POS,
+                 # max_POS = min_POS,
+                 
+                 bp_distance = 500000*2, 
+                 # plot_window = 500000,
+                 download_reference = T, 
+                 LD_reference = "UKB",
+                 superpopulation = "EUR", 
+                 plot_types = "simple",
+                 LD_block = F,  
+                 min_MAF = 0.001,
+                 PP_threshold = .95,
+                 n_causal = 5, 
+                 remove_tmps = T,
+                 server = F)  
+```
+
+
+
+ 
 # Marioni _2018
 
 ## Preprocess
@@ -156,93 +245,9 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
 ```
 
 
-# Kunkle et. al. (2019)
 
-## PTK2B/CLU
 
-The PTK2B/CLU is a tricky locus with multiple peaks (see Table S6 of Kunkle et al. (2019) for GCTA-COJO results).
-We therefore fine-mapped it a little differently:  
-  1. Identify the minimum and maximum span of SNPs that are in LD (r2) with the lead common SNP within the LRRK2 gene.
-  3. Fine-map each region separately
 
-```{r PTK2B/CLU, eval=F}
-quickstart_AD("CLU", dataset_name = "Kunkle_2019")
-lead.snp <- subset(finemap_DT, leadSNP)
-merged <-data.table:::merge.data.table(finemap_DT, 
-                              data.table::data.table(r2=LD_matrix[lead.snp$SNP,]^2,
-                                                     SNP=names(LD_matrix[lead.snp$SNP,])), 
-                              by="SNP") %>% 
-  subset(r2>0.1) 
-dim(merged)
-min_POS <- min(merged$POS) # 27373865
-max_POS <- max(merged$POS)
-```
-
-## Fine-mapping {.tabset .tabset-fade .tabset-pills} 
-
-```{r Kunkle_2019, results = 'asis', fig.height=10, fig.width=7, fig.show='hold'} 
-dataset_name <- "Kunkle_2019"
-top_SNPs <- import_topSNPs(
-              topSS_path = Directory_info(dataset_name, "topSS"),
-              sheet = "Supplementary Table 8",
-              chrom_col = "CHR", 
-              position_col = "POS", 
-              snp_col="Top Associated SNV",
-              pval_col="P_placeholder", 
-              effect_col="Beta_placeholder", 
-              gene_col="Lead SNV Gene",
-              locus_col = "Lead SNV Gene",
-              caption= "Kunkle et al. (2019) GWAS Summary Stats",
-              group_by_locus = T) 
-# Remove loci with notoriously difficult LD structure.
-no_no_loci <- c("HLA-DRB1","WWOX")
-top_SNPs <- subset(top_SNPs, !(Locus %in% no_no_loci))
-# completed <- list.files("./Data/GWAS/Kunkle_2019/", 
-#                         pattern = "ggbio.png", recursive = T)
-# loci <- top_SNPs$Locus[!top_SNPs$Locus %in% dirname(dirname(completed))]
-
-finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
-                                               loci = top_SNPs$Locus,
-                                               trim_gene_limits = F,
-                                               dataset_name = dataset_name,
-                                               dataset_type = "GWAS",
-                                               query_by ="tabix",
-                                               subset_path = "auto", 
-                                               finemap_methods = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),
-                                               force_new_subset = F,
-                                               force_new_LD = F,
-                                               force_new_finemap = F,  
-                 fullSS_path = Directory_info(dataset_name, "fullSS.local"),
-                 chrom_col = "Chromosome", 
-                 position_col = "Position", 
-                 snp_col = "MarkerName",
-                 pval_col = "Pvalue", 
-                 effect_col = "Beta", 
-                 stderr_col = "SE",
-                 A1_col = "Effect_allele",
-                 A2_col = "Non_Effect_allele",
-                 N_cases = 21982,
-                 N_controls = 41944, 
-                 proportion_cases = "calculate",
-                 
-                 # min_POS = min_POS,
-                 # max_POS = min_POS,
-                 
-                 bp_distance = 500000*2, 
-                 # plot_window = 500000,
-                 download_reference = T, 
-                 LD_reference = "UKB",
-                 superpopulation = "EUR", 
-                 plot_types = "simple",
-                 LD_block = F,  
-                 min_MAF = 0.001,
-                 PP_threshold = .95,
-                 n_causal = 5, 
-                 remove_tmps = T,
-                 server = F)  
-```
-
- 
 # Posthuma et al. (2018)
 
 ## Fine-mapping {.tabset .tabset-fade .tabset-pills} 
@@ -272,10 +277,10 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
                                                query_by ="tabix",
-                                               subset_path = "auto", 
-                                               finemap_methods = c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"),
+                                               subset_path = "auto",  
+                                               finemap_methods = c("ABF","SUSIE","POLYFUN_SUSIE"),
                                                # finemap_methods = "FINEMAP",
-                                               force_new_subset = F,
+                                               force_new_subset = T,
                                                force_new_LD = F,
                                                force_new_finemap = T,  
                  fullSS_path = Directory_info(dataset_name, "fullSS.local"),
@@ -287,7 +292,8 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs = top_SNPs,
                  stderr_col = "SE",
                  A1_col = "A1",
                  A2_col = "A2", 
-                 freq_col = "EAF",
+                 freq_col = "EAF", 
+                 MAF_col = "calculate",
                  N_cases = 71880 , # PROXY CASES + CASES
                  N_controls = 383378, 
                  proportion_cases = "calculate",
