@@ -35,16 +35,33 @@ getmode <- function(v) {
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
+get_sample_size <- function(subset_DT, sample_size=NA){
+  if(is.na(sample_size)){
+    if("N_cases" %in% colnames(subset_DT) & "N_controls" %in% colnames(subset_DT)){
+      sample_size <- max(subset_DT$N_cases) + max(subset_DT$N_controls)
+    } else {
+      sample_size <- 10000
+      printer("++ No sample size variable detected...Defaulting to:",sample_size)
+    }
+  }
+  return(sample_size)
+}
+
 COLOC.construct_dataset <- function(subset_DT, 
                                     sample_size=NA, 
-                                    proportion_cases=5e-324, # Doesn't allow actual 0, so use smallest number R allows
+                                    proportion_cases=NA, # Doesn't allow actual 0, so use smallest number R allows
                                     MAF=NA,
                                     type="cc"){ 
+  # Sample size
   sample_size <- get_sample_size(subset_DT, sample_size)
-  if("proportion_cases" %in% colnames(subset_DT)){
-    printer("++ Extracting Proportion of Cases...")
-    proportion_cases <- getmode(subset_DT$proportion_cases)
+  # Proportion cases
+  if(is.na(proportion_cases)){
+    if("proportion_cases" %in% colnames(subset_DT)){
+      printer("++ Extracting Proportion of Cases...")
+      proportion_cases <- getmode(subset_DT$proportion_cases)
+    }
   }
+  # MAF
   if(length(MAF)==1){
     printer("++ Extracting MAF...")
     if(is.na(MAF) & "MAF" %in% colnames(subset_DT)){
@@ -66,44 +83,54 @@ COLOC.construct_dataset <- function(subset_DT,
 
  
 
-COLOC <- function(gene,
-                  # dataset1_path, 
-                  # dataset2_path,
-                  subset_DT1,
-                  subset_DT2,
-                  dataset1_type="cc",# case-control
-                  dataset2_type="quant",
-                  shared_MAF=1, 
-                  dataset2_proportion_cases=5e-324, 
+COLOC <- function(data1,
+                  data2,
+                  data1_type="cc",# case-control
+                  data2_type="quant",
+                  shared_MAF=F, 
+                  data1_proportion_cases=NA,
+                  data2_proportion_cases=5e-324, 
+                  data1_MAF="MAF",
+                  data2_MAF=NA,
                   PP_threshold=0.8,
                   save_results=T,
-                  show_plot=T){
+                  results_path=NULL,
+                  show_plot=T,
+                  title1=NULL,
+                  subtitle1=NULL,
+                  title2=NULL,
+                  subtitle2=NULL){
   printer("******** Step 5: COLOCALIZE ********")  
   # The Approximate Bayes Factor colocalisation analysis described in the next section 
   ## essentially works by fine mapping each trait under a single causal variant assumption 
   ##and then integrating over those two posterior distributions to calculate probabilities that 
   ## those variants are shared.
   # https://cran.r-project.org/web/packages/coloc/vignettes/vignette.html
-  # subset_DT1 <- data.table::fread(dataset1_path, stringsAsFactors = F, sep="\t") %>% data.frame()
-  # subset_DT2 <- data.table::fread(dataset2_path, stringsAsFactors = F, sep="\t") %>% data.frame()
-  common_SNPs <- intersect(subset_DT1$SNP, subset_DT2$SNP)
-  subset_DT1 <- subset(subset_DT1, SNP %in% common_SNPs) %>% group_by(SNP) %>% slice(1) %>% data.frame()
-  subset_DT2 <- subset(subset_DT2, SNP %in% common_SNPs) %>% group_by(SNP) %>% slice(1) %>% data.frame()
+  # data1 <- data.table::fread(dataset1_path, stringsAsFactors = F, sep="\t") %>% data.frame()
+  # data2 <- data.table::fread(dataset2_path, stringsAsFactors = F, sep="\t") %>% data.frame()
+  common_SNPs <- intersect(data1$SNP, data2$SNP)
+  data1 <- subset(data1, SNP %in% common_SNPs) %>% group_by(SNP) %>% slice(1) %>% data.frame()
+  data2 <- subset(data2, SNP %in% common_SNPs) %>% group_by(SNP) %>% slice(1) %>% data.frame()
 
-  dataset1 <- COLOC.construct_dataset(subset_DT1,
-                                      type = dataset1_type)
-  dataset2 <- COLOC.construct_dataset(subset_DT2, 
-                                      proportion_cases = dataset2_proportion_cases,
-                                      type = dataset2_type)
+  dataset1 <- COLOC.construct_dataset(subset_DT = data1,
+                                      sample_size = data2_sample_size,
+                                      proportion_cases = data1_proportion_cases,
+                                      type = data1_type, 
+                                      MAF = data1_MAF)
+  dataset2 <- COLOC.construct_dataset(subset_DT = data2, 
+                                      sample_size = data2_sample_size,
+                                      proportion_cases = data2_proportion_cases,
+                                      type = data2_type, 
+                                      MAF = data2_MAF)
   if(shared_MAF==1){
-    dataset2$MAF <- dataset1$MAF
+    data2$MAF <- data1$MAF
   } else if(shared_MAF==2){
-    dataset1$MAF <- dataset2$MAF
+    data1$MAF <- data2$MAF
   }
   ## NOTES: MESA and Fairfax: No sample size (SNP-level), proportion of cases, or freq/MAF info available?   
   # printer("\n\n")
-  coloc.res <- coloc::coloc.abf(dataset1 = dataset1,
-                                dataset2 = dataset2)
+  coloc.res <- coloc::coloc.abf(dataset1 = data1,
+                                dataset2 = data2)
                                     # MAF = dataset1$MAF) 
  hypothesis_key <- setNames(
    c("Neither trait has a genetic association in the region.",
@@ -124,12 +151,8 @@ COLOC <- function(gene,
       printer("    ",h,"== FALSE: ")
     } 
   } 
-  
-  # Save raw results   
-  coloc_DT <- coloc.res$results
-  results_path <- dirname(dirname(dataset1_path))
-  data.table::fwrite(coloc_DT, file.path(results_path, "COLOC/COLOC_raw.txt"), sep="\t")
-  
+   
+  coloc_DT <- coloc.res$results 
   # Find the causal SNP that coloc.abf identified in each dataset via finemap.abf
   # DT1
   causal_DT1 <- coloc_DT %>% arrange(desc(lABF.df1))
@@ -141,7 +164,7 @@ COLOC <- function(gene,
   # Process results  
   coloc_DT$Colocalized <- ifelse(coloc_DT$SNP.PP.H4 >= PP_threshold, T, F)
   colocalized_snps <- subset(coloc_DT, Colocalized==T)$snp# subset(coloc_DT, Colocalized==1)$SNP
-  coloc_datasets <- coloc_plot_data(coloc.res, subset_DT1, subset_DT2)
+  coloc_datasets <- coloc_plot_data(coloc.res, data1, data2)
   subtitle2 <- paste0("Colocalized SNPs: ", paste(colocalized_snps,sep=", "))
   if((coloc.res$summary["PP.H3.abf"] + coloc.res$summary["PP.H4.abf"] >= PP_threshold) & 
      (coloc.res$summary["PP.H4.abf"]/coloc.res$summary["PP.H3.abf"] >= 2)){
@@ -155,16 +178,16 @@ COLOC <- function(gene,
   
   # Plot 
   if(show_plot){
-    title1 <- paste(gene,":",strsplit(dataset1_path,"/")[[1]][4],strsplit(dataset1_path,"/")[[1]][3])
-    title2 <- paste(gene,":",strsplit(dataset2_path,"/")[[1]][4],strsplit(dataset2_path,"/")[[1]][3]) 
+    # title1 <- paste(strsplit(dataset1_path,"/")[[1]][4],strsplit(dataset1_path,"/")[[1]][3])
+    # title2 <- paste(strsplit(dataset2_path,"/")[[1]][4],strsplit(dataset2_path,"/")[[1]][3]) 
     
     COLOC.plot(coloc_DT1 = coloc_datasets$coloc_DT1,
                coloc_DT2 = coloc_datasets$coloc_DT2, 
                title1 = title1,
-               subtitle1 = report,
+               subtitle1 = subtitle1,
                title2 = title2, 
                subtitle2 = subtitle2,
-               SNP_list = c("rs34637584","rs76904798","rs117073808"),
+               # SNP_list = c("rs34637584","rs76904798","rs117073808"),
                alt_color_SNPs = colocalized_snps, 
                show_plot = T)
   } 
@@ -173,6 +196,7 @@ COLOC <- function(gene,
     coloc_path <- file.path(dirname(dataset1_path),"COLOC")
     dir.create(coloc_path, recursive = T, showWarnings = F)
     data.table::fwrite(coloc_DT, file.path(coloc_path,"COLOC_results.txt"), sep="\t")
+    data.table::fwrite(coloc_DT, file.path(results_path, "COLOC/COLOC_raw.txt"), sep="\t")
   }
   return(coloc_DT)
 } 
@@ -180,8 +204,8 @@ COLOC <- function(gene,
 
 
 COLOC.plot_data <- function(coloc.res, 
-                            subset_DT1, 
-                            subset_DT2){
+                            data1, 
+                            data2){
   coloc_DT <- coloc.res$results
   # Merge Dataset 1
   coloc_DT1 <- coloc_DT %>% dplyr::select(SNP="snp", 
@@ -189,14 +213,14 @@ COLOC.plot_data <- function(coloc.res,
                              Z= "z.df1", 
                              lABF = "lABF.df1", 
                              H4.Probability = "SNP.PP.H4")
-  coloc_DT1 <- data.table:::merge.data.table(subset_DT1, coloc_DT1, on = "SNP", all = F)
+  coloc_DT1 <- data.table:::merge.data.table(data1, coloc_DT1, on = "SNP", all = F)
   # Merge Dataset 2
   coloc_DT2 <- coloc_DT %>% dplyr::select(SNP="snp", 
                                           V = "V.df2", 
                                           Z= "z.df2", 
                                           lABF = "lABF.df2", 
                                           H4.Probability = "SNP.PP.H4")
-  coloc_DT2 <- data.table:::merge.data.table(subset_DT2, coloc_DT2, on = "SNP", all = F) 
+  coloc_DT2 <- data.table:::merge.data.table(data2, coloc_DT2, on = "SNP", all = F) 
   return(list(coloc_DT1=coloc_DT1, coloc_DT2=coloc_DT2))
 }
 
@@ -227,17 +251,6 @@ COLOC.plot <- function(gene,
   cp <- cowplot::plot_grid(mp1, mp2, ncol = 1)
   if(show_plot){print(cp)}else{return(cp)}
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -291,7 +304,7 @@ COLOC.report_summary <- function(coloc.res, PP_threshold=.8){
 #   # DT2
 #   causal_DT2 <- coloc_DT %>% arrange(desc(lABF.df2))
 #   causal_DT2 <- causal_DT2$snp[1]
-#   coloc_datasets <- coloc_plot_data(coloc.res, subset_DT1, subset_DT2)
+#   coloc_datasets <- coloc_plot_data(coloc.res, data1, data2)
 #   # Plot 
 #   title1 <- paste(gene,":",strsplit(dataset1_path,"/")[[1]][4],strsplit(dataset1_path,"/")[[1]][3])
 #   title2 <- paste(gene,":",strsplit(dataset2_path,"/")[[1]][4],strsplit(dataset2_path,"/")[[1]][3]) 
@@ -431,10 +444,4 @@ COLOC.iterate_QTL <- function(GTEx_version="GTEx_V7",
   
 
 
-# MASHR <- function(){ 
-#   devtools::install_github("stephenslab/mashr@v0.2-11")
-#   library(ashr)
-#   library(mashr)
-#   set.seed(1)
-#   simdata = simple_sims(500,5,1)
-# }
+

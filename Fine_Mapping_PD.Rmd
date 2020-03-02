@@ -159,7 +159,7 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
 ## Gather Results
 
 ```{r Gather Results}
-merged_DT <- merge_finemapping_results(minimum_support=0,
+merged_DT <- merge_finemapping_results(minimum_support=1,
                                       include_leadSNPs=T,
                                       dataset = "./Data/GWAS/Nalls23andMe_2019",
                                       xlsx_path="./Data/Nalls23andMe_2019_results.xlsx",
@@ -425,27 +425,130 @@ gg_locus_summary /
 #### Gather QTL data
 
 ```{r}
-sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019","*_subset.tsv.gz", 
+source("~/Desktop/catalogueR/functions/catalogueR.R")
+# Query
+sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019",
+                             pattern = "*Multi-finemap_results.txt|*Multi-finemap.tsv.gz",
                              recursive = T, full.names = T)
-meta <- catalogueR.list_eQTL_datasets(save_path = F)
-  
-gwas.qtl <- catalogueR.run(sumstats_paths = sumstats_paths, 
-                           loci_names = basename(dirname(sumstats_paths)), 
-                           qtl_search = "Schmiedel_2018",
-                           # qtl_search =c("ROSMAP","Alasoo_2018","Fairfax_2014",
-                           #               "Nedelec_2016","BLUEPRINT","HipSci.iPSC",
-                           #               "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018",
-                           #               "blood","brain"),
+# meta <- catalogueR.list_eQTL_datasets(save_path = F)
+gwas.qtl_paths <- catalogueR.run(
+                           sumstats_paths = sumstats_paths,
+                           # loci_names = basename(dirname(sumstats_paths)), 
+                           # qtl_search = "ROSMAP",
+                           qtl_search =c("ROSMAP","Alasoo_2018","Fairfax_2014",
+                                         "Nedelec_2016","BLUEPRINT","HipSci.iPSC",
+                                         "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018",
+                                         "blood","brain"),
                            nThread = 4,
                            multithread_qtl = F,
                            multithread_loci = T, 
                            split_files = T,
                            merge_with_gwas = F,
-                           output_path = file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
-                                                   "Nalls23andMe_2019.eQTL_Catalogue.tsv.gz"))
-qtl.dat <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
-                                                   "Nalls23andMe_2019.eQTL_Catalogue.tsv.gz"), 
+                           # use_tabix = F,
+                           force_new_subset = F,
+                           # output_path = "./Data/GWAS/Nalls23andMe_2019/_genome_wide/eQTL_catalogue"
+                           output_path = "/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019"
+                           )
+# Use saved
+# qtl.dat <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide/eQTL_catalogue",
+#                                        "Nalls23andMe_2019.eQTL_Catalogue.tsv.gz"),  nThread = 4)
+gwas_data <- merge_finemapping_results(minimum_support=0,
+                                      include_leadSNPs=T,
+                                      dataset = "./Data/GWAS/Nalls23andMe_2019",
+                                      xlsx_path=F,
+                                      from_storage=T,
+                                      consensus_thresh = 2,
+                                      haploreg_annotation=F,
+                                      biomart_annotation=F, 
+                                      verbose=F)
+gwas_data <- gwas_data %>% dplyr::rename(Locus=Gene) 
+no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
+gwas_data <- subset(gwas_data, !(Locus %in% no_no_loci))
+
+
+qtl.dat <- rbind.file.list(file.list=gwas.qtl_paths, nCores = 4 )  
+coloc_qtls <- catalogueR.run_coloc(qtl.dat = qtl.dat,
+                                   gwas_data = gwas_data) 
+
+
+minPP4 <- .5
+coloc_plot <- subset(coloc_qtls, !is.na(Locus.GWAS)) %>% dplyr::mutate(Colocalized = ifelse(PP.H4>=minPP4,PP.H4,NA))
+# coloc_plot[is.na(coloc_plot),"PP.H4"] <- F
+
+ggplot(data=coloc_plot, aes(x=Locus.GWAS, y=qtl.id, fill=Colocalized)) + 
+  geom_raster() +  
+  # scale_fill_continuous(limits=c(minPP4,1)) +
+  scale_fill_gradient(na.value = "transparent", low = scales::alpha("blue",.7), high = scales::alpha("red",.7)) +
+  scale_x_discrete(drop=F) +
+  # scale_fill_manual(limits=c(0,1), palette="Spectral") +
+  facet_grid(facets = .~eGene) +
+  theme_classic() 
+  # theme(strip.text.x = element_text(margin =))
+
+```
+
+#### Check QTL overlap
+
+```{r}
+gwas.qtl <- catalogueR.merge_gwas_qtl(gwas_data = merged_DT,
+                                      qtl.subset = qtl.dat) 
+qtl.sig <-  subset(gwas.qtl, pvalue.QTL<.05 & (Consensus_SNP|leadSNP) ) 
+ 
+
+ggplot(data=qtl.sig, aes(x=SNP, y=qtl.id, fill=-log10(pvalue.QTL))) +   
+  geom_raster() + 
+  # geom_point(data=subset(top.snps_melt, leadQTL), shape="*", color="cyan", size=5) +
+  facet_grid(facets = .~gene.QTL + Locus, scales = "free_x") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_continuous(low="thistle2", high="darkred", 
+                       guide="colorbar",na.value="transparent") 
+
+# QTL pvalue distribution plots
+ggplot(data=gwas.qtl, aes(x=POS, y=-log10(pvalue.QTL), color=-log10(pvalue.QTL))) + 
+  geom_point(size=.1) +
+  geom_hline(yintercept = -log10(5e-8), show.legend = F, alpha=.5, size=.1) +
+  facet_grid(facets = Locus + qtl.id ~ gene.QTL, 
+             scales = "free") +
+   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+         strip.text.y = element_text(angle = 0, margin = margin(0, 0, 0, 0, "cm")))  
+```
+
+
+### Manually gathered QTL data
+
+```{r}
+dat <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide",
+                                       "Nalls23andMe_2019.QTL_overlaps.txt.gz"), 
                               nThread = 4)
+query.snps <- subset(merged_DT, Locus %in% c("LRRK2","MED12L"))$SNP
+# subset(qtl.dat, SNP %in% query.snps)
+top.snps <- subset(dat, SNP %in% query.snps)
+
+# top.snps_melt <-  setDT(top.snps)[, .( by=c("Locus","Cell_type","Assay")]
+top.snps_melt <- top.snps %>% reshape2:::melt.data.frame(id.vars = c("SNP","Gene","leadSNP","Consensus_SNP"), 
+                                        measure.vars = grep("*.FDR", colnames(top.snps), value = T),
+                                        variable.name = "QTL",
+                                        value.name ="FDR") %>% 
+  dplyr::mutate(QTL=gsub(".FDR$","",QTL)) %>%
+  subset(SNP %in% c("rs7294619","rs73159907") | leadSNP )
+top.snps_melt <- top.snps_melt %>% 
+  dplyr::group_by(SNP) %>%  
+  dplyr::mutate(SNP.group = ifelse(leadSNP ,"red","goldenrod"))
+# top.snps_melt <- top.snps_melt %>% 
+#   dplyr::group_by(QTL) %>% 
+#   dplyr::mutate(leadQTL = ifelse(FDR==max(FDR,na.rm = T),T,F))
+# top.snps_melt$SNP <- factor(top.snps_melt$SNP, unique(top.snps_melt$SNP),ordered = T)
+ggplot(subset(top.snps_melt,FDR<0.05), aes(x=SNP, y=QTL, fill=-log10(FDR))) + 
+  geom_raster() + 
+  # geom_point(data=subset(top.snps_melt, leadQTL), shape="*", color="cyan", size=5) +
+  facet_grid(facets = .~Gene, scales = "free_x") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_continuous(low="thistle2", high="darkred", 
+                       guide="colorbar",na.value="transparent") 
+
+
 ```
 
 

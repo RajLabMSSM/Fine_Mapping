@@ -6,7 +6,7 @@
 
 merge_finemapping_results <- function(minimum_support=0, 
                                       include_leadSNPs=T,
-                                      xlsx_path="./Data/annotated_finemapping_results.xlsx",
+                                      xlsx_path=F,#="./Data/annotated_finemapping_results.xlsx",
                                       from_storage=T,
                                       haploreg_annotation=F,
                                       regulomeDB_annotation=F,

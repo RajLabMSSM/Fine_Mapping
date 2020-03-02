@@ -188,12 +188,14 @@ reload <- function(){
 }
 
 
-rbind.file.list <- function(file.list, verbose=T){
-  merged.dat <- lapply(file.list, function(x){
+rbind.file.list <- function(file.list, 
+                            verbose=T, 
+                            nCores=4){
+  merged.dat <- parallel::mclapply(file.list, function(x){
     printer(x, v = verbose)
-    dat <- data.table::fread(x, nThread = 4)
+    dat <- data.table::fread(x)
     return(dat)
-  }) %>% data.table::rbindlist(fill=T)
+  }, mc.cores = nCores) %>% data.table::rbindlist(fill=T)
   return(merged.dat)
 }
 
