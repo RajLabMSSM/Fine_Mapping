@@ -50,6 +50,8 @@ library(dplyr)
 library(ggplot2)
 library(plotly)
 library(patchwork) #devtools::install_github("thomasp85/patchwork")
+library(pbmcapply); #devtools::install_github("kvnkuang/pbmcapply", ref = "dev")
+
 # library(cowplot)
 # library(ggrepel)
 # library(curl)

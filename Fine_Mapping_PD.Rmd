@@ -433,8 +433,8 @@ sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019",
 # meta <- catalogueR.list_eQTL_datasets(save_path = F)
 gwas.qtl_paths <- catalogueR.run(
                            sumstats_paths = sumstats_paths,
-                           # loci_names = basename(dirname(sumstats_paths)), 
-                           # qtl_search = "ROSMAP",
+                           loci_names = basename(dirname(dirname(sumstats_paths))),
+                           # qtl_search = c("ROSMAP","BrainSeq"),
                            qtl_search =c("ROSMAP","Alasoo_2018","Fairfax_2014",
                                          "Nedelec_2016","BLUEPRINT","HipSci.iPSC",
                                          "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018",
@@ -447,7 +447,8 @@ gwas.qtl_paths <- catalogueR.run(
                            # use_tabix = F,
                            force_new_subset = F,
                            # output_path = "./Data/GWAS/Nalls23andMe_2019/_genome_wide/eQTL_catalogue"
-                           output_path = "/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019"
+                           output_path = "/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019", 
+                           progress_bar = T
                            )
 # Use saved
 # qtl.dat <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide/eQTL_catalogue",
@@ -466,8 +467,9 @@ no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
 gwas_data <- subset(gwas_data, !(Locus %in% no_no_loci))
 
 
-qtl.dat <- rbind.file.list(file.list=gwas.qtl_paths, nCores = 4 )  
-coloc_qtls <- catalogueR.run_coloc(qtl.dat = qtl.dat,
+# qtl.dat <- rbind.file.list(file.list=gwas.qtl_paths, nCores = 4 )   
+
+coloc_qtls <- catalogueR.run_coloc(qtl.paths = gwas.qtl_paths,
                                    gwas_data = gwas_data) 
 
 
