@@ -43,7 +43,11 @@ source("echolocatoR/R/MAIN.R")
 #                                        "bitarray","networkx","rpy2","tabix"), 
 #                           python_version = 3.7,
 #                           conda="/opt/anaconda3/condabin/conda")
-reticulate::use_condaenv("echoR", conda="/opt/anaconda3/condabin/conda")
+if(startsWith(getwd(),"/sc/")){
+  reticulate::use_condaenv("echoR")
+} else {
+  reticulate::use_condaenv("echoR", conda="/opt/anaconda3/condabin/conda")
+}
 # setwd("~/Desktop/Fine_Mapping")
 # MINERVA PATHS TO SUMMARY STATISTICS DATASETS:
 # Data_dirs <- read.csv("./Data/directories_table.csv")
@@ -425,7 +429,11 @@ gg_locus_summary /
 #### Gather QTL data
 
 ```{r}
-source("~/Desktop/catalogueR/functions/catalogueR.R")
+if(startsWith(getwd(),"/sc/")){
+  source("/sc/orga/projects/pd-omics/brian/catalogueR/functions/catalogueR.R")
+} else {
+  source("~/Desktop/catalogueR/functions/catalogueR.R")
+}
 # Query
 sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019",
                              pattern = "*Multi-finemap_results.txt|*Multi-finemap.tsv.gz",
@@ -439,16 +447,16 @@ gwas.qtl_paths <- catalogueR.run(
                                          "Nedelec_2016","BLUEPRINT","HipSci.iPSC",
                                          "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018",
                                          "blood","brain"),
-                           nThread = 4,
+                           nThread = 10,
                            multithread_qtl = F,
                            multithread_loci = T, 
                            split_files = T,
-                           merge_with_gwas = F,
+                           merge_with_gwas = T,
                            # use_tabix = F,
                            force_new_subset = F,
-                           # output_path = "./Data/GWAS/Nalls23andMe_2019/_genome_wide/eQTL_catalogue"
-                           output_path = "/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019", 
-                           progress_bar = T
+                           # output_path = "/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019", 
+                           output_path = "../eQTL_catalogue/Nalls23andMe_2019",
+                           progress_bar = F
                            )
 # Use saved
 # qtl.dat <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide/eQTL_catalogue",
