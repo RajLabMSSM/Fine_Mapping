@@ -438,6 +438,9 @@ if(startsWith(getwd(),"/sc/")){
 sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019",
                              pattern = "*Multi-finemap_results.txt|*Multi-finemap.tsv.gz",
                              recursive = T, full.names = T)
+problem_children <- c("ASXL3","DNAH17","LMNB1","LRRK2","MEX3C","RIT2","WNT3") 
+ 
+
 # meta <- catalogueR.list_eQTL_datasets(save_path = F)
 gwas.qtl_paths <- catalogueR.run(
                            sumstats_paths = sumstats_paths,
@@ -447,20 +450,19 @@ gwas.qtl_paths <- catalogueR.run(
                                          "Nedelec_2016","BLUEPRINT","HipSci.iPSC",
                                          "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018",
                                          "blood","brain"),
-                           nThread = 10,
+                           nThread = 4,
                            multithread_qtl = F,
-                           multithread_loci = T, 
+                           multithread_loci = F, 
                            split_files = T,
                            merge_with_gwas = T,
                            # use_tabix = F,
                            force_new_subset = F,
-                           # output_path = "/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019", 
-                           output_path = "../eQTL_catalogue/Nalls23andMe_2019",
+                           output_path = "/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019",
+                           # output_path = "../eQTL_catalogue/Nalls23andMe_2019",
                            progress_bar = F
                            )
 # Use saved
-# qtl.dat <- data.table::fread(file.path("./Data/GWAS/Nalls23andMe_2019/_genome_wide/eQTL_catalogue",
-#                                        "Nalls23andMe_2019.eQTL_Catalogue.tsv.gz"),  nThread = 4)
+gwas.qtl_paths <- list.files("/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019/",recursive = T, full.names = T)
 gwas_data <- merge_finemapping_results(minimum_support=0,
                                       include_leadSNPs=T,
                                       dataset = "./Data/GWAS/Nalls23andMe_2019",
@@ -474,11 +476,8 @@ gwas_data <- gwas_data %>% dplyr::rename(Locus=Gene)
 no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
 gwas_data <- subset(gwas_data, !(Locus %in% no_no_loci))
 
-
-# qtl.dat <- rbind.file.list(file.list=gwas.qtl_paths, nCores = 4 )   
-
-coloc_qtls <- catalogueR.run_coloc(qtl.paths = gwas.qtl_paths,
-                                   gwas_data = gwas_data) 
+ 
+coloc_qtls <- catalogueR.run_coloc(gwas.qtl_paths = gwas.qtl_paths) 
 
 
 minPP4 <- .5
