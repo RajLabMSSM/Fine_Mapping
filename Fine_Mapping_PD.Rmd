@@ -440,7 +440,7 @@ problem_children <- c("ASXL3","DNAH17","LMNB1","LRRK2","MEX3C","RIT2","WNT3")
 no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
  
 
-sumstats_paths <- sumstats_paths[startsWith(basename(dirname(dirname(sumstats_paths))), "LRRK2")] 
+# sumstats_paths <- sumstats_paths[startsWith(basename(dirname(dirname(sumstats_paths))), "LRRK2")] 
 # meta <- catalogueR.list_eQTL_datasets(save_path = F)
 gwas.qtl_paths <- catalogueR.run(
                            sumstats_paths = sumstats_paths,
