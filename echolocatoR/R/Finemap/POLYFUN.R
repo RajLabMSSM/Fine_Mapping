@@ -349,9 +349,11 @@ POLYFUN.download_ref_files <- function(alkes_url="https://data.broadinstitute.or
 
 POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
                                     PF.output.path,
-                                    munged.path,
-                                    min_INFO = 0.6,
-                                    min_MAF = 0.05,
+                                    munged.path, 
+                                    dataset=NULL,#"Nalls23andMe_2019",
+                                    sample.size = NULL,
+                                    min_INFO = 0,
+                                    min_MAF = 0.001,
                                     annotations.path=file.path(polyfun,"example_data/annotations."),
                                     weights.path=file.path(polyfun,"example_data/weights."),
                                     prefix="PD_GWAS",
@@ -386,10 +388,10 @@ POLYFUN.compute_priors <- function(polyfun="./echolocatoR/tools/polyfun",
   printer("PolyFun:: [1]  Create a munged summary statistics file in a PolyFun-friendly parquet format.")
   munged.path <- POLYFUN.munge_summ_stats(polyfun=polyfun,
                                            python = python,
-                                           dataset="Nalls23andMe_2019",
-                                           sample.size=1474097,
-                                           min_INFO = 0,
-                                           min_MAF = 0.001,
+                                           dataset=dataset,
+                                           sample.size=sample.size,
+                                           min_INFO = min_INFO,
+                                           min_MAF = min_MAF,
                                            server = server)
 
   # 2.

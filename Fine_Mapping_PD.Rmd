@@ -424,11 +424,9 @@ gg_locus_summary /
 
 ## QTLs
 
-### eQTL_Catalogue  
+### Gather QTL data from eQTL Catalogue
 
-#### Gather QTL data
-
-```{r}
+```{r Gather QTL data from eQTL Catalogue}
 if(startsWith(getwd(),"/sc/")){
   source("/sc/orga/projects/pd-omics/brian/catalogueR/functions/catalogueR.R")
 } else {
@@ -439,62 +437,73 @@ sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019",
                              pattern = "*Multi-finemap_results.txt|*Multi-finemap.tsv.gz",
                              recursive = T, full.names = T)
 problem_children <- c("ASXL3","DNAH17","LMNB1","LRRK2","MEX3C","RIT2","WNT3") 
+no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
  
 
+sumstats_paths <- sumstats_paths[startsWith(basename(dirname(dirname(sumstats_paths))), "LRRK2")] 
 # meta <- catalogueR.list_eQTL_datasets(save_path = F)
 gwas.qtl_paths <- catalogueR.run(
                            sumstats_paths = sumstats_paths,
                            loci_names = basename(dirname(dirname(sumstats_paths))),
-                           # qtl_search = c("ROSMAP","BrainSeq"),
-                           qtl_search =c("ROSMAP","Alasoo_2018","Fairfax_2014",
-                                         "Nedelec_2016","BLUEPRINT","HipSci.iPSC",
-                                         "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018",
-                                         "blood","brain"),
-                           nThread = 4,
+                           qtl_search = c("ROSMAP","BrainSeq"),
+                           # qtl_search =c("ROSMAP","Alasoo_2018","Fairfax_2014",
+                           #               "Nedelec_2016","BLUEPRINT","HipSci.iPSC",
+                           #               "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018",
+                           #               "blood","brain"),
+                           nThread = 1,
                            multithread_qtl = F,
                            multithread_loci = F, 
                            split_files = T,
                            merge_with_gwas = T,
                            # use_tabix = F,
-                           force_new_subset = F,
-                           output_path = "/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019",
-                           # output_path = "../eQTL_catalogue/Nalls23andMe_2019",
-                           progress_bar = F
+                           force_new_subset = T,
+                           # output_path = "/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019",
+                           output_path = "../eQTL_catalogue/Nalls23andMe_2019",
+                           progress_bar = F, 
+                           genome_build="hg19"
                            )
-# Use saved
-gwas.qtl_paths <- list.files("/Volumes/Scizor/eQTL_catalogue/Nalls23andMe_2019/",recursive = T, full.names = T)
-gwas_data <- merge_finemapping_results(minimum_support=0,
-                                      include_leadSNPs=T,
-                                      dataset = "./Data/GWAS/Nalls23andMe_2019",
-                                      xlsx_path=F,
-                                      from_storage=T,
-                                      consensus_thresh = 2,
-                                      haploreg_annotation=F,
-                                      biomart_annotation=F, 
-                                      verbose=F)
-gwas_data <- gwas_data %>% dplyr::rename(Locus=Gene) 
-no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
-gwas_data <- subset(gwas_data, !(Locus %in% no_no_loci))
+```
 
- 
-coloc_qtls <- catalogueR.run_coloc(gwas.qtl_paths = gwas.qtl_paths) 
+### Colocalization
 
+```{r Colocalization}
+# COLOC
+# coloc_qtls <- catalogueR.run_coloc(gwas.qtl_paths = gwas.qtl_paths) 
+coloc_qtls <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/_genome_wide/COLOC/eQTL_Catalogue.coloc.tsv.gz")
+coloc_qtls <- subset(coloc_qtls, !Locus.GWAS %in% c(no_no_loci, problem_children))
 
-minPP4 <- .5
-coloc_plot <- subset(coloc_qtls, !is.na(Locus.GWAS)) %>% dplyr::mutate(Colocalized = ifelse(PP.H4>=minPP4,PP.H4,NA))
-# coloc_plot[is.na(coloc_plot),"PP.H4"] <- F
+# PLOT
+# Get colocalized eGenes for each locus-qtl.id comparison 
 
-ggplot(data=coloc_plot, aes(x=Locus.GWAS, y=qtl.id, fill=Colocalized)) + 
+PP_thresh <- .8
+coloc_plot <- subset(coloc_qtls, !is.na(Locus.GWAS)) %>% 
+  dplyr::mutate(PP.H4.thresh = ifelse(PP.H4>=PP_thresh, PP.H4,NA),
+                Colocalized= ifelse((PP.H3 + PP.H4 >= PP_thresh) & (PP.H4/PP.H3 >= 2), PP.H4,NA)) %>%
+  separate(col = qtl.id, into = c("QTL.group","id"), sep = "\\.", remove = F) %>%
+  subset((!is.na(Colocalized)) & (!is.na(PP.H4.thresh))) 
+
+# raster plot 
+gg_coloc <- ggplot(data=coloc_plot, aes(x=Locus.GWAS, y=qtl.id, fill=Colocalized)) + 
   geom_raster() +  
   # scale_fill_continuous(limits=c(minPP4,1)) +
   scale_fill_gradient(na.value = "transparent", low = scales::alpha("blue",.7), high = scales::alpha("red",.7)) +
-  scale_x_discrete(drop=F) +
+  # scale_y_discrete(drop=F) +
   # scale_fill_manual(limits=c(0,1), palette="Spectral") +
-  facet_grid(facets = .~eGene) +
-  theme_classic() 
-  # theme(strip.text.x = element_text(margin =))
+  facet_grid(facets = . ~ Locus.GWAS + eGene, 
+             switch = "y",scales = "free") +
+  theme_bw() +
+  theme(strip.text.x = element_text(angle = 90), 
+        strip.text.y = element_text(angle = 180),
+        strip.placement = "outside",
+        # axis.text.y = element_text(color=test$QTL.group),
+        axis.text.x = element_blank(), 
+        panel.border = element_rect(colour = "transparent"))
+print(gg_coloc)
 
+ggsave("./Data/GWAS/Nalls23andMe_2019/_genome_wide/COLOC/gg_coloc.png",
+       plot=gg_coloc,height = 10, width=30)
 ```
+
 
 #### Check QTL overlap
 

@@ -125,13 +125,17 @@ source("./echolocatoR/R/Plot/ggbio.R")
 source("./echolocatoR/R/Plot/QTL_boxplots.R")
 # Annotate
 source("./echolocatoR/R/Annotate/annotate.R")
-source("./echolocatoR/R/Annotate/GoShifter.R") # ***
+source("./echolocatoR/R/Annotate/summarise.R")
+# source("./echolocatoR/R/Annotate/GoShifter.R") # ***
 source("./echolocatoR/R/Annotate/XGR.R")
 source("./echolocatoR/R/Annotate/psychENCODE.R")
-source("./echolocatoR/R/Annotate/mergeQTL.R")
+# source("./echolocatoR/R/Annotate/mergeQTL.R")
 source("./echolocatoR/R/Annotate/Nott_2019.R")
-source("./echolocatoR/R/Annotate/summarise.R")
 source("./echolocatoR/R/Annotate/macs2.R")
+source("./echolocatoR/R/Annotate/IMPACT.R")
+# source("./echolocatoR/R/Annotate/liftover.R")
+
+
 # eQTL Catalogue
 # source("~/Desktop/catalogueR/functions/catalogueR.R")
 
