@@ -440,19 +440,22 @@ problem_children <- c("ASXL3","DNAH17","LMNB1","LRRK2","MEX3C","RIT2","WNT3")
 no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
  
 
-# sumstats_paths <- sumstats_paths[startsWith(basename(dirname(dirname(sumstats_paths))), "LRRK2")] 
-# meta <- catalogueR.list_eQTL_datasets(save_path = F)
+sumstats_paths <- sumstats_paths[!basename(dirname(dirname(sumstats_paths))) %in% no_no_loci]
+# meta <- catalogueR.list_eQTL_datasets(save_path = F, force_new = T)
 gwas.qtl_paths <- catalogueR.run(
                            sumstats_paths = sumstats_paths,
                            loci_names = basename(dirname(dirname(sumstats_paths))),
-                           qtl_search = c("ROSMAP","BrainSeq"),
+                           # qtl_search = c("ROSMAP","BrainSeq"),
                            # qtl_search =c("ROSMAP","Alasoo_2018","Fairfax_2014",
                            #               "Nedelec_2016","BLUEPRINT","HipSci.iPSC",
                            #               "Lepik_2017","BrainSeq","TwinsUK","Schmiedel_2018",
                            #               "blood","brain"),
-                           nThread = 1,
+                           qtl_search=NULL,
+                           
+                           nThread = 20,
                            multithread_qtl = F,
-                           multithread_loci = F, 
+                           multithread_loci = F,
+                           multithread_tabix = T,
                            split_files = T,
                            merge_with_gwas = T,
                            # use_tabix = F,
