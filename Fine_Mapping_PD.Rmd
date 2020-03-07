@@ -436,7 +436,6 @@ if(startsWith(getwd(),"/sc/")){
 sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019",
                              pattern = "*Multi-finemap_results.txt|*Multi-finemap.tsv.gz",
                              recursive = T, full.names = T)
-problem_children <- c("ASXL3","DNAH17","LMNB1","LRRK2","MEX3C","RIT2","WNT3") 
 no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
  
 
@@ -464,7 +463,7 @@ gwas.qtl_paths <- catalogueR.run(
                            output_path = "../eQTL_catalogue/Nalls23andMe_2019",
                            progress_bar = F, 
                            genome_build="hg19"
-                           )
+                           ) 
 ```
 
 ### Colocalization
@@ -473,38 +472,11 @@ gwas.qtl_paths <- catalogueR.run(
 # COLOC
 # coloc_qtls <- catalogueR.run_coloc(gwas.qtl_paths = gwas.qtl_paths) 
 coloc_qtls <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/_genome_wide/COLOC/eQTL_Catalogue.coloc.tsv.gz")
-coloc_qtls <- subset(coloc_qtls, !Locus.GWAS %in% c(no_no_loci, problem_children))
+coloc_qtls <- subset(coloc_qtls, !Locus.GWAS %in% c(no_no_loci))
 
 # PLOT
 # Get colocalized eGenes for each locus-qtl.id comparison 
 
-PP_thresh <- .8
-coloc_plot <- subset(coloc_qtls, !is.na(Locus.GWAS)) %>% 
-  dplyr::mutate(PP.H4.thresh = ifelse(PP.H4>=PP_thresh, PP.H4,NA),
-                Colocalized= ifelse((PP.H3 + PP.H4 >= PP_thresh) & (PP.H4/PP.H3 >= 2), PP.H4,NA)) %>%
-  separate(col = qtl.id, into = c("QTL.group","id"), sep = "\\.", remove = F) %>%
-  subset((!is.na(Colocalized)) & (!is.na(PP.H4.thresh))) 
-
-# raster plot 
-gg_coloc <- ggplot(data=coloc_plot, aes(x=Locus.GWAS, y=qtl.id, fill=Colocalized)) + 
-  geom_raster() +  
-  # scale_fill_continuous(limits=c(minPP4,1)) +
-  scale_fill_gradient(na.value = "transparent", low = scales::alpha("blue",.7), high = scales::alpha("red",.7)) +
-  # scale_y_discrete(drop=F) +
-  # scale_fill_manual(limits=c(0,1), palette="Spectral") +
-  facet_grid(facets = . ~ Locus.GWAS + eGene, 
-             switch = "y",scales = "free") +
-  theme_bw() +
-  theme(strip.text.x = element_text(angle = 90), 
-        strip.text.y = element_text(angle = 180),
-        strip.placement = "outside",
-        # axis.text.y = element_text(color=test$QTL.group),
-        axis.text.x = element_blank(), 
-        panel.border = element_rect(colour = "transparent"))
-print(gg_coloc)
-
-ggsave("./Data/GWAS/Nalls23andMe_2019/_genome_wide/COLOC/gg_coloc.png",
-       plot=gg_coloc,height = 10, width=30)
 ```
 
 
