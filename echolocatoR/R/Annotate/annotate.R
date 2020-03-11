@@ -45,6 +45,8 @@ merge_finemapping_results <- function(minimum_support=0,
                                         consensus_thresh = consensus_thresh, 
                                         exclude_methods = exclude_methods)
   
+  merged_results <- subset(merged_results, Support>=minimum_support)
+  
   # Loop through each DATASET
   # merged_results <- lapply(unique(finemap_results$Dataset), function(dname, include_leadSNPs.=include_leadSNPs){ 
   #   multi_finemap_DT <- subset(finemap_results, Dataset==dname) 

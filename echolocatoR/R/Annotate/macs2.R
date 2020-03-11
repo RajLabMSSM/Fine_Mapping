@@ -7,7 +7,10 @@
 ## Conda source: https://anaconda.org/bioconda/macs2
 
 MACS2.download_full_bigwig <- function(bigWig.paths='Nott_2019',
-                                       output.path = "/Volumes/Scizor/Nott_2019/"){
+                                       output.path = "/Volumes/Scizor/Nott_2019/",
+                                       nThreads=4,
+                                       force_overwrite = F){
+  dir.create(output.path, showWarnings = F, recursive = T)
   if(all(bigWig.paths=='Nott_2019')){
     bigWig.meta <- readxl::read_excel("./echolocatoR/annotations/Nott_2019/Nott_2019.snEpigenomics.xlsx")
     biWig.links <- bigWig.meta$data_link
@@ -16,11 +19,13 @@ MACS2.download_full_bigwig <- function(bigWig.paths='Nott_2019',
   bigWig.paths <- lapply(biWig.links, function(URL){
     printer("MACS2:: Downloading", basename(URL))
     out.path <- axel(input.url = URL, output.path = "/Volumes/Scizor/Nott_2019/",
-                     background = F, force_overwrite = F)
+                     background = F, force_overwrite = force_overwrite, 
+                     nThreads = nThreads)
     return(out.path)
   }) %>% unlist()
     return(bigWig.paths)
 }
+bigWig.paths <- MACS2.download_full_bigwig(output.path = "/Volumes/")
 
 
 MACS2.bigwig_to_bedgraph <- function(bigWig.paths,
