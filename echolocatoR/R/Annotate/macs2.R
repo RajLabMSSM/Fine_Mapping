@@ -18,14 +18,14 @@ MACS2.download_full_bigwig <- function(bigWig.paths='Nott_2019',
 
   bigWig.paths <- lapply(biWig.links, function(URL){
     printer("MACS2:: Downloading", basename(URL))
-    out.path <- axel(input.url = URL, output.path = "/Volumes/Scizor/Nott_2019/",
+    out.path <- axel(input.url = URL, output.path = output.path,
                      background = F, force_overwrite = force_overwrite, 
                      nThreads = nThreads)
     return(out.path)
   }) %>% unlist()
     return(bigWig.paths)
 }
-bigWig.paths <- MACS2.download_full_bigwig(output.path = "/Volumes/")
+# bigWig.paths <- MACS2.download_full_bigwig(output.path = "../Nott_2019")
 
 
 MACS2.bigwig_to_bedgraph <- function(bigWig.paths,
