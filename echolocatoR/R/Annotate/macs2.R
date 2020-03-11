@@ -26,7 +26,7 @@ MACS2.download_full_bigwig <- function(bigWig.paths='Nott_2019',
     return(bigWig.paths)
 }
 # bigWig.paths <- MACS2.download_full_bigwig(output.path = "../Nott_2019")
-
+# bigWig.paths <- list.files("/pd-omics/brian/Nott_2019", full.names = T)
 
 MACS2.bigwig_to_bedgraph <- function(bigWig.paths,
                                      converter_path="./echolocatoR/tools/UCSC_utilities",
@@ -61,6 +61,7 @@ MACS2.bigwig_to_bedgraph <- function(bigWig.paths,
 }
 # bedGraph.paths <- MACS2.bigwig_to_bedgraph(bigWig.paths)
 
+
 MACS2.call_peaks <- function(bedGraph.paths,
                              broad_peaks=F,
                              out.dir=NULL){
@@ -68,8 +69,8 @@ MACS2.call_peaks <- function(bedGraph.paths,
   # reticulate::conda_install(envname = "echolocatoR",
   #                           conda =  "/opt/anaconda3/bin/conda",
   #                           packages = c("MACS2"))
-  reticulate::use_condaenv(condaenv = "echolocatoR",
-                           conda =  "/opt/anaconda3/bin/conda")
+  # reticulate::use_condaenv(condaenv = "echolocatoR",
+  #                          conda =  "/opt/anaconda3/bin/conda")
 
   # Set up output dir
   if(is.null(out.dir)){
