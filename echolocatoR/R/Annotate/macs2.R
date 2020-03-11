@@ -29,11 +29,17 @@ MACS2.download_full_bigwig <- function(bigWig.paths='Nott_2019',
 
 
 MACS2.bigwig_to_bedgraph <- function(bigWig.paths,
-                                         destfile="./echolocatoR/tools/UCSC_utilities/bigWigToBedGraph.dms"){
+                                     converter_path="./echolocatoR/tools/UCSC_utilities",
+                                     force_new_download=F,
+                                     OS="MAC"){
   # Download executable
-  if(!file.exists(destfile)){
-    download.file("http://hgdownload.soe.ucsc.edu/admin/exe/macOSX.x86_64/bigWigToBedGraph",
-                  destfile = destfile)
+  destfile <- file.path(converter_path,OS,"bigWigToBedGraph.dms")
+  
+  if(!file.exists(destfile) | force_new_download){ 
+      download.file("http://hgdownload.soe.ucsc.edu/admin/exe/macOSX.x86_64/bigWigToBedGraph",
+                    destfile = destfile)
+    }
+   
     # Change permissions
     system(paste("chmod u+x",destfile))
   }
@@ -55,6 +61,7 @@ MACS2.bigwig_to_bedgraph <- function(bigWig.paths,
   printer("MACS2:: Returning",length(bedGraph.paths),"bedGraph paths.")
   return(bedGraph.paths)
 }
+# bedGraph.paths <- MACS2.bigwig_to_bedgraph(bigWig.paths)
 
 MACS2.call_peaks <- function(bedGraph.paths,
                              broad_peaks=F,
