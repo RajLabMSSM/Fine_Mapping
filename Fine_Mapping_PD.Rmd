@@ -424,9 +424,9 @@ gg_locus_summary /
 
 ## QTLs
 
-### Gather QTL data from eQTL Catalogue
+### catalogueR / eQTL Catalogue
 
-```{r Gather QTL data from eQTL Catalogue}
+```{r catalogueR / eQTL Catalogue}
 if(startsWith(getwd(),"/sc/")){
   source("/sc/orga/projects/pd-omics/brian/catalogueR/functions/catalogueR.R")
 } else {
@@ -466,46 +466,57 @@ gwas.qtl_paths <- catalogueR.run(
                            ) 
 ```
 
-### Colocalization
+#### top QTLs
 
-```{r Colocalization}
-# COLOC
-# coloc_qtls <- catalogueR.run_coloc(gwas.qtl_paths = gwas.qtl_paths) 
-coloc_qtls <- data.table::fread("./Data/GWAS/Nalls23andMe_2019/_genome_wide/COLOC/eQTL_Catalogue.coloc.tsv.gz")
-coloc_qtls <- subset(coloc_qtls, !Locus.GWAS %in% c(no_no_loci))
+```{r top QTLs, fig.height=7, fig.width=5}
+qtl_root <- "./Data/GWAS/Nalls23andMe_2019/_genome_wide/eQTL_Catalogue"
+
+# Gather top eVariants per QTL.ID per locus
+# topQTL <- catalogueR.gather_top_eVariants(root_dir="/pd-omics/brian/eQTL_catalogue/Nalls23andMe_2019", 
+#                                             save_path=file.path(qtl_root, "eQTL_catalogue_topHits.tsv.gz"),
+#                                             nThread=4)
+
+# Or just read in preprocessed file
+topQTL <- data.table::fread(file.path(qtl_root,"eQTL_catalogue_topHits.tsv.gz"))
+
+# Merge with fine-mapping results and filter by SNP groups ()
+## Also filter by QTL p-value 
+topQTL_sub <- catalogueR.top_eVariants_overlap(topQTL, 
+                                             gwas_dataset="./Data/GWAS/Nalls23andMe_2019",
+                                             gwas_min_support=1,
+                                             qtl_pvalue_thresh=NULL)
+# Construct the names of files in the topQTL ddf
+topQTL_files <- catalogueR.top_files(topQTL = topQTL_sub, root_dir = root_dir)
+# PLot heatmap with SNP group annotations
+## THis plot is kind of unncessary now that the labels are integrated into the coloc plots
+topQTL_plot <- catalogueR.plot_top_eVariants_overlap(topQTL_sub,
+                                                     qtl_pvalue_thresh=NULL,
+                                                     save_path=F)  
+```
+
+
+
+#### Colocalization
+
+```{r Colocalization, fig.height=5, fig.width=10}
+coloc_root <- "./Data/GWAS/Nalls23andMe_2019/_genome_wide/COLOC"
+# Run COLOC
+# coloc_QTLs <- catalogueR.run_coloc(gwas.qtl_paths = file.path("/pd-omics/brian/eQTL_catalogue/Nalls23andMe_2019/",topQTL_files),
+# save_path=file.path(coloc_root,"coloc.eQTL_Catalogue_topQTL.tsv.gz"),
+#                                  nThread=3)
+coloc_QTLs <- data.table::fread(file.path(coloc_root,"coloc.eQTL_Catalogue_topQTL.tsv.gz")) 
 
 # PLOT
-# Get colocalized eGenes for each locus-qtl.id comparison 
-
+# PLot colocalized eGenes for each locus-qtl.id comparison 
+coloc_plot_df <- catalogueR.plot_coloc_summary(coloc_QTLs, 
+                                               topQTL,
+                                               PP_thresh = .8,
+                                               save_path=file.path(coloc_root,
+                                                                   "coloc_topQTL.png"))
 ```
 
 
-#### Check QTL overlap
 
-```{r}
-gwas.qtl <- catalogueR.merge_gwas_qtl(gwas_data = merged_DT,
-                                      qtl.subset = qtl.dat) 
-qtl.sig <-  subset(gwas.qtl, pvalue.QTL<.05 & (Consensus_SNP|leadSNP) ) 
- 
-
-ggplot(data=qtl.sig, aes(x=SNP, y=qtl.id, fill=-log10(pvalue.QTL))) +   
-  geom_raster() + 
-  # geom_point(data=subset(top.snps_melt, leadQTL), shape="*", color="cyan", size=5) +
-  facet_grid(facets = .~gene.QTL + Locus, scales = "free_x") +
-  theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_continuous(low="thistle2", high="darkred", 
-                       guide="colorbar",na.value="transparent") 
-
-# QTL pvalue distribution plots
-ggplot(data=gwas.qtl, aes(x=POS, y=-log10(pvalue.QTL), color=-log10(pvalue.QTL))) + 
-  geom_point(size=.1) +
-  geom_hline(yintercept = -log10(5e-8), show.legend = F, alpha=.5, size=.1) +
-  facet_grid(facets = Locus + qtl.id ~ gene.QTL, 
-             scales = "free") +
-   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-         strip.text.y = element_text(angle = 0, margin = margin(0, 0, 0, 0, "cm")))  
-```
 
 
 ### Manually gathered QTL data
