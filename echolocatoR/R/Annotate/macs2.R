@@ -37,9 +37,7 @@ MACS2.bigwig_to_bedgraph <- function(bigWig.paths,
   
   if(!file.exists(destfile) | force_new_download){ 
       download.file("http://hgdownload.soe.ucsc.edu/admin/exe/macOSX.x86_64/bigWigToBedGraph",
-                    destfile = destfile)
-    }
-   
+                    destfile = destfile) 
     # Change permissions
     system(paste("chmod u+x",destfile))
   }
