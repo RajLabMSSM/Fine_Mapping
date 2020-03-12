@@ -120,7 +120,7 @@ SNP_track <- function(gr.snp,
     ggrepel::geom_label_repel(data=label_tags,
                      aes(label=SNP),
                      color=NA,
-                     nudge_x = .5,
+                     # nudge_x = .5,
                      fill="black",
                      box.padding = .25,
                      label.padding = .25,
@@ -134,7 +134,7 @@ SNP_track <- function(gr.snp,
                      aes(label=SNP),
                      color=label_tags$color,
                      segment.alpha = .5,
-                     nudge_x = .5,
+                     # nudge_x = .5,
                      box.padding = .25,
                      label.padding = .25,
                      segment.size = 1,
@@ -260,7 +260,7 @@ save_annotations <- function(gr, anno_path, libName){
 
 GGBIO.plot <- function(finemap_DT,
                        LD_matrix,
-                       gene,
+                       gene=NULL,
                        results_path,
                        method_list=c("SUSIE","FINEMAP","PAINTOR",
                                      "PAINTOR_Fairfax"),
@@ -513,7 +513,7 @@ GGBIO.plot <- function(finemap_DT,
   n_roadmap <- ifelse(ROADMAP,1,0)
   n_Nott <- ifelse(Nott_sn_epigenome,2,0)
   heights <- c(rep(.10,length(method_list)+2), # Fine-mapping tracks + GWAS and meanPP
-               c(.33,.33),# Nott data
+               if(Nott_sn_epigenome){c(.33,.33)}else{NULL},# Nott data
                rep(1,length(XGR_libnames)+n_roadmap))
   params_list <- list(title = paste0(gene," locus [",length(seqnames(gr.snp))," SNPs]"),
                       track.bg.color = "transparent",
