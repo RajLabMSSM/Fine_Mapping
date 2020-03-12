@@ -36,7 +36,7 @@ editor_options:
 # knitr::opts_chunk$set(error = T) # Knit even with errors
 # devtools::install_local("echolocatoR/", force = T)
 # library("echolocatoR")
-source("echolocatoR/R/MAIN.R")  
+source("echolocatoR/R/MAIN.R")
 # reticulate::conda_install(envname = "echoR",
 #                           packages = c("tqdm","scipy","scikit-learn",
 #                                        "requests","pandas","pyarrow","fastparquet",
