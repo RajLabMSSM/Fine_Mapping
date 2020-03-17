@@ -806,7 +806,7 @@ POLYFUN.functional_enrichment <- function(finemap_DT,
   # "...functional enrichment of fine-mapped common SNPs in the PIP range,
   ## defined as the proportion of common SNPs in the PIP range lying in the annotation
   ## divided by the proportion of genome-wide common SNPs lying in the annotation"
-  base_url <- "/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB"
+  base_url <- "/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB"
   chrom <- finemap_DT$CHR[1]
   annot.file <- list.files(base_url, pattern = paste0(".UKB.",chrom,".annot.parquet"), full.names = T)
 
@@ -884,7 +884,11 @@ POLYFUN.h2_enrichment <- function(h2_df,
   }
   return(h2.enrichment)
 }
-
+# POLYFUN.h2_enrichment <- function(h2_df, 
+#                                   target_SNPs=NULL){
+#   h2.target <- subset(h2_df, SNP %in% unique(target_SNPs))
+#   data.table:::merge.data.table(subset(finemap_DT))
+# }
 
 POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT,
                                             chrom="*",
@@ -895,71 +899,88 @@ POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT,
                                             out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output"){
   # Quickstart
   # finemap_DT=quick_finemap(); chrom="*"; ldsc_suffix="*.snpvar_constrained.gz"; subtitle="";show_plot=T; save_plot="./h2_enrichment.png"; out.path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/PolyFun/output"; conda_path="/hpc/packages/minerva-centos7/anaconda3/2018.12"; polyfun_annots="/sc/orga/projects/pd-omics/tools/polyfun/annotations/baselineLF2.2.UKB"
-  # finemap_DT <- merge_finemapping_results(minimum_support = 0)
+  # merged_DT <- merge_finemapping_results(dataset = "Data/GWAS/Nalls23andMe_2019/", 
+  #                                        minimum_support = 0, xlsx_path = F)
   # Gather your heritability
   ldsc.files <- list.files(out.path, pattern = ldsc_suffix, full.names = T) %>%
     grep(pattern = paste0(".",chrom,"."), value = T)
-  h2_df <- rbind.file.list(ldsc.files)
+  h2_DF <- rbind.file.list(ldsc.files)
   # Subset to only common snps: h2 vs. finemap files
   # common.snps <- intersect(h2_df$SNP, finemap_DT$SNP)
   # h2_sub <- subset(h2_df, SNP %in% common.snps)
   # finemap_DT <- subset(finemap_DT, SNP %in% common.snps)
-
-
-  GWAS.all <- POLYFUN.h2_enrichment(h2_df=h2_df,
-                                        target_SNPs=finemap_DT$SNP )
-  # GWAS nominally sig hits
-  GWAS.nom.sig <- POLYFUN.h2_enrichment(h2_df=h2_df,
-                                        target_SNPs=subset(finemap_DT, P<.05)$SNP )
-  # GWAS sig hits
-  GWAS.sig <- POLYFUN.h2_enrichment(h2_df=h2_df,
-                                    target_SNPs=subset(finemap_DT, P<5e-8)$SNP)
-  # Credible Set
-  Finemap.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
-                                           target_SNPs = subset(finemap_DT, Support>0)$SNP)
-  # # PAINTOR CS
-  # PAINTOR.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
-  #                                          target_SNPs = subset(finemap_DT, PAINTOR.Credible_Set>0)$SNP)
-  ABF.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
-                                           target_SNPs = subset(finemap_DT, ABF.Credible_Set>0)$SNP)
-
-  FINEMAP.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
-                                           target_SNPs = subset(finemap_DT, FINEMAP.Credible_Set>0)$SNP)
-
-  SUSIE.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
+  RES <-parallel::mclapply(unique(merged_DT$Gene), function(gene){
+    print(gene)
+    finemap_DT <- subset(merged_DT, Gene==gene)
+    h2_df <- subset(h2_DF, SNP %in% unique(finemap_DT$SNP))
+    # h2_df <- subset(h2_DF, CHR==finemap_DT$CHR[1] & 
+    #                   BP >= min(finemap_DT$POS) &  
+    #                   BP <= max(finemap_DT$POS))
+    
+    
+    GWAS.all <- POLYFUN.h2_enrichment(h2_df=h2_df,
+                                      target_SNPs=finemap_DT$SNP )
+    # GWAS nominally sig hits
+    GWAS.nom.sig <- POLYFUN.h2_enrichment(h2_df=h2_df,
+                                          target_SNPs=subset(finemap_DT, P<.05)$SNP )
+    # GWAS sig hits
+    GWAS.sig <- POLYFUN.h2_enrichment(h2_df=h2_df,
+                                      target_SNPs=subset(finemap_DT, P<5e-8)$SNP)
+    # Credible Set
+    UCS <- POLYFUN.h2_enrichment(h2_df=h2_df,
+                                             target_SNPs = subset(finemap_DT, Support>0)$SNP)
+    # # PAINTOR CS
+    # PAINTOR.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
+    #                                          target_SNPs = subset(finemap_DT, PAINTOR.Credible_Set>0)$SNP)
+    ABF.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
+                                         target_SNPs = subset(finemap_DT, ABF.Credible_Set>0)$SNP)
+    
+    FINEMAP.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
+                                             target_SNPs = subset(finemap_DT, FINEMAP.Credible_Set>0)$SNP)
+    
+    SUSIE.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
                                            target_SNPs = subset(finemap_DT, SUSIE.Credible_Set>0)$SNP)
+    
+    POLYFUN_SUSIE.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
+                                                   target_SNPs = subset(finemap_DT, POLYFUN_SUSIE.Credible_Set>0)$SNP)
+    
+    # Consenus SNP
+    Finemap.consensus <- POLYFUN.h2_enrichment(h2_df=h2_df,
+                                               target_SNPs = subset(finemap_DT, Consensus_SNP)$SNP)
+    
+    res <- data.frame(SNP.Group=c("All",
+                                  "GWAS_nom. sig.",
+                                  "GWAS_sig.",
+                                  "ABF_Credible Set",
+                                  "SUSIE_Credible Set",
+                                  "POLYFUN_SUSIE_Credible Set",
+                                  "FINEMAP_Credible Set",
+                                  "Union Credible Set",
+                                  "Consensus SNPs"),
+                      h2.enrichment=c(GWAS.all,
+                                      GWAS.nom.sig,
+                                      GWAS.sig,
+                                      ABF.credset,
+                                      SUSIE.credset,
+                                      POLYFUN_SUSIE.credset,
+                                      FINEMAP.credset,
+                                      UCS,
+                                      Finemap.consensus))
+    res <- cbind(Locus=gene, res)
+    return(res)
+  }, mc.cores = 4) %>% data.table::rbindlist(fill = T)
 
-  POLYFUN_SUSIE.credset <- POLYFUN.h2_enrichment(h2_df=h2_df,
-                                         target_SNPs = subset(finemap_DT, POLYFUN_SUSIE.Credible_Set>0)$SNP)
-
-  # Consenus SNP
-  Finemap.consensus <- POLYFUN.h2_enrichment(h2_df=h2_df,
-                                             target_SNPs = subset(finemap_DT, Support>1)$SNP)
-
-  res <- data.frame(SNP.Group=c("All",
-                                "GWAS_nom. sig.",
-                                "GWAS_sig.",
-                                "ABF_Credible Set",
-                                "SUSIE_Credible Set",
-                                "POLYFUN_SUSIE_Credible Set",
-                                "FINEMAP_Credible Set",
-                                "Fine-mapped_Union Credible Set",
-                                "Fine-mapped_Consensus"),
-                    h2.enrichment=c(GWAS.all,
-                                    GWAS.nom.sig,
-                                    GWAS.sig,
-                                    ABF.credset,
-                                    SUSIE.credset,
-                                    POLYFUN_SUSIE.credset,
-                                    FINEMAP.credset,
-                                    Finemap.credset,
-                                    Finemap.consensus))
+  
 
   if(show_plot){
-    res$SNP.Group <- factor(gsub("_","\n",res$SNP.Group),
-                            levels = unique(gsub("_","\n",res$SNP.Group)))
-    gp <- ggplot(data = res, aes(x=SNP.Group, y=h2.enrichment, fill= SNP.Group)) +
-      geom_col(show.legend = F) +
+    RES$SNP.Group <- factor(gsub("_","\n",RES$SNP.Group),
+                            levels = unique(gsub("_","\n",RES$SNP.Group)))
+    gp <- ggplot(data = subset(RES, h2.enrichment<20), 
+                 aes(x=SNP.Group, y=h2.enrichment, fill= SNP.Group)) +
+      # geom_col(show.legend = F) +
+      geom_boxplot(show.legend = F) +
+      geom_violin(show.legend = F) + 
+      geom_point(show.legend = F, alpha=.2) +
       labs(title="PolyFun Heritability Enrichment",
            subtitle=subtitle,
            x="SNP Group") + theme_bw()
@@ -970,6 +991,11 @@ POLYFUN.h2_enrichment_SNPgroups <- function(finemap_DT,
   }
   return(res)
 }
+
+
+
+
+
 # merged_results <- merge_finemapping_results(minimum_support=0,
 #                                             include_leadSNPs=T)
 # merged_results <- readxl::read_excel("./Data/annotated_finemapping_results.xlsx")

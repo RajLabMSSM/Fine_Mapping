@@ -72,11 +72,10 @@ TABIX.convert_file <- function(fullSS_path="./Data/GWAS/Nalls23andMe_2019/nallsE
 TABIX.query <- function(fullSS.gz,
                         chr,
                         start_pos,
-                        end_pos,
-                        subset_path){
+                        end_pos){
   coords <- paste0(chr,":",start_pos,"-",end_pos)
   # cmd4 <- paste("tabix -h",fullSS.gz,coords,">",subset_path)
-  printer("TABIX:: Extracting subset of sum stats ==>",subset_path)
+  printer("TABIX:: Extracting subset of sum stats")
   dat <- data.table::fread(cmd=paste("tabix -h",fullSS.gz,coords))
   printer("++ Returning",paste(dim(dat),collapse=" x "),"data.table")
   return(dat)
@@ -105,8 +104,7 @@ TABIX <- function(fullSS_path,
   dat <- TABIX.query(fullSS.gz,
                       chr=chrom,
                       start_pos=min_POS,
-                      end_pos=max_POS,
-                      subset_path=subset_path)
+                      end_pos=max_POS)
   colnames(dat) <- colnames(data.table::fread(header.path))
   printer("++ Saving query ==>", subset_path)
   head(dat)

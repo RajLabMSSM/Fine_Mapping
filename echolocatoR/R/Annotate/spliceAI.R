@@ -3,11 +3,38 @@
 
 # &&&&&&&&&&&&&&&&&& SPLICEAI &&&&&&&&&&&&&&&&&&&&
 # GitHub: https://github.com/Illumina/SpliceAI
-#
-# quick_finemap()
-# dat <- subset_DT
 
-dataframe_2_vcf <- function(dat, 
+#####------ baseSpaceCLI instructions ------- #####
+# To download large files from basepace, you can either:
+  # 1) use the BaseSpace Download on your local computer (extremely slow and unreliable).
+  # 2) Use the basespace command line interface (CLI): 
+    # Full Documentation: https://developer.basespace.illumina.com/docs/content/documentation/cli/cli-overview
+      # basespaceCLI is now installed on Minerva. To use it:
+        # 2.0) Request a bunch of cores (to speed up download)
+        
+        # 2.1) load:
+        # ml BaseSpaceCLI 
+        # 2.2) authenticate (use bs alias)
+        # bs auth
+        # 2.3) List your projects (and their IDs)
+        # bs list projects
+        # 2.4) Download entire project (automatically multi-threads)
+        # bs download project --id 66029966  -o spliceai_download/
+
+# Prepare 'genome_scores_v1.3/spliceai_scores.raw.snv.hg19.vcf.gz' file:
+# 1) convert vcf to tsv
+# vk vcf2tsv wide --print-header spliceai_scores.raw.snv.hg19.vcf.gz > spliceai_scores.raw.snv.hg19.tsv
+# 2) split by |
+# awk -F'\t' '{gsub(/[|]/, "\t", $8)} 1' OFS='\t' spliceai_scores.raw.snv.hg19.tsv > splice_split.tsv
+# 3) Remove empty cols
+#  awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$2,$4,$5,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17}' splice_split.tsv | tail -n +2 > tmp
+# 4) Replace header names
+# nano....
+# cat tmp_header.txt tmp > spliceai_scores.raw.snv.hg19_mod.tsv 
+# rm tmp
+
+# quick_finemap()  
+dataframe_2_vcf <- function(subset_DT, 
                             samplename="GWAS",
                             reference_fasta="/pd-omics/tools/polyfun/reference_fasta/hg19.fa.gz",
                             output_vcf="./GWAS_converted.vcf"){
@@ -26,7 +53,7 @@ dataframe_2_vcf <- function(dat,
   
   # STEP 1
   ## Save df as tsv w/ ID,CHROM,POS,AA
-  dat_mod <- dat %>% dplyr::mutate(AA = paste0(A1,A2), CHROM=paste0("chr",CHR)) %>% 
+  dat_mod <- subset_DT %>% dplyr::mutate(AA = paste0(A1,A2), CHROM=paste0("chr",CHR)) %>% 
     dplyr::select(ID=SNP, CHROM, POS, AA)
   data.table::fwrite(x = dat_mod, file="./tmp.tsv",sep = "\t")
   
@@ -48,7 +75,7 @@ dataframe_2_vcf <- function(dat,
   return(output_vcf)
 }
 
-
+ 
 
 
 SPLICEAI.run <- function(vcf_path="./GWAS_converted.vcf",
@@ -79,8 +106,99 @@ SPLICEAI.run <- function(vcf_path="./GWAS_converted.vcf",
                "-D", distance,
                "-M",mask)
   print(cmd)
-  system(cmd)
-  
-  
-  
+  system(cmd)  
 }
+
+
+
+
+SPLICEAI.subset_precomputed_vcf <- function(subset_DT, 
+                                         precomputed_path="/pd-omics/data/spliceAI/whole_genome_filtered_spliceai_scores.vcf.gz",
+                                         subset_vcf="subset.vcf"){
+      chrom = gsub("chr","",subset_DT$CHR[1] )
+      min_POS = min(subset_DT$POS)
+      max_POS = max(subset_DT$POS)
+      
+      cmd <- paste("bcftools query",precomputed_path,
+                   "-i",paste0("'CHROM=\"",chrom,"\" & (POS>=",min_POS," & ", "POS<=",max_POS,")'"),
+                    # "-i'CHROM="10" & (POS>=93821 & POS<=93825)'",
+                    "-f '%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%QUAL\\t%FILTER\\t%INFO\\n'",
+                    "-H",
+                    ">",subset_vcf) # Include header
+      cat(cmd)
+      system(cat(cmd))   
+}
+
+SPLICEAI.subset_precomputed_tsv <- function(subset_DT, 
+                                            precomputed_path="/pd-omics/data/spliceAI/whole_genome_filtered_spliceai_scores.tsv.gz",
+                                            merge_data=T,
+                                            keep_extra_pos=F){
+   
+  # First, convert from vcf to tsv with VCF-kit
+  # vk vcf2tsv wide --print-header whole_genome_filtered_spliceai_scores.vcf.gz > whole_genome_filtered_spliceai_scores.tsv && bgzip whole_genome_filtered_spliceai_scores.tsv
+  # header <- data.table::fread(cmd=paste("gunzip -c",precomputed_path, "| head -1") )
+  header <- c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","SYMBOL","STRAND","TYPE","DIST","DS_AG","DS_AL","DS_DG","DS_DL","DP_AG","DP_AL","DP_DG","DP_DL")
+  dat <- TABIX.query(fullSS.gz = precomputed_path,
+              chr = subset_DT$CHR[1],
+              start_pos = min(subset_DT$POS),
+              end_pos = max(subset_DT$POS)) 
+  colnames(dat) <- header
+  dat <- subset(dat, select=-c(ID,QUAL,FILTER))
+  
+  if(merge_data){
+    dat_merged <- data.table:::merge.data.table(x = subset_DT, 
+                                                y = dat, 
+                                                by.x = c("CHR","POS"), 
+                                                by.y = c("CHROM","POS"), 
+                                                all.x = T, 
+                                                all.y = keep_extra_pos)
+    return(dat_merged)
+  } else {return(dat)} 
+}
+
+
+SPLICEAI.plot <- function(dat_merged){
+  library(patchwork)
+  plt <- 
+  ggplot(dat_merged, aes(x=POS, y=-log10(P), color=-log10(P))) + 
+    geom_point() +  
+    theme_classic() + 
+  ggplot(dat_merged, aes(x=POS, y=DS_AG, color=DS_AG)) +  
+    geom_point() +
+    scale_color_viridis_c() + 
+    theme_classic() + 
+    ggplot(dat_merged, aes(x=POS, y=DS_AL, color=DS_AL))+ 
+    geom_point() + 
+    scale_color_viridis_c() + 
+    theme_classic() +
+    ggplot(dat_merged, aes(x=POS, y=DS_DG, color=DS_DG))+ 
+    geom_point() + 
+    scale_color_viridis_c() + 
+    theme_classic() +
+    ggplot(dat_merged, aes(x=POS, y=DS_DL, color=DS_DL))+ 
+    geom_point() + 
+    scale_color_viridis_c() + 
+    theme_classic() +
+    patchwork::plot_layout(ncol = 1)  
+  print(plt)
+  return(plt)
+  
+  # dat_melt <- data.table::melt.data.table(data = dat_merged, 
+  #                                         measure.vars = c("DS_AG","DS_AL","DS_DG","DS_DL"),
+  #                                         variable.name = "spliceAI_variable",
+  #                                         value.name = "spliceAI_score", 
+  #                                         na.rm = T)
+  ggplot(dat_melt, aes(x=POS, y=spliceAI_variable,   height=spliceAI_score)) +
+    ggridges::geom_ridgeline()
+  
+  ggplot(dat_melt, aes(x=POS, y=-log10(P), color=-log10(P))) + 
+    geom_point() +  
+    theme_classic() + 
+  ggplot(dat_melt, aes(x=POS, y=spliceAI_score, color=spliceAI_score)) +
+    geom_point() +
+    scale_color_viridis_c() + 
+    theme_classic() +
+    facet_grid(facets = spliceAI_variable~. ) +
+  patchwork::plot_layout(ncol = 1)  
+}
+

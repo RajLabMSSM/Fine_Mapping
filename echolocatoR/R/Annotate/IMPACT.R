@@ -3,13 +3,24 @@
 # https://github.com/immunogenomics/IMPACT
 
 
+
+
+
 IMPACT.get_annotations <- function(chrom=NULL, 
-                                subset_DT=NULL,
-                                nThread=4){ 
+                                   subset_DT=NULL,
+                                   nThread=4){ 
+  # These are large files stored via GitHub's large file storage (lfs) 
+  # Install LFS: https://git-lfs.github.com
+  # Getting started with LFS: https://www.atlassian.com/git/tutorials/git-lfs
+  # Download metadata / raw data for specific files with curl:  https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository
+  
   if(!is.null(subset_DT)){
     chrom <- subset_DT$CHR[1]
   }
+  # https://github.com/immunogenomics/IMPACT.git
+  # "curl --header 'https://git-lfs.github.com/spec/v1/projects/13083/repository/files/app%2Fmodels%2Fkey%2Erb/raw?ref=master'"
   baseURL <- "https://github.com/immunogenomics/IMPACT/raw/master/IMPACT707/Annotations"
+ 
   URL <- file.path(baseURL, paste0("IMPACT707_EAS_chr",chrom,".annot.gz"))
   annot <- data.table::fread(URL, nThread = nThread)
   
