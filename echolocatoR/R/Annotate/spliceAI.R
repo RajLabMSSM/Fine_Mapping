@@ -129,41 +129,50 @@ SPLICEAI.subset_precomputed_vcf <- function(subset_DT,
       system(cat(cmd))   
 }
 
+
 SPLICEAI.subset_precomputed_tsv <- function(subset_DT, 
-                                            precomputed_path="/pd-omics/data/spliceAI/spliceai_scores.raw.snv.hg19.tsv.gz",
-                                            # precomputed_path="/pd-omics/data/spliceAI/whole_genome_filtered_spliceai_scores.tsv.gz",
+                                            # precomputed_path="/pd-omics/data/spliceAI/spliceai_scores.raw.snv.hg19.tsv.gz",
+                                            precomputed_path="/pd-omics/data/spliceAI/whole_genome_filtered_spliceai_scores.tsv.gz",
                                             merge_data=T,
-                                            keep_extra_pos=F){
-   
-  # First, convert from vcf to tsv with VCF-kit
-  # vk vcf2tsv wide --print-header whole_genome_filtered_spliceai_scores.vcf.gz > whole_genome_filtered_spliceai_scores.tsv && bgzip whole_genome_filtered_spliceai_scores.tsv
-  # header <- data.table::fread(cmd=paste("gunzip -c",precomputed_path, "| head -1") )
-  # header <- c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","SYMBOL","STRAND","TYPE","DIST","DS_AG","DS_AL","DS_DG","DS_DL","DP_AG","DP_AL","DP_DG","DP_DL")
-  header <- c("CHROM","POS","REF","ALT","MUT","SYMBOL","DS_AG","DS_AL","DS_DG","DS_DL","DP_AG","DP_AL","DP_DG","DP_DL")
-   
+                                            drop_na=T,
+                                            filtered=T){ 
   dat <- TABIX.query(fullSS.gz = precomputed_path,
                       chrom = subset_DT$CHR[1],
                       start_pos = min(subset_DT$POS),
-                      end_pos = max(subset_DT$POS)) 
-  colnames(dat) <- header
-  # dat <- subset(dat, select=-c(ID,QUAL,FILTER))
+                      end_pos = max(subset_DT$POS))  
+  if(filtered){
+    colnames(dat) <- c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","SYMBOL","STRAND","TYPE","DIST","DS_AG","DS_AL","DS_DG","DS_DL","DP_AG","DP_AL","DP_DG","DP_DL")
+    dat <- subset(dat, select=-c(ID,QUAL,FILTER))
+    by.x = c("CHR","POS")
+    by.y = c("CHROM","POS")
+      
+  } else {
+    colnames(dat) <- c("CHROM","POS","REF","ALT","MUT","SYMBOL","DS_AG","DS_AL","DS_DG","DS_DL","DP_AG","DP_AL","DP_DG","DP_DL")
+    by.x = c("CHR","POS","A1")  
+    by.y = c("CHROM","POS","MUT")
+  }
   # summary(dat, na.rm=T)
-  # hist(dat$DS_DG, breaks = 100)
+  # hist(dat$DS_DG, breaks = 100) 
   if(merge_data){
     dat_merged <- data.table:::merge.data.table(x = subset_DT, 
                                                 y = dat, 
-                                                by.x = c("CHR","POS","A1"), 
-                                                by.y = c("CHROM","POS","MUT"), 
-                                                all.x = T, 
-                                                all.y = keep_extra_pos)
+                                                by.x = by.x, 
+                                                by.y = by.y, 
+                                                all.x = !drop_na)
     return(dat_merged)
   } else {return(dat)} 
 }
 
 
 SPLICEAI.subset_precomputed_tsv_iterate <- function(sumstats_paths,
+                                                    # precomputed_path="/pd-omics/data/spliceAI/whole_genome_filtered_spliceai_scores.tsv.gz",
                                                     precomputed_path="/pd-omics/data/spliceAI/spliceai_scores.raw.snv.hg19.tsv.gz",
-                                                    nThread=4){
+                                                    nThread=4,
+                                                    merge_data=T,
+                                                    drop_na=T,
+                                                    filtered=T,
+                                                    save_path="./spliceAI_subset.tsv.gz"){
+  # precomputed_path="../../data/spliceAI/spliceai_scores.raw.snv.hg19.tsv.gz";  nThread=4; merge_data=T; drop_na=T; filtered=F
   # sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019",
   #                              pattern = "*Multi-finemap_results.txt|*Multi-finemap.tsv.gz",
   #                              recursive = T, full.names = T)
@@ -172,18 +181,36 @@ SPLICEAI.subset_precomputed_tsv_iterate <- function(sumstats_paths,
   DAT <- parallel::mclapply(sumstats_paths, function(x){
     subset_DT <- data.table::fread(x)
     dat_merged <- SPLICEAI.subset_precomputed_tsv(subset_DT,
-                                                  precomputed_path=precomputed_path,
-                                                  # precomputed_path="/pd-omics/data/spliceAI/whole_genome_filtered_spliceai_scores.tsv.gz",
-                                                  merge_data=T,
-                                                  keep_extra_pos=F)
+                                                  precomputed_path=precomputed_path, 
+                                                  merge_data=merge_data,
+                                                  drop_na=drop_na,
+                                                  filtered = filtered)
     return(dat_merged)
-  }, mc.cores = nThread) %>% data.table::rbindlist()
+  }, mc.cores = nThread) %>% data.table::rbindlist(fill=T)
+  
+  if(save_path!=F){
+    printer("Saving SpliceAI subset ==>",save_path)
+    dir.create(dirname(save_path),showWarnings = F, recursive = T)
+    data.table::fwrite(DAT, save_path, nThread = nThread, sep="\t")
+  }
+  
   return(DAT)
 }
 
 
+SPLICEAI.snp_probs <- function(DAT){
+  # merged_DT <- merge_finemapping_results(dataset = "./Data/GWAS/Nalls23andMe_2019",minimum_support = 0, xlsx_path = F)
+  # DAT <- data.table::fread("/pd-omics/brian/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/_genome_wide/spliceAI_Nalls2019.overlap.tsv.gz")
+  # DAT <- find_consensus_SNPs(DAT)
+  # 
+  DF <- DAT[,c("DS_AG","DS_AL","DS_DG","DS_DL")]
+  DAT$splice_group <- colnames(DF)[max.col(DF,ties.method="first")]
+  DAT$splice_prob <- apply(DF, 1, max)
+  matchDAT <- subset(DAT,   (A1==REF | A1==ALT) & Support>0)
+  return(matchDAT)
+}
 
-SPLICEAI.plot <- function(dat_merged){
+SPLICEAI.plot <- function(dat_merged){ 
   library(patchwork)
   plt <- 
   ggplot(dat_merged, aes(x=POS, y=-log10(P), color=-log10(P))) + 
