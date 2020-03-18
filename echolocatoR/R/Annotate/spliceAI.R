@@ -130,31 +130,57 @@ SPLICEAI.subset_precomputed_vcf <- function(subset_DT,
 }
 
 SPLICEAI.subset_precomputed_tsv <- function(subset_DT, 
-                                            precomputed_path="/pd-omics/data/spliceAI/whole_genome_filtered_spliceai_scores.tsv.gz",
+                                            precomputed_path="/pd-omics/data/spliceAI/spliceai_scores.raw.snv.hg19.tsv.gz",
+                                            # precomputed_path="/pd-omics/data/spliceAI/whole_genome_filtered_spliceai_scores.tsv.gz",
                                             merge_data=T,
                                             keep_extra_pos=F){
    
   # First, convert from vcf to tsv with VCF-kit
   # vk vcf2tsv wide --print-header whole_genome_filtered_spliceai_scores.vcf.gz > whole_genome_filtered_spliceai_scores.tsv && bgzip whole_genome_filtered_spliceai_scores.tsv
   # header <- data.table::fread(cmd=paste("gunzip -c",precomputed_path, "| head -1") )
-  header <- c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","SYMBOL","STRAND","TYPE","DIST","DS_AG","DS_AL","DS_DG","DS_DL","DP_AG","DP_AL","DP_DG","DP_DL")
+  # header <- c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","SYMBOL","STRAND","TYPE","DIST","DS_AG","DS_AL","DS_DG","DS_DL","DP_AG","DP_AL","DP_DG","DP_DL")
+  header <- c("CHROM","POS","REF","ALT","MUT","SYMBOL","DS_AG","DS_AL","DS_DG","DS_DL","DP_AG","DP_AL","DP_DG","DP_DL")
+   
   dat <- TABIX.query(fullSS.gz = precomputed_path,
-              chr = subset_DT$CHR[1],
-              start_pos = min(subset_DT$POS),
-              end_pos = max(subset_DT$POS)) 
+                      chrom = subset_DT$CHR[1],
+                      start_pos = min(subset_DT$POS),
+                      end_pos = max(subset_DT$POS)) 
   colnames(dat) <- header
-  dat <- subset(dat, select=-c(ID,QUAL,FILTER))
-  
+  # dat <- subset(dat, select=-c(ID,QUAL,FILTER))
+  # summary(dat, na.rm=T)
+  # hist(dat$DS_DG, breaks = 100)
   if(merge_data){
     dat_merged <- data.table:::merge.data.table(x = subset_DT, 
                                                 y = dat, 
-                                                by.x = c("CHR","POS"), 
-                                                by.y = c("CHROM","POS"), 
+                                                by.x = c("CHR","POS","A1"), 
+                                                by.y = c("CHROM","POS","MUT"), 
                                                 all.x = T, 
                                                 all.y = keep_extra_pos)
     return(dat_merged)
   } else {return(dat)} 
 }
+
+
+SPLICEAI.subset_precomputed_tsv_iterate <- function(sumstats_paths,
+                                                    precomputed_path="/pd-omics/data/spliceAI/spliceai_scores.raw.snv.hg19.tsv.gz",
+                                                    nThread=4){
+  # sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019",
+  #                              pattern = "*Multi-finemap_results.txt|*Multi-finemap.tsv.gz",
+  #                              recursive = T, full.names = T)
+  # no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
+  # sumstats_paths <- sumstats_paths[!basename(dirname(dirname(sumstats_paths))) %in% no_no_loci]
+  DAT <- parallel::mclapply(sumstats_paths, function(x){
+    subset_DT <- data.table::fread(x)
+    dat_merged <- SPLICEAI.subset_precomputed_tsv(subset_DT,
+                                                  precomputed_path=precomputed_path,
+                                                  # precomputed_path="/pd-omics/data/spliceAI/whole_genome_filtered_spliceai_scores.tsv.gz",
+                                                  merge_data=T,
+                                                  keep_extra_pos=F)
+    return(dat_merged)
+  }, mc.cores = nThread) %>% data.table::rbindlist()
+  return(DAT)
+}
+
 
 
 SPLICEAI.plot <- function(dat_merged){
@@ -183,11 +209,11 @@ SPLICEAI.plot <- function(dat_merged){
   print(plt)
   return(plt)
   
-  # dat_melt <- data.table::melt.data.table(data = dat_merged, 
-  #                                         measure.vars = c("DS_AG","DS_AL","DS_DG","DS_DL"),
-  #                                         variable.name = "spliceAI_variable",
-  #                                         value.name = "spliceAI_score", 
-  #                                         na.rm = T)
+  dat_melt <- data.table::melt.data.table(data = dat_merged,
+                                          measure.vars = c("DS_AG","DS_AL","DS_DG","DS_DL"),
+                                          variable.name = "spliceAI_variable",
+                                          value.name = "spliceAI_score",
+                                          na.rm = T)
   ggplot(dat_melt, aes(x=POS, y=spliceAI_variable,   height=spliceAI_score)) +
     ggridges::geom_ridgeline()
   

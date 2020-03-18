@@ -70,10 +70,10 @@ TABIX.convert_file <- function(fullSS_path="./Data/GWAS/Nalls23andMe_2019/nallsE
 
 # Query
 TABIX.query <- function(fullSS.gz,
-                        chr,
+                        chrom,
                         start_pos,
                         end_pos){
-  coords <- paste0(chr,":",start_pos,"-",end_pos)
+  coords <- paste0(chrom,":",start_pos,"-",end_pos)
   # cmd4 <- paste("tabix -h",fullSS.gz,coords,">",subset_path)
   printer("TABIX:: Extracting subset of sum stats")
   dat <- data.table::fread(cmd=paste("tabix -h",fullSS.gz,coords))
@@ -102,7 +102,7 @@ TABIX <- function(fullSS_path,
   header.path <- file.path(dirname(fullSS_path),"header.txt")
   cDict <- column_dictionary(file_path = header.path)
   dat <- TABIX.query(fullSS.gz,
-                      chr=chrom,
+                      chrom=chrom,
                       start_pos=min_POS,
                       end_pos=max_POS)
   colnames(dat) <- colnames(data.table::fread(header.path))

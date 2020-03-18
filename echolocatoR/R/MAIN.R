@@ -106,9 +106,11 @@ source("./echolocatoR/R/Download/query.R")
 source("./echolocatoR/R/Download/standardize.R")
 source("./echolocatoR/R/Download/tabix.R")
 source("./echolocatoR/R/Download/downloaders.R")
+
 # LD
 source("./echolocatoR/R/LD/LD.R")
 source("./echolocatoR/R/LD/UKBiobank_LD.R")
+
 # Fine-map
 source("./echolocatoR/R/Finemap/multi_finemap.R")
 source("./echolocatoR/R/Finemap/SUSIE.R")
@@ -119,10 +121,12 @@ source("./echolocatoR/R/Finemap/COJO.R")
 source("./echolocatoR/R/Finemap/COLOC.R")
 source("./echolocatoR/R/Finemap/fGWAS.R")
 source("./echolocatoR/R/Finemap/POLYFUN.R")
+
 # Plot
 source("./echolocatoR/R/Plot/plot.R")
 source("./echolocatoR/R/Plot/ggbio.R")
 source("./echolocatoR/R/Plot/QTL_boxplots.R")
+
 # Annotate
 source("./echolocatoR/R/Annotate/annotate.R")
 source("./echolocatoR/R/Annotate/summarise.R")
@@ -134,6 +138,7 @@ source("./echolocatoR/R/Annotate/Nott_2019.R")
 source("./echolocatoR/R/Annotate/macs2.R")
 source("./echolocatoR/R/Annotate/IMPACT.R")
 # source("./echolocatoR/R/Annotate/liftover.R")
+source("./echolocatoR/R/Annotate/spliceAI.R")
 
 
 # eQTL Catalogue
