@@ -172,7 +172,7 @@ SPLICEAI.subset_precomputed_tsv_iterate <- function(sumstats_paths,
                                                     drop_na=T,
                                                     filtered=T,
                                                     save_path="./spliceAI_subset.tsv.gz"){
-  # precomputed_path="../../data/spliceAI/spliceai_scores.raw.snv.hg19.tsv.gz";  nThread=4; merge_data=T; drop_na=T; filtered=F
+  # precomputed_path="../../data/spliceAI/spliceai_scores.raw.snv.hg19.tsv.gz";  nThread=4; merge_data=T; drop_na=T; filtered=F; save_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/spliceAI_raw_subset.tsv.gz"
   # sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019",
   #                              pattern = "*Multi-finemap_results.txt|*Multi-finemap.tsv.gz",
   #                              recursive = T, full.names = T)
@@ -185,6 +185,11 @@ SPLICEAI.subset_precomputed_tsv_iterate <- function(sumstats_paths,
                                                   merge_data=merge_data,
                                                   drop_na=drop_na,
                                                   filtered = filtered)
+    if(!"Locus" %in% colnames(dat_merged)){
+      locus <- basename(dirname(dirname(x)))
+      printer("Adding Locus column:", locus)
+      dat_merged <- cbind(Locus=locus, dat_merged)
+    } 
     return(dat_merged)
   }, mc.cores = nThread) %>% data.table::rbindlist(fill=T)
   
@@ -192,21 +197,34 @@ SPLICEAI.subset_precomputed_tsv_iterate <- function(sumstats_paths,
     printer("Saving SpliceAI subset ==>",save_path)
     dir.create(dirname(save_path),showWarnings = F, recursive = T)
     data.table::fwrite(DAT, save_path, nThread = nThread, sep="\t")
-  }
-  
+  } 
   return(DAT)
 }
 
 
-SPLICEAI.snp_probs <- function(DAT){
+SPLICEAI.snp_probs <- function(DAT,
+                               save_path=F){
   # merged_DT <- merge_finemapping_results(dataset = "./Data/GWAS/Nalls23andMe_2019",minimum_support = 0, xlsx_path = F)
   # DAT <- data.table::fread("/pd-omics/brian/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/_genome_wide/spliceAI_Nalls2019.overlap.tsv.gz")
-  # DAT <- find_consensus_SNPs(DAT)
-  # 
+  DAT <- data.table::fread("/pd-omics/brian/Fine_Mapping/Data/GWAS/Nalls23andMe_2019/_genome_wide/spliceAI_raw_subset.tsv.gz", nThread=4)
+  DAT <- find_consensus_SNPs(DAT, consensus_thresh = 2)
+    
   DF <- DAT[,c("DS_AG","DS_AL","DS_DG","DS_DL")]
-  DAT$splice_group <- colnames(DF)[max.col(DF,ties.method="first")]
-  DAT$splice_prob <- apply(DF, 1, max)
-  matchDAT <- subset(DAT,   (A1==REF | A1==ALT) & Support>0)
+  DAT$max_spliceAI_group <- colnames(DF)[max.col(DF,ties.method="first")]
+  DAT$max_spliceAI_prob <- apply(DF, 1, max)
+  matchDAT <- DAT %>% dplyr::rename(Risk_allele=A1, Nonrisk_allele=A2, REF.spliceAI=REF, ALT.spliceAI=ALT) %>%
+    subset(Risk_allele==ALT.spliceAI, select = c("Locus","SNP","CHR","POS","Effect","P",
+                                                "leadSNP","Consensus_SNP","Support","mean.PP","Risk_allele","Nonrisk_allele",
+                                                "SYMBOL","REF.spliceAI","ALT.spliceAI","DS_AG","DS_AL","DS_DG","DS_DL","max_spliceAI_group","max_spliceAI_prob")) %>% 
+    dplyr::mutate(GWAS.sig=P<5e-8) %>% subset(max_spliceAI_prob>.1 & Support>0)
+  matchDAT
+  # data.table::fwrite(matchDAT, "./Data/GWAS/Nalls23andMe_2019/_genome_wide/SpliceAI/spliceAI_raw_subset_matched.tsv", sep="\t")
+  if(save_path!=F){
+    # save_path="./Data/GWAS/Nalls23andMe_2019/_genome_wide/spliceAI_Nalls2019.matches.tsv"
+    dir.create(dirname(save_path), showWarnings = F, recursive = T)
+    data.table::fwrite(matchDAT, save_path, sep = "\t")
+  }
+  
   return(matchDAT)
 }
 
