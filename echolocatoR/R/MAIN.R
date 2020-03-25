@@ -217,6 +217,7 @@ quick_finemap <- function(locus="LRRK2", consensus_thresh = 2){
   # locus <<- locus
   results_path <<- file.path("./Data/GWAS/Nalls23andMe_2019",gene)
   finemap_DT <<- data.table::fread(file.path(results_path, "Multi-finemap/Multi-finemap_results.txt"))
+  finemap_DT <<- cbind(Locus=locus, Gene=locus, finemap_DT)
   finemap_DT <<- find_consensus_SNPs(finemap_DT, consensus_thresh = consensus_thresh)
 
   if(file.exists(file.path(results_path,"plink","UKB_LD.RDS"))){

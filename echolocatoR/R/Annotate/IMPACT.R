@@ -6,7 +6,8 @@
 
 
 
-IMPACT.get_annotations <- function(chrom=NULL, 
+IMPACT.get_annotations <- function(baseURL="https://github.com/immunogenomics/IMPACT/raw/master/IMPACT707/Annotations",
+                                   chrom=NULL, 
                                    subset_DT=NULL,
                                    nThread=4){ 
   # These are large files stored via GitHub's large file storage (lfs) 
@@ -19,8 +20,8 @@ IMPACT.get_annotations <- function(chrom=NULL,
   }
   # https://github.com/immunogenomics/IMPACT.git
   # "curl --header 'https://git-lfs.github.com/spec/v1/projects/13083/repository/files/app%2Fmodels%2Fkey%2Erb/raw?ref=master'"
-  baseURL <- "https://github.com/immunogenomics/IMPACT/raw/master/IMPACT707/Annotations"
- 
+  
+  
   URL <- file.path(baseURL, paste0("IMPACT707_EAS_chr",chrom,".annot.gz"))
   annot <- data.table::fread(URL, nThread = nThread)
   
@@ -37,12 +38,12 @@ IMPACT.get_annotations <- function(chrom=NULL,
   annot_melt <- data.table:::melt.data.table(annot_merge, measure.vars = annot_cols,
                                              variable.name = "Annot",
                                              value.name = "IMPACT_score") %>%
-                data.table:::merge.data.table(annot.key,
-                                              by="Annot", 
-                                              allow.cartesian = T)
+    data.table:::merge.data.table(annot.key,
+                                  by="Annot", 
+                                  allow.cartesian = T)
   return(annot_melt)
 } 
-   
+
 
 IMPACT.get_annotation_key <- function(URL="https://github.com/immunogenomics/IMPACT/raw/master/IMPACT707/IMPACT_annotation_key.txt"){
   annot.key <- data.table::fread(URL)
@@ -51,7 +52,99 @@ IMPACT.get_annotation_key <- function(URL="https://github.com/immunogenomics/IMP
 }
 
 # quick_finemap()
-# annot_melt <- IMPACT.get_annotations(subset_DT = subset_DT)
+# annot_melt <- IMPACT.get_annotations(baseURL = "/Volumes/Steelix/IMPACT/IMPACT707/Annotations", subset_DT = subset_DT)
+
+
+IMPACT.get_top_annotations <- function(){
+  topIMPACT <- annot_melt %>%
+    dplyr::select(-Accession, -File) %>%
+    dplyr::group_by(SNP) %>% 
+    dplyr::top_n(n=1, wt=IMPACT_score) %>%
+    data.table::data.table() %>% 
+    unique()
+  topIMPACT
+  
+  subset(annot_melt, SNP=="rs7294619" )
+}
+
+IMPACT.compute_enrichment <- function(annot_melt, locus=NULL){  
+  sum.IMPACT <- sum(annot_melt$IMPACT_score, na.rm=T)
+  len.SNPs <- n_distinct(annot_melt$SNP, na.rm = T)
+  # SNP.groups <- list("leadGWAS"=subset(annot_melt, leadSNP),
+  #                    "UCS"=subset(annot_melt, Consensus_SNP),
+  #                    "ABF_CS"=subset(annot_melt, ABF.Credible_Set>0),
+  #                    "FINEMAP_CS"=subset(annot_melt, FINEMAP.Credible_Set>0),
+  #                    "SUSIE_CS"=subset(annot_melt, SUSIE.Credible_Set>0),
+  #                    "POLYFUN_CS"=subset(annot_melt, POLYFUN_SUSIE.Credible_Set>0),
+  #                    "Consensus"=subset(annot_melt, Consensus_SNP))
+  # enrich <- lapply(names(SNP.groups), function(snp.group){
+  #   print(snp.group)
+  #   e <- SNP.groups[[snp.group]] %>% 
+  #     dplyr::group_by(TF, Tissue, Cell, CellDeriv) %>%
+  #     dplyr::summarise(enrichment = (sum(IMPACT_score, na.rm = T) / sum.IMPACT) /
+  #                        (n_distinct(SNP, na.rm = T) / len.SNPs) ) %>% 
+  #     dplyr::arrange(-enrichment) %>% 
+  #     data.table::data.table()
+  #   e <- cbind(SNP.group=snp.group, e)
+  #   return(e)
+  # }) %>% data.table::rbindlist()
+  annot_melt[is.na(annot_melt$IMPACT_score),"IMPACT_score"] <- 0
+
+  SNP.groups <- list(
+    "leadGWAS" = annot_melt %>% 
+      dplyr::group_by(TF, Tissue, Cell, CellDeriv) %>%
+      dplyr::summarise(enrichment = (sum(IMPACT_score[leadSNP], na.rm = T) / sum(IMPACT_score, na.rm = T)) /
+                         (n_distinct(SNP[leadSNP], na.rm = T) / n_distinct(SNP, na.rm = T)) ),
+    "UCS" = annot_melt %>% 
+      dplyr::group_by(TF, Tissue, Cell, CellDeriv) %>%
+      dplyr::summarise(enrichment = (sum(IMPACT_score[Support>0], na.rm = T) / sum(IMPACT_score, na.rm = T)) /
+                         (n_distinct(SNP[Support>0], na.rm = T) / n_distinct(SNP, na.rm = T)) ),
+    "ABF_CS" = annot_melt %>% 
+      dplyr::group_by(TF, Tissue, Cell, CellDeriv) %>%
+      dplyr::summarise(enrichment = (sum(IMPACT_score[ABF.Credible_Set>0], na.rm = T) / sum(IMPACT_score, na.rm = T)) /
+                         (n_distinct(SNP[ABF.Credible_Set>0], na.rm = T) / n_distinct(SNP, na.rm = T)) ), 
+    "FINEMAP_CS" = annot_melt %>% 
+      dplyr::group_by(TF, Tissue, Cell, CellDeriv) %>%
+      dplyr::summarise(enrichment = (sum(IMPACT_score[FINEMAP.Credible_Set>0], na.rm = T) / sum(IMPACT_score, na.rm = T)) /
+                         (n_distinct(SNP[FINEMAP.Credible_Set>0], na.rm = T) / n_distinct(SNP, na.rm = T)) ), 
+    "SUSIE_CS" = annot_melt %>% 
+      dplyr::group_by(TF, Tissue, Cell, CellDeriv) %>%
+      dplyr::summarise(enrichment = (sum(IMPACT_score[SUSIE.Credible_Set>0], na.rm = T) / sum(IMPACT_score, na.rm = T)) /
+                         (n_distinct(SNP[SUSIE.Credible_Set>0], na.rm = T) / n_distinct(SNP, na.rm = T)) ),
+    "POLYFUN_CS" = annot_melt %>% 
+      dplyr::group_by(TF, Tissue, Cell, CellDeriv) %>%
+      dplyr::summarise(enrichment = (sum(IMPACT_score[POLYFUN_SUSIE.Credible_Set>0], na.rm = T) / sum(IMPACT_score, na.rm = T)) /
+                         (n_distinct(SNP[POLYFUN_SUSIE.Credible_Set>0], na.rm = T) / n_distinct(SNP, na.rm = T)) ), 
+    "Consensus" = annot_melt %>% 
+      dplyr::group_by(TF, Tissue, Cell, CellDeriv) %>%
+      dplyr::summarise(enrichment = (sum(IMPACT_score[Consensus_SNP], na.rm = T) / sum(IMPACT_score, na.rm = T)) /
+                         (n_distinct(SNP[Consensus_SNP], na.rm = T) / n_distinct(SNP, na.rm = T)) ) 
+  )
+  enrich <- data.table::rbindlist(SNP.groups, idcol = "SNP.group") %>% dplyr::arrange(-enrichment)
+  enrich <- cbind(Locus=locus, enrich)
+  enrich$TF <- factor(enrich$TF, ordered = T)
+  enrich$SNP.group <- factor(enrich$SNP.group, levels=names(SNP.groups), ordered = T)
+  return(enrich)
+}
+
+
+IMPACT.plot_enrichment <- function(enrich){
+  enrich_dat <- enrich %>% 
+    dplyr::group_by(Tissue, CellDeriv) %>% 
+    dplyr::top_n(n=2, wt=enrichment)
+  ep <- ggplot(enrich_dat, aes(x=TF, y=enrichment, fill=SNP.group)) +
+    geom_col(position = "dodge") +
+    geom_hline(yintercept = 1, linetype="dashed", alpha=.8) +
+    facet_grid(facets = SNP.group ~ Tissue + CellDeriv, 
+               switch = "y", space = "free_x",
+               scales = "free_x") +
+    theme_bw() + 
+    theme(strip.text = element_text(angle=0), 
+          axis.text.x = element_text(angle=45, hjust=1))
+  print(ep)
+}
+
+
 IMPACT.plot_impact_score <- function(annot_melt, 
                                      save_path=F,
                                      show_plot=T){
@@ -67,7 +160,7 @@ IMPACT.plot_impact_score <- function(annot_melt,
   # subset(annot_top,SNP %in% unique(subset(annot_melt, Consensus_SNP)$SNP))
   # annot_top
   
- 
+  
   # Reduce to smaller df to make plotting faster
   finemap_cols <- grep("*.PP$|*.Credible_Set$",colnames(annot_melt),value=T)
   annot_snp <- subset(annot_melt, select=c("SNP","CHR","POS","Mb","P","Consensus_SNP","leadSNP","Support",finemap_cols)) %>% unique()
@@ -133,22 +226,26 @@ IMPACT.plot_impact_score <- function(annot_melt,
   # print(finemap)
   
   # IMPACT rows
-  impact <- ggplot(annot_melt, aes(x=Mb, y=Tissue, fill=Tissue, height = IMPACT_score)) + 
-    # facet_grid(facets = Tissue ~.) +
-    # geom_point(aes(color=IMPACT_score)) +
-    ggridges::geom_ridgeline(na.rm = T, size=.1, show.legend = F) +
+  impact <- ggplot(subset(annot_melt, IMPACT_score>0.5), 
+                   aes(x=Mb, y=IMPACT_score, color=TF)) + 
+    geom_point(show.legend = T) +
+    # geom_col(position = "identity", show.legend = T) +
+    facet_grid(facets = Tissue ~ ., switch = "y") +
+    # ggridges::geom_ridgeline(aes(height = IMPACT_score), na.rm = T, size=.1, show.legend = F) +
     # ggridges::theme_ridges() +
     theme_bw() + 
     labs(y="IMPACT score per tissue") + 
     theme(strip.text.y = element_text(angle = 0), 
           panel.grid = element_blank(), 
           axis.title.y = element_text(vjust = .5))
+  # impact 
   
   impact_plot <- gwas + finemap + impact + patchwork::plot_layout(ncol = 1, heights = c(.2,.2,1)) +
     geom_vline(xintercept = unique(subset(labelSNPs, Consensus_SNP)$Mb), color="goldenrod2",
                alpha=1, size=.3, linetype='solid') +
     geom_vline(xintercept = unique(subset(labelSNPs, leadSNP)$Mb), color="red",
                alpha=1, size=.3, linetype='solid')
+  # impact_plot
   
   if(show_plot){print(impact_plot)}
   
@@ -158,8 +255,32 @@ IMPACT.plot_impact_score <- function(annot_melt,
     printer("IMPACT:: Saving plot ==>",save_path)
     ggsave(save_path, plot=impact_plot, height=10, width=10)
   }
-  
   return(impact_plot)
+}
+
+
+
+
+IMPACT.iterate_enrichment <- function(gwas_paths){
+  # gwas_paths <- list.files(path = "./Data/GWAS/Nalls23andMe_2019", pattern = "Multi-finemap_results.txt", recursive = T, full.names = T)
+  
+  ENRICH <- lapply(gwas_paths, function(x){
+    locus <- basename(dirname(dirname(x)))
+    message(locus)
+    subset_DT <- data.table::fread(x, nThread = 4)
+    if(!"Locus" %in% colnames(subset_DT)){
+      subset_DT <- cbind(Locus=locus, subset_DT) 
+    }
+    subset_DT <- find_consensus_SNPs(finemap_DT = subset_DT)
+    annot_melt <- IMPACT.get_annotations(baseURL = "/Volumes/Steelix/IMPACT/IMPACT707/Annotations", 
+                                         subset_DT = subset_DT, 
+                                         nThread = 4) 
+    enrich <- IMPACT.compute_enrichment(annot_melt = annot_melt,
+                                        locus = locus)
+    return(enrich)
+  }) %>% data.table::rbindlist(fill=T)
+  # ENRICH
+  return(ENRICH)
 }
 
 
@@ -177,14 +298,13 @@ This may affect subsequent analyss (e.g. fine-mapping).")
   
   if(!is.null(subset_DT)){ 
     ldscore_merge <- data.table:::merge.data.table(data.table::data.table(subset_DT),
-                                  ldscore,
-                                  by.x = c("SNP","CHR","POS"), 
-                                  by.y = c("SNP","CHR","BP"),
-                                  all = F)  
+                                                   ldscore,
+                                                   by.x = c("SNP","CHR","POS"), 
+                                                   by.y = c("SNP","CHR","BP"),
+                                                   all = F)  
     return(ldscore_merge)
   } else {
     return(ldscore)
   } 
 }
 
- 
