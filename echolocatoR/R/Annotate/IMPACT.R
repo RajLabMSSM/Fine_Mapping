@@ -46,7 +46,7 @@ IMPACT.get_annotations <- function(baseURL="https://github.com/immunogenomics/IM
 
 
 IMPACT.get_annotation_key <- function(URL="https://github.com/immunogenomics/IMPACT/raw/master/IMPACT707/IMPACT_annotation_key.txt",
-                                      save_path="./echolocatoR/annotations/IMPACT/IMPACT_annotation_key.txt",
+                                      save_path="./echolocatoR/annotations/IMPACT/IMPACT_annotation_key.txt.gz",
                                       force_new_download=F){
   if(file.exists(save_path) & force_new_download==F){
     print("+ IMPACT:: Importing local anotation key...")
@@ -55,6 +55,7 @@ IMPACT.get_annotation_key <- function(URL="https://github.com/immunogenomics/IMP
     print("+ IMPACT:: Downloading annotation key from GitHub...")
     annot.key <- data.table::fread(URL)
     data.table::fwrite(annot.key, save_path, sep="\t")
+    R.utils::gzip(save_path)
   }
   annot.key$Annot <- as.factor(paste0("Annot",annot.key$IMPACT))
   return(annot.key)
