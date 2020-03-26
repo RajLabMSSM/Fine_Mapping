@@ -128,18 +128,55 @@ IMPACT.compute_enrichment <- function(annot_melt, locus=NULL){
 }
 
 
-IMPACT.plot_enrichment <- function(enrich){
-  enrich_dat <- enrich %>% 
-    dplyr::group_by(Tissue, CellDeriv) %>% 
-    dplyr::top_n(n=2, wt=enrichment)
-  ep <- ggplot(enrich_dat, aes(x=TF, y=enrichment, fill=SNP.group)) +
+
+IMPACT.iterate_enrichment <- function(gwas_paths){
+  # gwas_paths <- list.files(path = "./Data/GWAS/Nalls23andMe_2019", pattern = "Multi-finemap_results.txt", recursive = T, full.names = T)
+  
+  ENRICH <- lapply(gwas_paths, function(x){
+    locus <- basename(dirname(dirname(x)))
+    message(locus)
+    subset_DT <- data.table::fread(x, nThread = 4)
+    if(!"Locus" %in% colnames(subset_DT)){
+      subset_DT <- cbind(Locus=locus, subset_DT) 
+    }
+    subset_DT <- find_consensus_SNPs(finemap_DT = subset_DT)
+    annot_melt <- IMPACT.get_annotations(baseURL = "/Volumes/Steelix/IMPACT/IMPACT707/Annotations", 
+                                         subset_DT = subset_DT, 
+                                         nThread = 4) 
+    enrich <- IMPACT.compute_enrichment(annot_melt = annot_melt,
+                                        locus = locus)
+    return(enrich)
+  }) %>% data.table::rbindlist(fill=T)
+  # ENRICH
+  return(ENRICH)
+}
+
+IMPACT.genome_wide_enrichment <- function(ENRICH){
+  
+}
+
+
+IMPACT.plot_enrichment <- function(ENRICH){
+  enrich_dat <- subset(ENRICH, !is.na(enrichment) & enrichment>=1) %>% 
+    dplyr::group_by(Tissue, CellDeriv) %>%
+    dplyr::top_n(n=1, wt=enrichment)
+  # ep <- ggplot(enrich_dat, aes(x=TF, y=enrichment, fill=SNP.group)) +
+  #   geom_col(position = "dodge") +
+  #   geom_hline(yintercept = 1, linetype="dashed", alpha=.8) +
+  #   facet_grid(facets = SNP.group ~ Tissue + CellDeriv, 
+  #              switch = "y", space = "free_x",
+  #              scales = "free_x") +
+  #   theme_bw() + 
+  #   theme(strip.text = element_text(angle=0), 
+  #         axis.text.x = element_text(angle=45, hjust=1))
+  ep <- ggplot(enrich_dat, aes(x=TF, y=SNP.group, fill=enrichment)) +
     geom_col(position = "dodge") +
     geom_hline(yintercept = 1, linetype="dashed", alpha=.8) +
-    facet_grid(facets = SNP.group ~ Tissue + CellDeriv, 
-               switch = "y", space = "free_x",
-               scales = "free_x") +
+    facet_grid(facets = . ~ Tissue + CellDeriv, 
+               switch = "y", space = "free_x") +
     theme_bw() + 
-    theme(strip.text = element_text(angle=0), 
+    theme(
+      # strip.text = element_text(angle=0), 
           axis.text.x = element_text(angle=45, hjust=1))
   print(ep)
 }
@@ -259,29 +296,6 @@ IMPACT.plot_impact_score <- function(annot_melt,
 }
 
 
-
-
-IMPACT.iterate_enrichment <- function(gwas_paths){
-  # gwas_paths <- list.files(path = "./Data/GWAS/Nalls23andMe_2019", pattern = "Multi-finemap_results.txt", recursive = T, full.names = T)
-  
-  ENRICH <- lapply(gwas_paths, function(x){
-    locus <- basename(dirname(dirname(x)))
-    message(locus)
-    subset_DT <- data.table::fread(x, nThread = 4)
-    if(!"Locus" %in% colnames(subset_DT)){
-      subset_DT <- cbind(Locus=locus, subset_DT) 
-    }
-    subset_DT <- find_consensus_SNPs(finemap_DT = subset_DT)
-    annot_melt <- IMPACT.get_annotations(baseURL = "/Volumes/Steelix/IMPACT/IMPACT707/Annotations", 
-                                         subset_DT = subset_DT, 
-                                         nThread = 4) 
-    enrich <- IMPACT.compute_enrichment(annot_melt = annot_melt,
-                                        locus = locus)
-    return(enrich)
-  }) %>% data.table::rbindlist(fill=T)
-  # ENRICH
-  return(ENRICH)
-}
 
 
 IMPACT.get_ldscores <- function(chrom=NULL, 
