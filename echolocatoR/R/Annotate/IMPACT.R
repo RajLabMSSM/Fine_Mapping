@@ -45,8 +45,17 @@ IMPACT.get_annotations <- function(baseURL="https://github.com/immunogenomics/IM
 } 
 
 
-IMPACT.get_annotation_key <- function(URL="https://github.com/immunogenomics/IMPACT/raw/master/IMPACT707/IMPACT_annotation_key.txt"){
-  annot.key <- data.table::fread(URL)
+IMPACT.get_annotation_key <- function(URL="https://github.com/immunogenomics/IMPACT/raw/master/IMPACT707/IMPACT_annotation_key.txt",
+                                      save_path="./echolocatoR/annotations/IMPACT/IMPACT_annotation_key.txt",
+                                      force_new_download=F){
+  if(file.exists(save_path) & force_new_download==F){
+    print("+ IMPACT:: Importing local anotation key...")
+    annot.key <- data.table::fread(save_path)
+  } else {
+    print("+ IMPACT:: Downloading annotation key from GitHub...")
+    annot.key <- data.table::fread(URL)
+    data.table::fwrite(annot.key, save_path, sep="\t")
+  }
   annot.key$Annot <- as.factor(paste0("Annot",annot.key$IMPACT))
   return(annot.key)
 }
@@ -129,7 +138,8 @@ IMPACT.compute_enrichment <- function(annot_melt, locus=NULL){
 
 
 
-IMPACT.iterate_enrichment <- function(gwas_paths){
+IMPACT.iterate_enrichment <- function(gwas_paths,
+                                      annot_baseURL="../../data/IMPACT/IMPACT707/Annotations"){
   # gwas_paths <- list.files(path = "./Data/GWAS/Nalls23andMe_2019", pattern = "Multi-finemap_results.txt", recursive = T, full.names = T)
   
   ENRICH <- lapply(gwas_paths, function(x){
@@ -140,7 +150,7 @@ IMPACT.iterate_enrichment <- function(gwas_paths){
       subset_DT <- cbind(Locus=locus, subset_DT) 
     }
     subset_DT <- find_consensus_SNPs(finemap_DT = subset_DT)
-    annot_melt <- IMPACT.get_annotations(baseURL = "/Volumes/Steelix/IMPACT/IMPACT707/Annotations", 
+    annot_melt <- IMPACT.get_annotations(baseURL = annot_baseURL, 
                                          subset_DT = subset_DT, 
                                          nThread = 4) 
     enrich <- IMPACT.compute_enrichment(annot_melt = annot_melt,
