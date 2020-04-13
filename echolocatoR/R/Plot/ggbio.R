@@ -272,20 +272,27 @@ GGBIO.plot <- function(finemap_DT,
                        annot_overlap_threshold=5,
                        PP_threshold=.95,
                        consensus_thresh=2,
+                       
                        Nott_sn_epigenome=F,
+                       show_regulatory_rects=T,
+                       show_placseq=T, 
+                       plot_Nott_binwidth=2500,
+                       
                        save_plot=T,
                        show_plot=T,
                        max_transcripts=1,
                        plot_window=NULL,
-                       dpi=200,
-                       plot_Nott_binwidth=2500){
+                       dpi=200){
   # http://bioconductor.org/packages/release/bioc/vignettes/ggbio/inst/doc/ggbio.pdf
   library(ggbio)
   require(GenomicRanges)
   require(biovizBase)
-  # consensus_thresh=2; XGR_libnames=NULL; mean.PP=T; ROADMAP=F; PP_threshold=.95;  Nott_sn_epigenome=T;  save_plot=T; show_plot=T; method_list=c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"); full_data=T; quick_finemap("LRRK2", consensus_thresh)
-  # quickstart_AD("ABCA7", "Kunkle_2019");  max_transcripts=3; plot_window=100000;
-
+  # consensus_thresh=2; XGR_libnames=NULL; mean.PP=T; ROADMAP=F; PP_threshold=.95;  Nott_sn_epigenome=T;  save_plot=T; show_plot=T; method_list=c("ABF","SUSIE","POLYFUN_SUSIE","FINEMAP"); full_data=T;  max_transcripts=3; plot_window=100000;
+  # quick_finemap("LRRK2", consensus_thresh);
+  # Nott_sn_epigenome=T; show_regulatory_rects=T; show_placseq=T; plot_Nott_binwidth=2500
+  
+   
+  
   # Set up data
   finemap_DT <- find_consensus_SNPs(finemap_DT = finemap_DT,
                                     credset_thresh = PP_threshold,
@@ -499,13 +506,17 @@ GGBIO.plot <- function(finemap_DT,
                                                         binwidth = plot_Nott_binwidth)
     TRACKS_list <- append(TRACKS_list, track.Nott_histo)
     names(TRACKS_list)[length(TRACKS_list)] <- "Nott (2019)\nRead Densities"
-
-    # PLAC-seq
-    track.Nott_plac <- NOTT_2019.plac_seq_plot(finemap_DT,
-                                               title=gene,
-                                               return_interaction_track = T)
-    TRACKS_list <- append(TRACKS_list, track.Nott_plac)
-    names(TRACKS_list)[length(TRACKS_list)] <- "Nott (2019)\nPLAC-seq"
+     
+    # PLAC-seq 
+    if(show_placseq){
+      track.Nott_plac <- NOTT_2019.plac_seq_plot(finemap_DT,
+                                                 title=gene,
+                                                 return_interaction_track = T,
+                                                 show_arches = T)
+      TRACKS_list <- append(TRACKS_list, track.Nott_plac)
+      names(TRACKS_list)[length(TRACKS_list)] <- "Nott (2019)\nPLAC-seq"
+    }
+    
   }
 
 

@@ -348,10 +348,11 @@ COLOC.iterate_QTL <- function(GTEx_version="GTEx_V7",
                               dataset.gwas.name = "./Data/GWAS/Nalls23andMe_2019"){
   FM_all <- merge_finemapping_results(minimum_support = 0, 
                                       include_leadSNPs = T, 
-                                      dataset = dataset.gwas.name)
+                                      dataset = dataset.gwas.name, 
+                                      xlsx_path = F)
   QTL_files <- list.files(path = "./Data/QTL", pattern = "*.finemap.txt.gz", recursive = T, full.names = T)
-  # QTL_files <- grep(paste(c("GTEx","Fairfax", "MESA"),collapse="|"), QTL_files, value = T)
-  QTL_files <- grep(paste(c("Fairfax"),collapse="|"), QTL_files, value = T)
+  QTL_files <- grep(paste(c("GTEx","Cardiogenics","MESA","psychENCODE"),collapse="|"), QTL_files, value = T)
+  # QTL_files <- grep(paste(c("Fairfax"),collapse="|"), QTL_files, value = T)
  
   # qtl_file = QTL_files[28] # Need allele/MAF info: 1:4 (Brain_xQTL_Serve), 5:6 (Cardiogenics), 7:10 (Fairfax), 28:31 (psychENCODE) ##### (GTEx and MESA are good (tho MESA needs sample size))
   COLOC_DT <- lapply(QTL_files, function(qtl_file){

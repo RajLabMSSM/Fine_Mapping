@@ -119,7 +119,7 @@ loci <- unique(top_SNPs$Gene)
 #  
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci = "MED12L", #unique(c("LRRK2", loci)),
+                                               loci = "LRRK2", #unique(c("LRRK2", loci)),
                                                trim_gene_limits = F,#c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
@@ -171,9 +171,11 @@ merged_DT <- merge_finemapping_results(minimum_support=1,
                                       consensus_thresh = 2,
                                       haploreg_annotation=F,
                                       biomart_annotation=F, 
-                                      verbose = F)
-merged_DT <- merged_DT %>% dplyr::rename(Locus=Gene) 
-no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
+                                      verbose = F) %>% 
+  dplyr::rename(Locus=Gene) 
+no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1", 
+                # Tau region 
+                "RETREG3","UBTF","FAM171A2","MAP3K14","CRHR1","MAPT-AS1","KANSL1","NSF","WNT3")
 merged_DT <- subset(merged_DT, !(Locus %in% no_no_loci))
 
 # Sort from loci with the smallest to largest UCS size.
@@ -268,10 +270,13 @@ missense <- snp_info %>%
   dplyr::group_by(refsnp_id) %>% 
   dplyr::summarise(Missense = ifelse(any(consequence_type_tv=="missense_variant",na.rm = T),T,F)) %>%
   data.table::data.table()
+
 merged_DT <- data.table:::merge.data.table(merged_DT, missense,
                                            all.x=T,
                                            by.x="SNP",
                                            by.y = "refsnp_id")
+missense_counts <- merged_DT %>% dplyr::group_by(Locus) %>%
+  dplyr::summarise(Missense=sum(Missense))
 printer(sum(subset(merged_DT, Consensus_SNP>0)$Missense, na.rm = T),"missense mutations detected in UCS.")
 ```
 
@@ -283,31 +288,27 @@ printer(sum(subset(merged_DT, Consensus_SNP>0)$Missense, na.rm = T),"missense mu
 # regions <- NOTT_2019.get_regulatory_regions(merged_DT)
 # gr.regions <- GenomicRanges::makeGRangesFromDataFrame(df = regions, 
 #                                                       seqnames.field = "chr", 
-#                                                       start.field = "start", 
+#                                                        start.field = "start", 
 #                                                       end.field = "end", 
 #                                                       keep.extra.columns = T)
-gr.peaks <- NOTT_2019.get_epigenomic_peaks(peak.dir="/Volumes/Scizor/Nott_2019/peaks",
-                                             narrow_peaks = T, 
-                                             broad_peaks = T)
-gr.finemap <- GenomicRanges::makeGRangesFromDataFrame(df = subset(merged_DT, Support>0) %>%
-                                                        dplyr::mutate(CHR=paste0("chr",CHR)), 
-                                                      seqnames.field = "chr", 
-                                                      start.field = "POS", 
-                                                      end.field = "POS", 
-                                                      keep.extra.columns = T)
-overlap <- GenomicRanges:::findOverlaps_GenomicRanges(gr.peaks,
-                                                      gr.finemap,
-                                                      minoverlap = 1,ignore.strand = T)
+# gr.peaks <- NOTT_2019.get_epigenomic_peaks(peak.dir="../../data/Nott_2019/peaks",
+#                                              narrow_peaks = T,
+#                                              broad_peaks = F)
+regions <- readRDS("/Volumes/Steelix/fine_mapping_files/narrow_peaks_granges.RDS") 
+## $$$$$ HERE $$$$$$ : use for fig 1, third col
+# regions <- NOTT_2019.get_regulatory_regions(finemap_DT = merged_DT)  
+# Report overlap 
+gr.hits <- NOTT_2019.report_regulatory_overlap(finemap_DT=subset(merged_DT,Consensus_SNP),
+                                              regions=regions)
+# gr.hits <- data.frame(gr.hits)[,c("SNP","Name","Cell_type","Element","start","end","middle")]
+gr.hits <- data.frame(gr.hits)[,c("SNP","name","score","Cell_type","Assay","marker")]
 
-nott_overlap <- cbind(data.frame(gr.finemap[overlap@to,"SNP"]),
-                      data.frame(gr.peaks[overlap@from,]@elementMetadata))
-
+ 
 merged_annot <- data.table:::merge.data.table(data.table::data.table(merged_DT), 
-                                               data.table::data.table(nott_overlap),
+                                               data.table::data.table(gr.hits),
                                                all.x = T,
                                                by = "SNP") 
-remove(gr.peaks, gr.finemap, overlap, nott_overlap)
-
+if(nrow( subset(merged_annot, !is.na(Cell_type)) )==0){warning("No SNPs overlapping with peaks...")} 
 ```
 
 ### Melt Consensus Annotation Data        
@@ -316,12 +317,21 @@ remove(gr.peaks, gr.finemap, overlap, nott_overlap)
 # Identify whether consensus SNPs are GWAS lead
 # You have to subset within summarise (not beforehand) to avoid  dropping any loci without consensus SNPs  
 merged_annot <- merged_annot %>% 
-  dplyr::group_by(Locus) %>% 
-  dplyr::mutate(topConsensus = ifelse(Consensus_SNP & mean.PP==max(mean.PP),T,F))
-consensus_melt <-  setDT(merged_annot)[, .(Count = uniqueN(SNP[topConsensus == T], na.rm = T)), 
-                                       by=c("Locus","Cell_type","Assay")] %>% 
+  dplyr::group_by(Locus, Cell_type, Assay) %>% 
+  dplyr::mutate(topConsensus = ifelse(Consensus_SNP & mean.PP==max(mean.PP,na.rm = T),T,F)) %>%
+  data.table::data.table()
+
+
+consensus_melt <- # merged_annot %>%
+  # dplyr::group_by(Locus, Cell_type, Assay) %>% 
+  # dplyr::summarise(Count =  n_distinct(SNP[topConsensus], na.rm = T)) %>%
+  setDT(merged_annot)[, .(Count = n_distinct(SNP[Consensus_SNP>0], na.rm = T)),
+                                       by=c("Locus","Cell_type","Assay")] %>%
   subset(!is.na(Cell_type) & !is.na(Assay)) %>%
-  dplyr::mutate(Annotation = paste0(Cell_type,"_",Assay))
+  dplyr::mutate(Annotation = paste0(Cell_type,"_",Assay)) %>%
+  # Merge with missense data
+  merge(missense_counts, on="Locus", all=T)
+
 consensus_melt$Locus <- factor(consensus_melt$Locus,  levels = locus_order$Locus, ordered = T)
 length(unique(consensus_melt$Locus)) 
 ```
@@ -336,11 +346,16 @@ melt.dat <- merged_DT %>%
   unique() %>%
   dplyr::group_by(Locus, .drop=F) %>%
     summarise_at(vars(ends_with(".Credible_Set")),
-                 funs(sum(unique(.), na.rm = T))) %>% 
+                 funs(n_distinct(SNP[.>0], na.rm = T))) %>% 
   reshape2:::melt.data.frame(measure.vars = CS_cols, 
                              variable.name = "CS", 
-                             value.name = "Credible Set size") %>% 
-  dplyr::mutate(Method=gsub(".Credible_Set$","", CS))
+                             value.name = "Credible Set size") %>%  
+  merge(locus_order, by="Locus", all = T) %>%
+   dplyr::mutate(Method=gsub(".Credible_Set$","", CS),
+                Locus_UCS=paste0(Locus,"  (",UCS_size,")")) %>%
+  arrange(UCS_size, Method) %>%
+  dplyr::mutate(Locus = factor(Locus,  levels = locus_order$Locus, ordered = T),
+                Method=factor(Method ))
 melt.dat$Locus <- factor(melt.dat$Locus,  levels = locus_order$Locus, ordered = T)
  
 
@@ -348,41 +363,72 @@ melt.dat$Locus <- factor(melt.dat$Locus,  levels = locus_order$Locus, ordered = 
 library(patchwork)
 
 ## UCS
-gg_CS_count <- ggplot(data=locus_order,aes(x=Locus, y=UCS_size, fill=-UCS_size)) +
-  geom_col(color="white", show.legend = F) +
-  geom_text(aes(label = UCS_size, color=-UCS_size), nudge_y = .5, size=3, show.legend = F) +
-  labs(y="Union Credible Set size") +
-  coord_flip() + 
- theme_classic()
+# gg_CS_count <- ggplot(data=locus_order,aes(x=Locus, y=UCS_size, fill=-UCS_size)) +
+#   geom_col(color="white", show.legend = F) +
+#   geom_text(aes(label = UCS_size, color=-UCS_size), nudge_y = .5, size=3, show.legend = F) +
+#   labs(y="Union Credible Set size") +
+#   coord_flip() + 
+#  theme_classic()
 
 ## Method-specific CS
-gg_method_CS_count <- ggplot(data = melt.dat) + 
-  geom_col(aes(x=Locus, y=`Credible Set size`, fill=Method), color="black", size=.05) +  
-  labs(x=NULL) + 
-  coord_flip() +
-  theme_classic() +
+melt.dat[melt.dat$`Credible Set size`==0 | is.na(melt.dat$`Credible Set size`),"Credible Set size"] <- NA
+gg_method_CS_count <- ggplot(data = melt.dat,
+                             aes(y=Locus, x=`Credible Set size`, fill=Method)) + 
+  geom_bar(stat = "identity", color="white", size=.05) + 
+  geom_text(aes(label = `Credible Set size`), color="grey20",
+            size=3, show.legend = F, position = position_stack(vjust = .5)) +
+  geom_text(aes(x=sum(`Credible Set size`), label = UCS_size),
+            size=3, show.legend = F, position = position_stack(vjust = 1)) +
+  
+  labs(x=NULL, y="Locus  (UCS size)\n") + 
+  # coord_flip() +
+  theme_bw() +
   theme(legend.position = "top", 
-        axis.text.y = element_blank(),
-        axis.title.y = element_blank(),
+        # axis.text.y = element_blank(),
+        # axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
         legend.text = element_text(size = 8), 
         legend.key.size = unit(.5, units = "cm" )) +
   guides(fill = guide_legend(nrow = 2, 
                              title.position = "top",
                              title.hjust = .5)) 
 
+# gg_method_CS_count
+consensus_melt$dummy <- "UCS missense\nmutations"
+consensus_melt[consensus_melt$Missense==0 | is.na(consensus_melt$Missense),"Missense"] <- NA
+consensus_melt$Missense <- factor(consensus_melt$Missense, ordered = T)
+
+gg_missense <- ggplot(data=consensus_melt, aes(x=dummy, y=Locus, fill=Missense)) +
+  geom_tile(show.legend = F) +
+  geom_text(aes(label = Missense)) +
+  scale_fill_discrete(na.value = "transparent") +
+  # scale_fill_viridis_d(na.value = "transparent") +
+  theme_bw() +
+  labs(y=NULL, x=NULL) +
+  theme(axis.text.y = element_blank(),
+        axis.text.x = element_text(angle=40, hjust=1),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank())
+# gg_missense
 
 ## Variant annotations
 # Extend palette beyond limit
 # consensus_colors <-  c("white",colorRampPalette(RColorBrewer::brewer.pal(8, "PuRd"))(max(consensus_melt$Count)))
-consensus_melt[consensus_melt$Count==0,"Count"] <- NA
-gg_consensus_annot <- ggplot(data=consensus_melt, aes(x=Annotation, y=Locus, fill=Count)) +
-   geom_raster() +  
-   # scale_fill_manual(values = consensus_colors) +  
-   scale_fill_gradient(na.value = "transparent", low = scales::alpha("blue",.7), high = scales::alpha("red",.7)) +
-   geom_point(aes(size=ifelse(Count>0, "dot", "no_dot")), show.legend = F, alpha=.8, color="white") +
+consensus_melt[consensus_melt$Count==0 | is.na(consensus_melt$Count),"Count"] <- NA
+consensus_melt$Cell_type <- gsub("oligodendrocytes","oligo",consensus_melt$Cell_type)
+consensus_melt$Cell_type <- gsub("peripheral PU1\\+","periph",consensus_melt$Cell_type)
+gg_consensus_annot <- ggplot(data=subset(consensus_melt, !is.na(Assay)), 
+                             aes(x=Assay, y=Locus, fill=Count, group=Count)) +
+   geom_tile(color="white") +  
+   # scale_fill_manual(values = consensus_colors) +
+  # scale_fill_discrete(na.value = "transparent") +
+   scale_fill_gradient(na.value = "transparent",low = scales::alpha("blue",.7), high = scales::alpha("red",.7)) +
+   # geom_point(aes(size=ifelse(Count>0, "dot", "no_dot")), show.legend = F, alpha=.8, color="white") +
+  facet_grid(facets = .~Cell_type) +  
    scale_size_manual(values=c(dot=.5, no_dot=NA), guide="none") +
-   labs(fill = "Consensus SNP Count") +
-   theme_classic() +
+   labs(fill = "UCS SNPs within\nepigenomic peaks") +
+   theme_bw() +
    theme(legend.position = "top",  
          legend.title.align = .5,
          axis.text.x = element_text(angle = 40, hjust = 1),
@@ -390,14 +436,17 @@ gg_consensus_annot <- ggplot(data=consensus_melt, aes(x=Annotation, y=Locus, fil
          legend.key = element_rect(colour = "gray60"),
          axis.text.y = element_blank(), 
          axis.title.y = element_blank(), 
+         strip.background = element_rect(fill="grey90"),
          legend.text = element_text(size = 8),
          legend.text.align = .5,
          # legend.key.size = unit(.5, units = "cm" ),
          legend.box="horizontal",
          panel.background = element_rect(fill = 'transparent'),
          # panel.grid = element_line(color="gray", size=5),
-         panel.grid.major = element_line(color="white", size=5),
-         panel.grid.minor = element_line(color="white", size=5)) +  
+         # panel.grid.major.x = element_line(color="gray", size=.5),
+         # panel.grid.major.x = element_line(color="gray", size=.5),
+
+         panel.grid.minor = element_line(color="white", size=.5)) +  
   guides(color = guide_legend(nrow = 1, reverse = F,
                                title.position = "top",
                                # label.position = "top",
@@ -405,10 +454,16 @@ gg_consensus_annot <- ggplot(data=consensus_melt, aes(x=Annotation, y=Locus, fil
                                label.hjust = -1)) +
   # Keep unused levels/Loci
   scale_y_discrete(drop=FALSE)
-# Merge tgoether
-gg_locus_summary / 
-  (gg_CS_count + gg_method_CS_count + gg_consensus_annot) +
-  patchwork::plot_layout(heights = c(.15,1))
+# gg_consensus_annot
+
+# Merge
+gg_merged <- (patchwork::plot_spacer() + gg_locus_summary + plot_layout(widths = c(.4,.6)))  / 
+  (gg_method_CS_count + gg_missense + gg_consensus_annot + plot_layout(widths = c(1,.1,1))) +
+  patchwork::plot_layout(heights = c(.15,1),ncol = 1)
+gg_merged
+
+ggsave("./Data/GWAS/Nalls23andMe_2019/_genome_wide/Fig2.svg",dpi = 500,
+       height=16, width=10)
 ```
 
 
@@ -436,9 +491,8 @@ if(startsWith(getwd(),"/sc/")){
 sumstats_paths <- list.files("./Data/GWAS/Nalls23andMe_2019",
                              pattern = "*Multi-finemap_results.txt|*Multi-finemap.tsv.gz",
                              recursive = T, full.names = T)
-no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
- 
 
+no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
 sumstats_paths <- sumstats_paths[!basename(dirname(dirname(sumstats_paths))) %in% no_no_loci]
 # meta <- catalogueR.list_eQTL_datasets(save_path = F, force_new = T)
 gwas.qtl_paths <- catalogueR.run(
@@ -599,7 +653,117 @@ createDT(subset(merged_DT, !is.na(sQTL.pval)))
 ```{r}
 ```
 
+# Singleton comparison
 
+Compare echolocatoR to Singleton results
+
+```{r}
+merged_DT <- merge_finemapping_results(minimum_support=0,
+                                      include_leadSNPs=T,
+                                      dataset = "./Data/GWAS/Nalls23andMe_2019",
+                                      xlsx_path=F,
+                                      from_storage=T,
+                                      consensus_thresh = 2,
+                                      haploreg_annotation=F,
+                                      biomart_annotation=F, 
+                                      verbose = F) %>% 
+  dplyr::rename(Locus=Gene) 
+
+dat <- data.table::fread("/Volumes/Steelix/fine_mapping_files/pd_meta5_sum_stats_fm_results.csv.gz")
+DAT <- data.table::merge.data.table(merged_DT, dat,
+                                    by.x =c("SNP","A1","A2"),
+                                    by.y =c("SNP","A1","A2")) %>% 
+  dplyr::group_by(SNP) %>% 
+  top_n(n = 1, wt = -P) %>% 
+  data.frame()
+remove(merged_DT, dat)
+
+
+CS_overlap <- function(DAT){
+  OVERLAP <- lapply(c("ABF","FINEMAP","SUSIE","POLYFUN_SUSIE","mean"), function(x){
+    print(x)
+    cs1 <- unique(subset(DAT, prob>.95)$SNP)
+    cs2 <- unique( DAT[DAT[[paste0(x,".Credible_Set")]]>0,]$SNP )
+    cs2 <- cs2[!is.na(cs2)]
+  
+   
+    overlap <- intersect(cs1, cs2)
+    comp_df <- data.frame(Singleton_CS_size=length(cs1), 
+                          Raj_CS_size=length(cs2),
+                          Singleton_CS.overlap_prop=round(length(overlap)/length(cs1),2),
+                          Raj_CS.overlap_prop=round(length(overlap)/length(cs2),2), 
+                          overlap=length(overlap),
+                          method=x)
+    return(comp_df)
+  }) %>% data.table::rbindlist()
+  
+  
+  
+}
+
+
+finemap_correlations <- function(DAT, 
+                                 x_var="prob",
+                                 y_var="FINEMAP.PP",
+                                 dropna=T,
+                                 method="pearson",
+                                 y_CS_filter=F){
+  if(y_CS_filter){
+    fm_method <- gsub("\\.PP",".Credible_Set",y_var)
+    DAT <- DAT[DAT[fm_method]>0,]
+  }
+ 
+  prob_dat <- data.frame(x=DAT[[x_var]], 
+                         y=DAT[[y_var]])
+  
+  if(dropna){
+     prob_dat <- prob_dat[complete.cases(prob_dat),] # or fillna with 0 
+  } else { prob_dat[is.na(prob_dat)] <- 0}
+ 
+  prob_thresh <- 0
+  prob_dat <- subset(prob_dat, x>prob_thresh | y>prob_thresh)
+  # if(method=="phi"){
+  #   sqrt(chisq.test(table(prob_dat$x,prob_dat$y),
+  #                   correct=FALSE)$statistic/length(prob_dat$x))
+  # }
+  out <- cor.test(prob_dat$x, prob_dat$y, method = method)   
+  res <- data.table::data.table(x_var=x_var, y_var=y_var, 
+                                t=out$statistic, 
+                                pval=out$p.value,
+                                coef=out$estimate,
+                                method=method)
+  return(res)
+}
+
+iterate_finemap_correlations <- function(DAT){
+  RES <- lapply(c("ABF.PP","FINEMAP.PP","SUSIE.PP","POLYFUN_SUSIE.PP","mean.PP"), function(y){
+  print(y)
+  res <- finemap_correlations(DAT, x_var="prob", y_var=y, 
+                              dropna = T, method = "pearson",
+                              y_CS_filter=T)
+  return(res)
+}) %>% data.table::rbindlist()
+  return(RES)
+}
+
+# RES 
+
+
+
+
+plot_finemap_correlations <- function(DAT,
+                                      x_var="prob",
+                                      y_var="FINEMAP.PP"){
+  prob_dat <- data.frame(x=DAT[[x_var]], 
+                         y=DAT[[y_var]])
+  ggplot(prob_dat, aes(x=x, y=y)) + 
+    geom_point(alpha=.5) + 
+    labs(title=paste("Singleton FINEMAP PP x Raj",gsub("\\."," ",y_var))) +
+    theme_bw()
+}
+ 
+ 
+```
 
 
 # Session Information

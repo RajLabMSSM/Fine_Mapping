@@ -142,20 +142,25 @@ IMPACT.compute_enrichment <- function(annot_melt, locus=NULL){
 IMPACT.iterate_enrichment <- function(gwas_paths,
                                       annot_baseURL="../../data/IMPACT/IMPACT707/Annotations"){
   # gwas_paths <- list.files(path = "./Data/GWAS/Nalls23andMe_2019", pattern = "Multi-finemap_results.txt", recursive = T, full.names = T)
-  
+  # no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1")
+  # gwas_paths <- gwas_paths[!basename(dirname(dirname(gwas_paths))) %in% no_no_loci]
+ 
   ENRICH <- lapply(gwas_paths, function(x){
     locus <- basename(dirname(dirname(x)))
     message(locus)
-    subset_DT <- data.table::fread(x, nThread = 4)
-    if(!"Locus" %in% colnames(subset_DT)){
-      subset_DT <- cbind(Locus=locus, subset_DT) 
-    }
-    subset_DT <- find_consensus_SNPs(finemap_DT = subset_DT)
-    annot_melt <- IMPACT.get_annotations(baseURL = annot_baseURL, 
-                                         subset_DT = subset_DT, 
-                                         nThread = 4) 
-    enrich <- IMPACT.compute_enrichment(annot_melt = annot_melt,
-                                        locus = locus)
+    enrich <- NULL
+    try({
+      subset_DT <- data.table::fread(x, nThread = 4)
+      if(!"Locus" %in% colnames(subset_DT)){
+        subset_DT <- cbind(Locus=locus, subset_DT) 
+      }
+      subset_DT <- find_consensus_SNPs(finemap_DT = subset_DT)
+      annot_melt <- IMPACT.get_annotations(baseURL = annot_baseURL, 
+                                           subset_DT = subset_DT, 
+                                           nThread = 4) 
+      enrich <- IMPACT.compute_enrichment(annot_melt = annot_melt,
+                                          locus = locus)
+    }) 
     return(enrich)
   }) %>% data.table::rbindlist(fill=T)
   # ENRICH
