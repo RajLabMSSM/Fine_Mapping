@@ -4,6 +4,21 @@
 
 
 
+IMPACT.get_annotation_key <- function(URL="https://github.com/immunogenomics/IMPACT/raw/master/IMPACT707/IMPACT_annotation_key.txt",
+                                      save_path="./echolocatoR/annotations/IMPACT/IMPACT_annotation_key.txt.gz",
+                                      force_new_download=F){
+  if(file.exists(save_path) & force_new_download==F){
+    print("+ IMPACT:: Importing local anotation key...")
+    annot.key <- data.table::fread(save_path)
+  } else {
+    print("+ IMPACT:: Downloading annotation key from GitHub...")
+    annot.key <- data.table::fread(URL)
+    data.table::fwrite(annot.key, save_path, sep="\t")
+    R.utils::gzip(save_path)
+  }
+  annot.key$Annot <- as.factor(paste0("Annot",annot.key$IMPACT))
+  return(annot.key)
+}
 
 
 IMPACT.get_annotations <- function(baseURL="https://github.com/immunogenomics/IMPACT/raw/master/IMPACT707/Annotations",
@@ -45,24 +60,42 @@ IMPACT.get_annotations <- function(baseURL="https://github.com/immunogenomics/IM
 } 
 
 
-IMPACT.get_annotation_key <- function(URL="https://github.com/immunogenomics/IMPACT/raw/master/IMPACT707/IMPACT_annotation_key.txt",
-                                      save_path="./echolocatoR/annotations/IMPACT/IMPACT_annotation_key.txt.gz",
-                                      force_new_download=F){
-  if(file.exists(save_path) & force_new_download==F){
-    print("+ IMPACT:: Importing local anotation key...")
-    annot.key <- data.table::fread(save_path)
-  } else {
-    print("+ IMPACT:: Downloading annotation key from GitHub...")
-    annot.key <- data.table::fread(URL)
-    data.table::fwrite(annot.key, save_path, sep="\t")
-    R.utils::gzip(save_path)
-  }
-  annot.key$Annot <- as.factor(paste0("Annot",annot.key$IMPACT))
-  return(annot.key)
-}
 
 # quick_finemap()
 # annot_melt <- IMPACT.get_annotations(baseURL = "/Volumes/Steelix/IMPACT/IMPACT707/Annotations", subset_DT = subset_DT)
+
+IMPACT.iterate_get_annotations <- function(merged_DT,
+                                           IMPACT_score_thresh=.1){
+  IMPACT_score_thresh = .1
+  no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1",
+                  # Tau region
+                  "RETREG3","UBTF","FAM171A2","MAP3K14","CRHR1","MAPT-AS1","KANSL1","NSF","WNT3")
+  merged_DT <- merge_finemapping_results(minimum_support=1,
+                                         include_leadSNPs=T,
+                                         dataset = "./Data/GWAS/Nalls23andMe_2019",
+                                         xlsx_path=F,
+                                         from_storage=T,
+                                         consensus_thresh = 2,
+                                         haploreg_annotation=F,
+                                         biomart_annotation=F,
+                                         verbose = F) %>%
+    dplyr::rename(Locus=Gene) %>%
+    subset(!(Locus %in% no_no_loci))
+ 
+  #
+  
+  ANNOT_MELT <- lapply(unique(merged_DT$Locus), function(locus){
+    message("+ IMPACT:: Gathering annotations for Locus = ",locus)
+    subset_DT <- subset(merged_DT, Locus==locus)
+    annot_melt <- IMPACT.get_annotations(baseURL = "/Volumes/Steelix/IMPACT/IMPACT707/Annotations", 
+                                         subset_DT = subset_DT,
+                                         nThread = 4)
+    annot_melt <- subset(annot_melt, IMPACT_score>=IMPACT_score_thresh)
+    printer("+ IMPACT::",nrow(annot_melt),"annotations found at IMPACT_score ≥", IMPACT_score_thresh)
+    return(annot_melt)
+  }) %>% data.table::rbindlist()
+ return(ANNOT_MELT)
+}
 
 
 IMPACT.get_top_annotations <- function(){
