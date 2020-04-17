@@ -70,7 +70,7 @@ construct_SNPs_labels <- function(subset_DT, lead=T, method=T, consensus=T, verb
   
   ## BEFORE fine-mapping  
   if(lead){
-    before <- subset( subset_DT %>% arrange(P), leadSNP == T)[1,]  
+    before <- subset( subset_DT %>% arrange(P), leadSNP == T)
     before$type <- "Lead SNP"
     before$color <- "red"
     before$shape <- 18
