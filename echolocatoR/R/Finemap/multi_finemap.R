@@ -33,7 +33,7 @@ find_consensus_SNPs <- function(finemap_DT,
   PP.sub <- subset(finemap_DT, select=c("SNP",PP.cols)) %>% data.frame()# %>% unique()
   PP.sub[is.na(PP.sub)] <- 0
   if(NCOL(PP.sub[,-1]) > 1){
-    finemap_DT$mean.PP <- rowMeans(PP.sub[,-1])
+    finemap_DT$mean.PP <- rowMeans(PP.sub[,-1], na.rm = T)
   } else{
     finemap_DT$mean.PP <- PP.sub[,-1]
   }

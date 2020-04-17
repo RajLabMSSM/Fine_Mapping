@@ -179,7 +179,8 @@ no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1",
 merged_DT <- subset(merged_DT, !(Locus %in% no_no_loci))
 
 # Sort from loci with the smallest to largest UCS size.
-locus_order <- subset(merged_DT, Support>0) %>% 
+locus_order <- merged_DT
+  # subset(merged_DT, Support>0) %>% 
   dplyr::group_by(Locus, .drop=F) %>% 
   dplyr::summarise_at(vars(ends_with("Credible_Set")),
                       funs(size=n_distinct(SNP[.>0], na.rm = T),

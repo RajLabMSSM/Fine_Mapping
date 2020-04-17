@@ -252,11 +252,99 @@ save_annotations <- function(gr, anno_path, libName){
 }
 
 
+
+transcript_model_track <- function(gr.snp_CHR,
+                             max_transcripts=1,
+                             show.legend=T){
+  library(ggbio)
+  printer("++ GGBIO:: Gene Model Track")
+  lead.index <- which(gr.snp_CHR$leadSNP==T)
+  print("+ Annotating at transcript-level.")
+  db.gr <- ensembldb::transcripts(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75) %>%
+    data.table::as.data.table() %>%
+    dplyr::mutate(index=row.names(.)) %>%
+    dplyr::group_by(gene_id) %>%
+    dplyr::slice(1:max_transcripts)
+  if(!"symbol" %in% colnames(db.gr)){
+    db.gr$symbol <- ensembl_to_hgnc(db.gr$gene_id)
+  }
+  # Subset to only the region encompassed by the sumstats
+  db.gr <- subset(db.gr, seqnames == unique(gr.snp_CHR$CHR) &
+                    start >= min(gr.snp_CHR$POS) &
+                    end <= max(gr.snp_CHR$POS)) %>%
+    GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns = T)
+  db.gr$symbol <- factor(db.gr$symbol, levels = unique(db.gr$symbol), ordered = T) 
+  edb <-  ensembldb::addFilter( EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75, 
+                                AnnotationFilter::TxIdFilter(db.gr$tx_id))
+  track.genes <- autoplot(edb,
+                          # Have to limit (can only handle depth < 1000)
+                          which = db.gr,
+                          names.expr = "symbol",
+                          aes(fill=symbol, color=symbol),
+                          show.legend=show.legend)  +
+    theme_classic() +
+    theme(strip.text.y = element_text(angle = 0),
+          strip.text = element_text(size=9),
+          legend.text = element_text(size=5),
+          legend.key.width=unit(.1,"line"),
+          legend.key.height=unit(.1,"line")) +
+    guides(fill=guide_legend(override.aes = list(size=1), ncol=4),
+           color=guide_legend(override.aes = list(size=1), ncol=4),
+           size=.5)
+  track.genes
+  return(track.genes)
+}
+
+
+
+# gene_model_track <- function(gr.snp_CHR,
+#                              max_transcripts=1,
+#                              show.legend=T){
+#   library(ggbio)
+#   printer("++ GGBIO:: Gene Model Track")
+#   lead.index <- which(gr.snp_CHR$leadSNP==T)
+#   print("+ Annotating at transcript-level.")
+#   db.gr <- ensembldb::genes(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75) %>%
+#     data.table::as.data.table() %>%
+#     dplyr::mutate(index=row.names(.)) %>%
+#     dplyr::group_by(gene_name) %>%
+#     dplyr::slice(1:max_transcripts)
+#   if(!"symbol" %in% colnames(db.gr)){
+#     db.gr$symbol <- ensembl_to_hgnc(db.gr$gene_id)
+#   }
+#   # Subset to only the region encompassed by the sumstats
+#   db.gr <- subset(db.gr, seqnames == unique(gr.snp_CHR$CHR) &
+#                     start >= min(gr.snp_CHR$POS) &
+#                     end <= max(gr.snp_CHR$POS)) %>%
+#     GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns = T)
+#   db.gr$symbol <- factor(db.gr$symbol, levels = unique(db.gr$symbol), ordered = T) 
+#   edb <-  ensembldb::addFilter( EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75, 
+#                                 AnnotationFilter::GeneNameFilter(db.gr$gene_name))
+#   track.genes <- autoplot(edb,
+#                           # Have to limit (can only handle depth < 1000)
+#                           which = db.gr,
+#                           names.expr = "gene_name",
+#                           aes(fill=gene_name, color=gene_name),
+#                           show.legend=show.legend)  +
+#     theme_classic() +
+#     theme(strip.text.y = element_text(angle = 0),
+#           strip.text = element_text(size=9),
+#           legend.text = element_text(size=5),
+#           legend.key.width=unit(.1,"line"),
+#           legend.key.height=unit(.1,"line")) +
+#     guides(fill=guide_legend(override.aes = list(size=1), ncol=4),
+#            color=guide_legend(override.aes = list(size=1), ncol=4),
+#            size=.5)
+#   track.genes
+#   return(track.genes)
+# }
+
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 ############ PLOT ALL TRACKS TOGETHER ############
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$#
+
 
 GGBIO.plot <- function(finemap_DT,
                        LD_matrix,
@@ -347,42 +435,10 @@ GGBIO.plot <- function(finemap_DT,
   # Track 3: Gene Model Track
   # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   # DB tutorial: https://rdrr.io/bioc/ensembldb/f/vignettes/ensembldb.Rmd
-  printer("++ GGBIO:: Gene Model Track")
-  lead.index <- which(gr.snp_CHR$leadSNP==T)
-  print("+ Annotating at transcript-level.")
-  db.gr <- ensembldb::transcripts(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75) %>%
-    data.table::as.data.table() %>%
-    dplyr::mutate(index=row.names(.)) %>%
-    dplyr::group_by(gene_id) %>%
-    dplyr::slice(1:max_transcripts)
-  if(!"symbol" %in% colnames(db.gr)){
-    db.gr$symbol <- ensembl_to_hgnc(db.gr$gene_id)
-  }
-  # Subset to only the region encompassed by the sumstats
-  db.gr <- subset(db.gr, seqnames == unique(gr.snp_CHR$CHR) &
-                    start >= min(gr.snp_CHR$POS) &
-                    end <= max(gr.snp_CHR$POS)) %>%
-    GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns = T)
-  db.gr$symbol <- factor(db.gr$symbol, levels = unique(db.gr$symbol), ordered = T) 
-  edb <-  ensembldb::addFilter( EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75, 
-                                AnnotationFilter::TxIdFilter(db.gr$tx_id))
-  track.genes <- autoplot(edb,
-                          # Have to limit (can only handle depth < 1000)
-                          which = db.gr,
-                          names.expr = "gene_name",
-                          aes(fill=gene_name, color=gene_name),
-                          show.legend=T)  +
-    theme_classic() +
-    theme(strip.text.y = element_text(angle = 0),
-          strip.text = element_text(size=9),
-          legend.text = element_text(size=5),
-          legend.key.width=unit(.1,"line"),
-          legend.key.height=unit(.1,"line")) +
-    guides(fill=guide_legend(override.aes = list(size=1), ncol=4),
-           color=guide_legend(override.aes = list(size=1), ncol=4),
-           size=.5)
+  
   # track.genes <- invisible_legend(track.genes)
-
+  track.genes <- transcript_model_track(gr.snp_CHR, max_transcripts = max_transcripts)
+  
   TRACKS_list <- append(TRACKS_list, track.genes)
   names(TRACKS_list)[length(TRACKS_list)] <- "Gene Track"
 

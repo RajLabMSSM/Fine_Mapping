@@ -63,33 +63,39 @@ COJO_plot <- function(gene,
 
 
 
-construct_SNPs_labels <- function(DT, lead=T, method=T, consensus=T, verbose=F){ 
+construct_SNPs_labels <- function(subset_DT, lead=T, method=T, consensus=T, verbose=F, remove_duplicates=T){ 
   printer("+ PLOT:: Constructing SNP labels...", v=verbose)
   labelSNPs <- data.table::data.table() 
-  DT <- data.table::as.data.table(DT)
+  subset_DT <- data.table::as.data.table(subset_DT)
   
   ## BEFORE fine-mapping  
   if(lead){
-    before <- subset( DT %>% arrange(P), leadSNP == T)[1,]  
+    before <- subset( subset_DT %>% arrange(P), leadSNP == T)[1,]  
     before$type <- "Lead SNP"
     before$color <- "red"
+    before$shape <- 18
+    before$size <- 3
     labelSNPs <- rbind(labelSNPs, before, fill=T)
   }
   if(method){
     # AFTER fine-mapping
-    after = subset(DT, Support>0) 
+    after = subset(subset_DT, Support>0) 
     if(dim(after)[1]>0){
       after$type <- "Credible Set"  
       after$color<- "green3"
+      after$shape <- 1
+      after$size=3
       labelSNPs <- rbind(labelSNPs, after, fill=T) 
     } 
   } 
-  if(consensus & "Consensus_SNP" %in% colnames(DT)){
+  if(consensus & "Consensus_SNP" %in% colnames(subset_DT)){
     # Conensus across all fine-mapping tools
-    cons_SNPs <- subset(DT, Consensus_SNP==T)
+    cons_SNPs <- subset(subset_DT, Consensus_SNP==T)
     if(dim(cons_SNPs)[1]>0){
       cons_SNPs$type <- "Consensus SNP"
       cons_SNPs$color <- "darkgoldenrod1"
+      cons_SNPs$shape <- 1
+      cons_SNPs$size=4
       labelSNPs <- rbind(labelSNPs, cons_SNPs, fill=T)
     } 
   } 
@@ -97,6 +103,21 @@ construct_SNPs_labels <- function(DT, lead=T, method=T, consensus=T, verbose=F){
   # labelGR <- transformDfToGr(data=labelSNPs, seqnames = "CHR", start = "POS", end = "POS")
   # names(labelGR) <- labelGR$SNP
   # plotGrandLinear(gr.snp, aes(y = P, x=POS), highlight.gr = labelGR)
+  
+  # If there's duplicates only show the last one
+  if(remove_duplicates){
+    labelSNPs$rowID <- 1:nrow(labelSNPs)
+    labelSNPs <- labelSNPs %>% 
+      dplyr::group_by(SNP) %>% 
+      dplyr::arrange(rowID) %>% 
+      dplyr::slice(n())  
+  } else {
+    labelSNPs$rowID <- 1:nrow(labelSNPs)
+    labelSNPs <- labelSNPs %>% 
+      dplyr::group_by(SNP, type) %>% 
+      dplyr::arrange(rowID) %>% 
+      dplyr::slice(n())  
+  }
   return(as.data.frame(labelSNPs))
 }
  

@@ -232,6 +232,28 @@ quick_finemap <- function(locus="LRRK2", consensus_thresh = 2){
   subset_DT <<- finemap_DT
 }
 
+
+quick_merged_DT <- function(){
+  no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1",
+                  # Tau region
+                  "RETREG3","UBTF","FAM171A2","MAP3K14","CRHR1","MAPT-AS1","KANSL1","NSF","WNT3")
+  merged_DT <- merge_finemapping_results(minimum_support=1,
+                                         include_leadSNPs=T,
+                                         dataset = "./Data/GWAS/Nalls23andMe_2019",
+                                         xlsx_path=F,
+                                         from_storage=T,
+                                         consensus_thresh = 2,
+                                         haploreg_annotation=F,
+                                         biomart_annotation=F,
+                                         verbose = F) %>%
+    dplyr::rename(Locus=Gene) %>%
+    subset(!(Locus %in% no_no_loci))
+  return(merged_DT )
+}
+
+
+
+
 effective_sample_size <- function(finemap_DT){
   finemap_DT$N <- (4.0 / (1.0/finemap_DT$N_cases + 1.0/finemap_DT$N_controls) )
   sample_size <- as.integer(median(finemap_DT$N))
@@ -517,6 +539,14 @@ dt.replace <- function(DT, target, replacement){
   return(DT)
 }
 
+assign_lead_SNP <- function(new_DT, verbose=T){
+  if(sum(new_DT$leadSNP)==0){
+    printer("+ leadSNP missing. Assigning new one by min p-value.", v=verbose)
+    top.snp <- head(arrange(new_DT, P, desc(Effect)))[1,]$SNP
+    new_DT$leadSNP <- ifelse(new_DT$SNP==top.snp,T,F)
+  }
+  return(new_DT)
+}
 
 subset_common_snps <- function(LD_matrix, finemap_DT, verbose=F){
   printer("+ Subsetting LD matrix and finemap_DT to common SNPs...", v=verbose)
@@ -541,11 +571,7 @@ subset_common_snps <- function(LD_matrix, finemap_DT, verbose=F){
   new_DT <- data.table::as.data.table(finemap_DT[common.snps, ])
   new_DT <- unique(new_DT)
   # Reassign the lead SNP if it's missing
-  if(sum(new_DT$leadSNP)==0){
-    printer("+ leadSNP missing. Assigning new one by min p-value.", v=verbose)
-    top.snp <- head(arrange(new_DT, P, desc(Effect)))[1,]$SNP
-    new_DT$leadSNP <- ifelse(new_DT$SNP==top.snp,T,F)
-  }
+  new_DT <- assign_lead_SNP(new_DT)
   # Check dimensions are correct
   if(nrow(new_DT)!=nrow(new_LD)){
     warning("+ LD_matrix and finemap_DT do NOT have the same number of SNPs.",v=verbose)
