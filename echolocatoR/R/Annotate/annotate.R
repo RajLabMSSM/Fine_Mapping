@@ -19,19 +19,17 @@ merge_finemapping_results <- function(minimum_support=0,
   if(from_storage){
     printer("+ Gathering all fine-mapping results from storage...", v=verbose)
     # Find all multi-finemap_results files
-    multi_dirs <- list.files(dataset, pattern = "Multi-finemap_results.txt", 
+    multi_dirs <- list.files(dataset, pattern = "Multi-finemap_results.txt|*_Multi-finemap.tsv.gz", 
                              recursive = T, full.names = T)
     dataset_names <- dirname(dirname(dirname(multi_dirs))) %>% unique() 
     # Loop through each GENE
     finemap_results <- lapply(dataset_names, function(dn, multi_dirs.=multi_dirs){
-      gene_dirs <- dirname(dirname(multi_dirs.))
+      # gene_dirs <- dirname(dirname(multi_dirs.))
       # Loop through each gene folder
-      all_results <- lapply(gene_dirs, function(gd){
-        gene <- basename(gd)
-        dirname(gd) 
+      all_results <- lapply(multi_dirs., function(md){
+        gene <- basename(dirname(dirname(md))) 
         printer("+ Importing results...",gene, v=verbose)
-        multi_data <- data.table::fread(file.path(gd,"Multi-finemap/Multi-finemap_results.txt"), 
-                                        nThread = 4)
+        multi_data <- data.table::fread(md, nThread = 4)
         multi_data <- cbind(data.table::data.table(Dataset=dn, Gene=gene), multi_data)
         return(multi_data)
       }) %>% data.table::rbindlist(fill=TRUE) # Bind genes
@@ -46,6 +44,9 @@ merge_finemapping_results <- function(minimum_support=0,
                                         exclude_methods = exclude_methods)
   
   merged_results <- subset(merged_results, Support>=minimum_support)
+  if(!"Locus" %in% colnames(merged_results)){
+    merged_results <- merged_results %>% dplyr::rename(Locus=Gene) %>% data.table::data.table()
+  }
   
   # Loop through each DATASET
   # merged_results <- lapply(unique(finemap_results$Dataset), function(dname, include_leadSNPs.=include_leadSNPs){ 

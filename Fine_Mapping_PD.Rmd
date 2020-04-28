@@ -110,7 +110,7 @@ top_SNPs <- data.table::rbindlist(list(top_SNPs,
                                       data.frame(CHR=12,POS=40388109, SNP="rs140722239",
                                                    P=2.691e-37, Effect=0.3869, Gene="SLC2A13", Locus=NA )
                                       ), use.names = T)
-loci <- unique(top_SNPs$Gene)
+# loci <- unique(top_SNPs$Gene)
 # # Filter loci
 # finished_loci <- list.files("./Data/GWAS/Nalls23andMe_2019",pattern = "_ggbio.png$",
 #            recursive = T, full.names = T) 
@@ -119,7 +119,7 @@ loci <- unique(top_SNPs$Gene)
 #  
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci = "LRRK2", #unique(c("LRRK2", loci)),
+                                               loci = "MED12L",#top_SNPs$Gene, #unique(c("LRRK2", loci)),
                                                trim_gene_limits = F,#c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
@@ -162,6 +162,24 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
 
 ## Gather Results
 
+```{r}
+MERGED_DT <- lapply(c("Kunkle_2019","Posthuma_2018"), function(x){
+  message(x)
+  merged_DT <- merge_finemapping_results(minimum_support=1,
+                                          include_leadSNPs=T,
+                                          dataset = file.path("./Data/GWAS",x),
+                                          xlsx_path=F,
+                                          from_storage=T,
+                                          consensus_thresh = 2,
+                                          haploreg_annotation=F,
+                                          biomart_annotation=F, 
+                                          verbose = F)
+  return(merged_DT)
+}) %>% data.table::rbindlist(fill=T)
+
+```
+
+
 ```{r Gather Results}
 merged_DT <- merge_finemapping_results(minimum_support=1,
                                       include_leadSNPs=T,
@@ -177,6 +195,16 @@ no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1",
                 # Tau region 
                 "RETREG3","UBTF","FAM171A2","MAP3K14","CRHR1","MAPT-AS1","KANSL1","NSF","WNT3")
 merged_DT <- subset(merged_DT, !(Locus %in% no_no_loci))
+
+mean(subset(merged_DT, leadSNP)$mean.PP, na.rm = T)
+mean(subset(merged_DT, Support>0)$mean.PP, na.rm = T)
+mean(subset(merged_DT, Consensus_SNP)$mean.PP, na.rm = T)
+
+head(arrange(merged_DT, Locus), 50)
+```
+
+
+```{r}
 
 # Sort from loci with the smallest to largest UCS size.
 locus_order <- merged_DT

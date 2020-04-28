@@ -59,7 +59,7 @@ SNP_track <- function(gr.snp,
   }
   dat <- as.data.frame(gr.snp)
   ### Label set
-  labelSNPs <- construct_SNPs_labels(DT = dat, lead=T, method=T, consensus=T)
+  labelSNPs <- construct_SNPs_labels(subset_DT = dat, lead=T, method=T, consensus=T, remove_duplicates = F)
   leader_SNP <- subset(labelSNPs, type=="Lead SNP")
   CS_set <- subset(labelSNPs, type=="Credible Set")
   label_tags <- subset(labelSNPs, (type %in% labels_subset))
@@ -279,8 +279,8 @@ transcript_model_track <- function(gr.snp_CHR,
   track.genes <- autoplot(edb,
                           # Have to limit (can only handle depth < 1000)
                           which = db.gr,
-                          names.expr = "symbol",
-                          aes(fill=symbol, color=symbol),
+                          names.expr = "gene_name",
+                          aes(fill=gene_name, color=gene_name),
                           show.legend=show.legend)  +
     theme_classic() +
     theme(strip.text.y = element_text(angle = 0),
