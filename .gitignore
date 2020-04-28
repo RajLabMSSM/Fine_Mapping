@@ -43,3 +43,4 @@ core.*
 /Data/**/**/_genome_wide/PolyFun/*.parquet
 /Data/**/**/*.parquet
 /Data/**/**/_genome_wide/eQTL_catalogue/*.query.tsv.gz 
+/Data/GWAS/Nalls23andMe_2019/_genome_wide/IMPACT/annot_melt_topAnnot_all.csv.gz
