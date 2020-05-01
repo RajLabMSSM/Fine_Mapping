@@ -7,7 +7,7 @@ message(" * installing R packages required for echolocatoR")
 
 # current CRAN version of foreign (dependency for ChIPQC) needs R >= 4.0 - so specify legacy version
 
-r_packages <- c("cowplot", "patchwork", "ggrepel", "curl", "gaston", "tidyverse", "BiocManager", "crayon", "roxygen2", "coloc", "haploR", "doBy")
+r_packages <- c("reticulate", "pbmcapply", "plotly","cowplot", "patchwork", "ggrepel", "curl", "gaston", "tidyverse", "BiocManager", "crayon", "roxygen2", "coloc", "haploR", "doBy")
 
 required_packages <- r_packages[ ! r_packages %in% installed.packages() ]
 
