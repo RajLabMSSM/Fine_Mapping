@@ -15,7 +15,8 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
                                             return_assay_track=F,
                                             binwidth=2500, 
                                             geom="histogram",
-                                            plot_formula="Assay + Cell_type ~."){
+                                            plot_formula="Assay + Cell_type ~.",
+                                            bigwig_dir=NULL){
   library(BiocGenerics)
   library(GenomicRanges)
   library(ggbio)
@@ -45,6 +46,8 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
   bigWigFiles <- readxl::read_excel("./echolocatoR/annotations/Nott_2019/Nott_2019.snEpigenomics.xlsx")
   # bigWigFiles <- subset(bigWigFiles, marker!="-" &  cell_type!="peripheral microglia")
   bigWigFiles <- dplyr::mutate(bigWigFiles, cell_type = gsub(" ",".",cell_type))
+  # Authors have since removed this from UCSC, but I saved it on Minerva beforehand.
+  subset(bigWigFiles, cell_type!="peripheral.PU1+") 
 
 
    
@@ -60,7 +63,10 @@ NOTT_2019.epigenomic_histograms <- function(finemap_DT,
                                                     keep.extra.columns = T)
   
   bw.grlist <- parallel::mclapply(1:nrow(bigWigFiles), function(i){
-    bw.file <- bigWigFiles$data_link[i]
+    if(!is.null(bigwig_dir)){
+      bw.file <- file.path(bigwig_dir,paste0(bigWigFiles$long_name[i],".ucsc.bigWig"))
+    } else { bw.file <- bigWigFiles$data_link[i]}
+   
     bw.name <- gsub("_pooled|pooled_","",bigWigFiles$name[i])
     printer("GVIZ:: Importing...",bw.name)
     bw.filt <- import.bw.filt(bw.file=bw.file,
@@ -296,7 +302,7 @@ NOTT_2019.report_regulatory_overlap <- function(finemap_DT, regions){
   library(GenomicRanges)
   library(BiocGenerics) 
   # consensus.snps <- subset(finemap_DT, Consensus_SNP==T) 
-  gr.consensus <- GenomicRanges::makeGRangesFromDataFrame(finemap_DT, 
+  gr.finemap <- GenomicRanges::makeGRangesFromDataFrame(finemap_DT, 
                                                           seqnames.field = "CHR", 
                                                           start.field = "POS", end.field = "POS",
                                                           ignore.strand = T,
@@ -313,15 +319,15 @@ NOTT_2019.report_regulatory_overlap <- function(finemap_DT, regions){
                                                           keep.extra.columns = T) 
   }
   
-  hits <- GenomicRanges::findOverlaps(query = gr.consensus,
+  hits <- GenomicRanges::findOverlaps(query = gr.finemap,
                                       subject = gr.regions) 
   
   gr.hits <- gr.regions[ S4Vectors::subjectHits(hits), ] 
   mcols(gr.hits) <- cbind(mcols(gr.hits),
-                          mcols(gr.consensus[S4Vectors::queryHits(hits),]) )
+                          mcols(gr.finemap[S4Vectors::queryHits(hits),]) )
   # gr.hits <- cbind(mcols(gr.regions[ S4Vectors::subjectHits(hits), ] ),
   #                         mcols(gr.consensus[S4Vectors::queryHits(hits),]) )
-  message("+ NOTT_2019:: ",nrow(mcols(gr.hits))," Consensus SNP(s) detected with functional overlap." )
+  message("",nrow(mcols(gr.hits))," query SNP(s) detected with reference overlap." )
   # print(data.frame(mcols(gr.hits[,c("Name","SNP")])) )
   return(gr.hits)
 }
@@ -419,7 +425,7 @@ NOTT_2019.plac_seq_plot <- function(finemap_DT=NULL,
     ggbio::geom_arch(data = interact.DT, alpha=.6, color="gray60", max.height = 10,
                                         aes(x=Start, xend=End)) + 
     facet_grid(facets = Cell_type~.) +
-    scale_y_reverse() +
+    # scale_y_reverse() +
     # scale_colour_brewer(palette = "Set2") +
     theme_classic() +
     # labs(subtitle = paste0(annot_sub$Annotation[[1]]," - ",promoter_celltypes) ) +

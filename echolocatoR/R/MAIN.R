@@ -139,6 +139,8 @@ source("./echolocatoR/R/Annotate/macs2.R")
 source("./echolocatoR/R/Annotate/IMPACT.R")
 # source("./echolocatoR/R/Annotate/liftover.R")
 source("./echolocatoR/R/Annotate/spliceAI.R")
+source("./echolocatoR/R/Annotate/Roadmap.R")
+
 
 
 # eQTL Catalogue
@@ -746,7 +748,8 @@ finemap_pipeline <- function(gene,
                              server=F,
                              PP_threshold=.95,
                              plot_window=NULL,
-                             plot_Nott_binwidth=2500){
+                             plot_Nott_binwidth=2500,
+                             Nott_bigwig_dir=NULL){
    # Create paths
    results_path <- make_results_path(dataset_name, dataset_type, gene)
    # Extract subset
@@ -869,18 +872,28 @@ finemap_pipeline <- function(gene,
                             plot_window = plot_window,
                             save_plot = T,
                             show_plot = T, 
-                            plot_Nott_binwidth = plot_Nott_binwidth)
+                            plot_Nott_binwidth = plot_Nott_binwidth, 
+                            Nott_bigwig_dir = Nott_bigwig_dir)
     })
   }
   if("fancy" %in% plot_types){
     try({
-      trx <- GGBIO.plot(finemap_DT = finemap_DT,
-                        gene = gene,
-                        LD_matrix = LD_matrix,
-                        results_path = results_path,
-                        method_list = finemap_methods, #c("SUSIE","FINEMAP","PAINTOR","PAINTOR_Fairfax")
+      trx <- GGBIO.plot(finemap_DT=finemap_DT,
+                        LD_matrix=LD_matrix,
+                        gene=gene,
+                        results_path=results_path,
+                        method_list=finemap_methods,
+                        Nott_sn_epigenome = T, 
                         XGR_libnames = c("ENCODE_TFBS_ClusteredV3_CellTypes",
-                                         "ENCODE_DNaseI_ClusteredV3_CellTypes"))
+                                         "ENCODE_DNaseI_ClusteredV3_CellTypes",
+                                         "Broad_Histone"),
+                        ROADMAP = T,
+                        max_transcripts = 1,
+                        plot_window = plot_window,
+                        save_plot = T,
+                        show_plot = T, 
+                        plot_Nott_binwidth = plot_Nott_binwidth, 
+                        Nott_bigwig_dir = Nott_bigwig_dir)
     })
   }
 
@@ -985,7 +998,8 @@ finemap_loci <- function(loci,
                          server=F,
                          PP_threshold=.95,
                          plot_window=NULL,
-                         plot_Nott_binwidth=2500){
+                         plot_Nott_binwidth=2500,
+                         Nott_bigwig_dir=NULL){
   fineMapped_topSNPs <- data.table()
   fineMapped_allResults <- data.table()
   lead_SNPs <- snps_to_condition(conditioned_snps, top_SNPs, loci)
@@ -1056,7 +1070,8 @@ finemap_loci <- function(loci,
                                      server=server,
                                      PP_threshold=PP_threshold,
                                      plot_window=plot_window,
-                                     plot_Nott_binwidth=plot_Nott_binwidth)
+                                     plot_Nott_binwidth=plot_Nott_binwidth,
+                                     Nott_bigwig_dir=Nott_bigwig_dir)
 
       # Create summary table for all genes
       printer("Generating summary table...", v=verbose)

@@ -119,7 +119,7 @@ top_SNPs <- data.table::rbindlist(list(top_SNPs,
 #  
 
 finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
-                                               loci = "MED12L",#top_SNPs$Gene, #unique(c("LRRK2", loci)),
+                                               loci = "SPTSSB",#top_SNPs$Gene, #unique(c("LRRK2", loci)),
                                                trim_gene_limits = F,#c(T, rep(F,length(gene_list))),
                                                dataset_name = dataset_name,
                                                dataset_type = "GWAS",
@@ -136,14 +136,14 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  A1_col = "A1",
                  A2_col = "A2",
                  bp_distance = 500000*2,
-                 # plot_window = 50000,
-                 # plot_Nott_binwidth = 100,
+                 plot_window = 100000,
+                 plot_Nott_binwidth = 500,
                  # max_snps=1000,
                  download_reference = T, 
                  LD_reference = "UKB",#"1KG_Phase1",
                  superpopulation = "EUR", 
                  LD_block = F, 
-                 min_MAF = 0.001,
+                 min_MAF = 0.001, 
                  # min_POS = min_POS,
                  # max_POS = max_POS,
                  # remove_variants = c("rs34637584"),
@@ -151,6 +151,7 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
                  conditioned_snps = "auto", # Use the lead SNP for each gene  
                  n_causal = 5, 
                  plot_types = c("simple"), #"fancy" 
+                 Nott_bigwig_dir = "/pd-omics/data/Nott_2019",
                  PP_threshold = .95,
                  remove_tmps = T,  
                  server=F)  
@@ -160,28 +161,27 @@ finemap_results[[dataset_name]] <- finemap_loci(top_SNPs,
 
 # Summarise Results
 
-## Gather Results
+## Gather AD Results
 
 ```{r}
-MERGED_DT <- lapply(c("Kunkle_2019","Posthuma_2018"), function(x){
-  message(x)
-  merged_DT <- merge_finemapping_results(minimum_support=1,
-                                          include_leadSNPs=T,
-                                          dataset = file.path("./Data/GWAS",x),
-                                          xlsx_path=F,
-                                          from_storage=T,
-                                          consensus_thresh = 2,
-                                          haploreg_annotation=F,
-                                          biomart_annotation=F, 
-                                          verbose = F)
-  return(merged_DT)
-}) %>% data.table::rbindlist(fill=T)
-
+# MERGED_DT <- lapply(c("Kunkle_2019","Posthuma_2018","Marioni_2018"), function(x){
+#   message(x)
+#   merged_DT <- merge_finemapping_results(minimum_support=1,
+#                                           include_leadSNPs=T,
+#                                           dataset = file.path("./Data/GWAS",x),
+#                                           xlsx_path=F,
+#                                           from_storage=T,
+#                                           consensus_thresh = 2,
+#                                           haploreg_annotation=F,
+#                                           biomart_annotation=F, 
+#                                           verbose = F)
+#   return(merged_DT)
+# }) %>% data.table::rbindlist(fill=T)
 ```
 
-
+## Gather PD Results
 ```{r Gather Results}
-merged_DT <- merge_finemapping_results(minimum_support=1,
+merged_DT <- merge_finemapping_results(minimum_support=0,
                                       include_leadSNPs=T,
                                       dataset = "./Data/GWAS/Nalls23andMe_2019",
                                       xlsx_path=F,
@@ -189,8 +189,7 @@ merged_DT <- merge_finemapping_results(minimum_support=1,
                                       consensus_thresh = 2,
                                       haploreg_annotation=F,
                                       biomart_annotation=F, 
-                                      verbose = F) %>% 
-  dplyr::rename(Locus=Gene) 
+                                      verbose = F) 
 no_no_loci <- c("HLA-DRB5","MAPT","ATG14","SP1","LMNB1","ATP6V0A1", 
                 # Tau region 
                 "RETREG3","UBTF","FAM171A2","MAP3K14","CRHR1","MAPT-AS1","KANSL1","NSF","WNT3")
@@ -204,18 +203,17 @@ head(arrange(merged_DT, Locus), 50)
 ```
 
 
-```{r}
+```{r locus_order}
 
 # Sort from loci with the smallest to largest UCS size.
-locus_order <- merged_DT
-  # subset(merged_DT, Support>0) %>% 
+locus_order <- merged_DT %>%
   dplyr::group_by(Locus, .drop=F) %>% 
   dplyr::summarise_at(vars(ends_with("Credible_Set")),
                       funs(size=n_distinct(SNP[.>0], na.rm = T),
                            length=n_distinct(SNP) )
                    ) %>%  
   dplyr::mutate(UCS_size = mean.Credible_Set_length) %>% 
-  arrange(-UCS_size) 
+ dplyr::arrange(-UCS_size) 
 locus_order <- locus_order[!endsWith(colnames(locus_order), ".Credible_Set_length")]
 locus_order$Locus <- factor(locus_order$Locus,  levels = locus_order$Locus, ordered = T)   
 
@@ -305,8 +303,8 @@ merged_DT <- data.table:::merge.data.table(merged_DT, missense,
                                            by.x="SNP",
                                            by.y = "refsnp_id")
 missense_counts <- merged_DT %>% dplyr::group_by(Locus) %>%
-  dplyr::summarise(Missense=sum(Missense))
-printer(sum(subset(merged_DT, Consensus_SNP>0)$Missense, na.rm = T),"missense mutations detected in UCS.")
+  dplyr::summarise(Missense=sum(Missense, na.rm=T))
+printer(sum(subset(merged_DT, Support>0)$Missense, na.rm = T),"missense mutations detected in UCS.")
 ```
 
 ## Consensus SNP Annotations
@@ -354,19 +352,24 @@ merged_annot <- merged_annot %>%
 consensus_melt <- # merged_annot %>%
   # dplyr::group_by(Locus, Cell_type, Assay) %>% 
   # dplyr::summarise(Count =  n_distinct(SNP[topConsensus], na.rm = T)) %>%
-  setDT(merged_annot)[, .(Count = n_distinct(SNP[Consensus_SNP>0], na.rm = T)),
+  setDT(merged_annot)[, .(Count = n_distinct(SNP[Consensus_SNP==T], na.rm = T)),
                                        by=c("Locus","Cell_type","Assay")] %>%
   subset(!is.na(Cell_type) & !is.na(Assay)) %>%
   dplyr::mutate(Annotation = paste0(Cell_type,"_",Assay)) %>%
   # Merge with missense data
   merge(missense_counts, on="Locus", all=T)
-
 consensus_melt$Locus <- factor(consensus_melt$Locus,  levels = locus_order$Locus, ordered = T)
 length(unique(consensus_melt$Locus)) 
+
+
+# consensus_melt %>% group_by(Locus) %>% summarise(cell_types = paste(unique(Cell_type), collapse="; "))
+# subset(consensus_melt, Locus %in% c("CRLS1","CLCN3","HIP1R"))
 ```
 
 
 ```{r merge data and plot} 
+library(patchwork)
+
 # Group and melt CS sizes
 CS_cols <- grep(".Credible_Set$", colnames(merged_DT), value = T)
 CS_cols <- CS_cols[!startsWith(CS_cols, "mean")]
@@ -387,9 +390,6 @@ melt.dat <- merged_DT %>%
                 Method=factor(Method ))
 melt.dat$Locus <- factor(melt.dat$Locus,  levels = locus_order$Locus, ordered = T)
  
-
-# Plot
-library(patchwork)
 
 ## UCS
 # gg_CS_count <- ggplot(data=locus_order,aes(x=Locus, y=UCS_size, fill=-UCS_size)) +
@@ -695,9 +695,7 @@ merged_DT <- merge_finemapping_results(minimum_support=0,
                                       consensus_thresh = 2,
                                       haploreg_annotation=F,
                                       biomart_annotation=F, 
-                                      verbose = F) %>% 
-  dplyr::rename(Locus=Gene) 
-
+                                      verbose = F) 
 dat <- data.table::fread("/Volumes/Steelix/fine_mapping_files/pd_meta5_sum_stats_fm_results.csv.gz")
 DAT <- data.table::merge.data.table(merged_DT, dat,
                                     by.x =c("SNP","A1","A2"),
@@ -719,15 +717,13 @@ CS_overlap <- function(DAT){
     overlap <- intersect(cs1, cs2)
     comp_df <- data.frame(Singleton_CS_size=length(cs1), 
                           Raj_CS_size=length(cs2),
-                          Singleton_CS.overlap_prop=round(length(overlap)/length(cs1),2),
-                          Raj_CS.overlap_prop=round(length(overlap)/length(cs2),2), 
+                          Singleton_CS.overlap_proportion=round(length(overlap)/length(cs1),2),
+                          Raj_CS.overlap_proportion=round(length(overlap)/length(cs2),2), 
                           overlap=length(overlap),
                           method=x)
     return(comp_df)
   }) %>% data.table::rbindlist()
-  
-  
-  
+  return(OVERLAP)
 }
 
 
