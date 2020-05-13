@@ -413,7 +413,7 @@ GGBIO.plot <- function(finemap_DT,
                                    alpha = 1,
                                    facets=Source~.)
     }
-    track.xgr <- track.xgr+
+    track.xgr <- track.xgr +
       theme_classic() +
       theme(strip.text.y = element_text(angle = 0),
             strip.text = element_text(size=9)) +

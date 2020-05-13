@@ -40,7 +40,7 @@ git submodule update
 
 ## Workflow  
 
-![echoFlow](./echolocatoR/images/echolocatoR_Flowchart.png)
+![echoFlow](./echolocatoR/images/echolocatoR_flowchart.png)
 
 <br>
 
@@ -88,8 +88,9 @@ Planning to implement:
 
 ### LD Reference Panels  
 
-#### [1000 Genomes Phase 1]()  
-#### [1000 Genomes Phase 3]()  
+#### [UK Biobank](https://www.ukbiobank.ac.uk)
+#### [1000 Genomes Phase 1](https://www.internationalgenome.org)  
+#### [1000 Genomes Phase 3](https://www.internationalgenome.org)  
 
 
 ### QTL
